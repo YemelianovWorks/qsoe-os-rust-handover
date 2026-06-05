@@ -2,9 +2,9 @@
  * libtaskman/src/pathmgr.c -- taskman's path namespace registry.
  *
  * Storage is a fixed pool of pm_node_t; nodes are bump-allocated.
- * Sufficient for early-system server registrations (a few dozen); a
- * freelist + symbol table arrive when later filesystems can
- * add/remove leaves at runtime.
+ * Sufficient for the early-system server registrations a taskman
+ * makes (a few dozen); a freelist becomes necessary once a writable
+ * filesystem adds and removes leaves at runtime.
  *
  * Names are stored inline in a small per-node buffer.  Long
  * components (>= PATHMGR_NAME_MAX) are rejected.  Real filesystems
@@ -17,7 +17,7 @@
  * no libtaskman_seams() calls.  Lifted verbatim from LQ taskman's
  * path/pathmgr.c (where it had the same shape).
  *
- * Copyright (c) 2026 Yuri Zaporozhets <r_tty@yahoo.co.uk>
+ * Copyright (c) 2026 Yuri Zaporozhets <yuriz@qsoe.net>
  * SPDX-License-Identifier: Apache-2.0
  */
 

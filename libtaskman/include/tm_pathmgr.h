@@ -9,16 +9,15 @@
  * path bytes that matched (so future resmgrs can serve subtrees).
  *
  * Storage is a fixed pool; nodes are bump-allocated.  Sufficient for
- * the early-system server registrations a Stage-A taskman makes (a
- * few dozen); a freelist + symbol table arrive when later filesystems
- * add/remove leaves at runtime.
+ * the early-system server registrations taskman makes (a few dozen);
+ * a freelist becomes necessary once a writable filesystem adds and
+ * removes leaves at runtime.
  *
  * Inspired by QRV's tNode (~/proj/QRV-OS/taskman/include/pathmgr_node.h)
- * but written from scratch -- no reference counting yet, no link
- * chains.  Public surface here is OS-independent: pid_t and int only,
- * nothing kernel-specific.
+ * but written from scratch.  Public surface here is OS-independent:
+ * pid_t and int only, nothing kernel-specific.
  *
- * Copyright (c) 2026 Yuri Zaporozhets <r_tty@yahoo.co.uk>
+ * Copyright (c) 2026 Yuri Zaporozhets <yuriz@qsoe.net>
  * SPDX-License-Identifier: Apache-2.0
  */
 #ifndef LIBTASKMAN_PATHMGR_H

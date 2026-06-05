@@ -16,7 +16,7 @@
  * Per-process bounds (TM_MAX_TID_PER_PROC, TM_MAX_MMAP_PER_PROC)
  * scale with what one process can do, not the system-wide count.
  *
- * Copyright (c) 2026 Yuri Zaporozhets <r_tty@yahoo.co.uk>
+ * Copyright (c) 2026 Yuri Zaporozhets <yuriz@qsoe.net>
  * SPDX-License-Identifier: Apache-2.0
  */
 #ifndef LIBTASKMAN_LIMITS_H
@@ -30,12 +30,12 @@
 
 /* Per-process caps. */
 #define TM_MAX_TID_PER_PROC       32   /* threads in one process */
-/* TM_MAX_MMAP_PER_PROC bumped from 16 -> 64 on 2026-06-02: qsh chews
- * through mmaps fast under v0.8 -- every posix_spawn currently grabs a
- * fresh 2 MiB Mega_Page for the args side channel (no pool reuse yet),
- * stdio buffers each take a page, mallocng grabs more, and external
- * commands compound that.  64 buys headroom; a future args-page pool
- * (one slot reused across spawns) will let us walk this back. */
+/* qsh chews through mmaps fast: every posix_spawn grabs a fresh
+ * 2 MiB Mega_Page for the args side channel (the args page is not
+ * pooled across spawns), stdio buffers each take a page, mallocng
+ * grabs more, and external commands compound that.  64 buys
+ * headroom; an args-page pool (one slot reused across spawns) is the
+ * structural reduction. */
 #define TM_MAX_MMAP_PER_PROC      64   /* mmap'd Mega_Page regions tracked */
 
 #endif /* LIBTASKMAN_LIMITS_H */

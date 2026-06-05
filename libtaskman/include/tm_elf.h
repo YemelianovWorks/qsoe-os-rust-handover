@@ -16,7 +16,7 @@
  * Anything else (sections, symbols, relocations, ELF64 BE, ARM/x86)
  * is out of scope and lives in rtld when needed.
  *
- * Copyright (c) 2026 Yuri Zaporozhets <r_tty@yahoo.co.uk>
+ * Copyright (c) 2026 Yuri Zaporozhets <yuriz@qsoe.net>
  * SPDX-License-Identifier: Apache-2.0
  */
 #ifndef LIBTASKMAN_ELF_H

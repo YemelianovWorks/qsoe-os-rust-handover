@@ -1,20 +1,22 @@
 /*
  * <libtaskman/syscfg.h> -- system-configuration blob builder + walker.
  *
- * Every QSOE taskman publishes a small TLV blob ("syscfg") describing
- * the platform: timebase Hz, memory regions, PCI ECAM base, etc.  The
- * BLOB FORMAT is the QSOE-neutral ABI in <qsoe/syscfg.h>; this module
- * builds and walks it.  Source of truth for the platform data (FDT
- * on QEMU, hard-coded for testbeds, board firmware on real HW) is the
- * per-OS taskman -- it iterates that source, calls our emit_* helpers
- * to lay down tags, and later answers TM_REQ_GET_SYSCFG by handing
- * the blob back to clients (libc's hwi_*).
+ * Each QSOE taskman that needs a TLV platform blob ("syscfg") --
+ * timebase Hz, memory regions, PCI ECAM base, etc. -- builds it with
+ * this module.  The BLOB FORMAT is the QSOE-neutral ABI in
+ * <qsoe/syscfg.h>; this module builds and walks it.  Source of truth
+ * for the platform data (FDT on QEMU, hard-coded for testbeds, board
+ * firmware on real HW) is the per-OS taskman: it iterates that
+ * source, calls our emit_* helpers to lay down tags, and serves the
+ * blob to consumers (libc's hwi_*, in-process clock-freq init, PCI
+ * ECAM mapping, ...).
  *
- * Walker (find_*) is read-only and used by both taskman itself
- * (clock-freq init, PCI ECAM mapping) and by any future libtaskman
- * module that needs to consult syscfg.
+ * NQ today reaches the same goal via the kernel-built sysmap page
+ * mapped read-only in every process; the syscfg path lives on for
+ * LQ and for taskman-internal callers that need TLV emit/find
+ * primitives.
  *
- * Copyright (c) 2026 Yuri Zaporozhets <r_tty@yahoo.co.uk>
+ * Copyright (c) 2026 Yuri Zaporozhets <yuriz@qsoe.net>
  * SPDX-License-Identifier: Apache-2.0
  */
 #ifndef LIBTASKMAN_SYSCFG_H

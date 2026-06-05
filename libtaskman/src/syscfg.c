@@ -12,7 +12,7 @@
  * Lifted from LQ taskman's sys/syscfg.c (the in-buffer body), with
  * the global s_blob replaced by a caller-owned tm_syscfg_state_t.
  *
- * Copyright (c) 2026 Yuri Zaporozhets <r_tty@yahoo.co.uk>
+ * Copyright (c) 2026 Yuri Zaporozhets <yuriz@qsoe.net>
  * SPDX-License-Identifier: Apache-2.0
  */
 

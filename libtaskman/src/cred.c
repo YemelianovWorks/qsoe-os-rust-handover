@@ -8,7 +8,7 @@
  * tm_set_cred, tm_proc_self_info -- the parts that mutate the state
  * struct only, not the per-OS process-table lookups around them).
  *
- * Copyright (c) 2026 Yuri Zaporozhets <r_tty@yahoo.co.uk>
+ * Copyright (c) 2026 Yuri Zaporozhets <yuriz@qsoe.net>
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -29,9 +29,9 @@ int tm_cred_chdir(tm_cred_state_t *s, const char *path, unsigned path_len)
 {
     if (!s || !path) return -EINVAL;
     if (path_len == 0 || path_len >= TM_CWD_MAX) return -ENAMETOOLONG;
-    /* Stage-A accepts absolute paths only.  Relative paths need full
-     * cwd-relative resolution which lands when a real fs server can
-     * verify the destination exists. */
+    /* Absolute paths only.  Relative paths need cwd-relative
+     * resolution against a filesystem that can verify the destination
+     * exists. */
     if (path[0] != '/') return -EINVAL;
     for (unsigned i = 0; i < path_len; ++i) s->cwd[i] = path[i];
     s->cwd[path_len] = 0;
@@ -63,9 +63,9 @@ int tm_cred_set(tm_cred_state_t *s,
                 unsigned rgid_new, unsigned egid_new, unsigned sgid_new)
 {
     if (!s) return -EINVAL;
-    /* 0xFFFFFFFF = "leave alone".  Stage-A is single-user-root so
-     * permission checks are deferred to the caller; the per-OS
-     * taskman gates this with whatever policy it has. */
+    /* 0xFFFFFFFF = "leave alone".  Single-user-root posture: the
+     * per-OS taskman applies whatever policy it has before calling
+     * us; this body never gates on the requested values. */
     if (ruid_new != 0xFFFFFFFFu) s->cred.ruid = (uid_t)ruid_new;
     if (euid_new != 0xFFFFFFFFu) s->cred.euid = (uid_t)euid_new;
     if (suid_new != 0xFFFFFFFFu) s->cred.suid = (uid_t)suid_new;

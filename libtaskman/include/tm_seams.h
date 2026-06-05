@@ -28,7 +28,7 @@
  * Adding a field is source-compatible: existing taskmen leave the
  * new slot zero-init and libtaskman_init() flags the gap loudly.
  *
- * Copyright (c) 2026 Yuri Zaporozhets <r_tty@yahoo.co.uk>
+ * Copyright (c) 2026 Yuri Zaporozhets <yuriz@qsoe.net>
  * SPDX-License-Identifier: Apache-2.0
  */
 #ifndef LIBTASKMAN_SEAMS_H
@@ -38,8 +38,8 @@
 
 struct libtaskman_seams {
     /* ---- Clock (timer module needs this) ---- */
-    /* Read the monotonic tick count.  Stage-A taskmen back this with
-     * RISC-V `rdtime`; later builds may run a more elaborate clock. */
+    /* Read the monotonic tick count.  Backed today by RISC-V `rdtime`;
+     * a sched-context-aware clock takes over once MCS lands. */
     uint64_t (*clock_now_ticks)(void);
 
     /* ---- FDT (syscfg module needs this) ---- */
@@ -56,9 +56,9 @@ struct libtaskman_seams {
      * thread.  Returns 0 on success, -errno on failure. */
     int (*send_pulse)(pid_t pid, int code, int value);
 
-    /* Future seams (multi-process spawn, cap minting, IRQ binding,
-     * VSpace ops, etc.) get fields appended below as the corresponding
-     * modules graduate from per-OS into shared libtaskman code. */
+    /* Additional seams (multi-process spawn, cap minting, IRQ binding,
+     * VSpace ops, ...) get appended below as the corresponding modules
+     * move from per-OS into the shared libtaskman body. */
 };
 
 /* Initialise libtaskman.  Must be called once before any other

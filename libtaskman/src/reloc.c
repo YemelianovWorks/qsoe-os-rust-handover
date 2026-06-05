@@ -6,7 +6,7 @@
  * writes go through a callback so per-kernel taskmen can plug in
  * their own "write 8 bytes at child VA X" implementation.
  *
- * Copyright (c) 2026 Yuri Zaporozhets <r_tty@yahoo.co.uk>
+ * Copyright (c) 2026 Yuri Zaporozhets <yuriz@qsoe.net>
  * SPDX-License-Identifier: Apache-2.0
  */
 

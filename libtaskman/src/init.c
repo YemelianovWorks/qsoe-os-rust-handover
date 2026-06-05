@@ -5,7 +5,7 @@
  * module code reads through libtaskman_seams().  Init is allowed
  * exactly once per process; a second call is a programming error.
  *
- * Copyright (c) 2026 Yuri Zaporozhets <r_tty@yahoo.co.uk>
+ * Copyright (c) 2026 Yuri Zaporozhets <yuriz@qsoe.net>
  * SPDX-License-Identifier: Apache-2.0
  */
 

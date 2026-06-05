@@ -14,7 +14,7 @@
  * because the path may need pre-validation against the resmgr the
  * caller's open() was speaking to.
  *
- * Copyright (c) 2026 Yuri Zaporozhets <r_tty@yahoo.co.uk>
+ * Copyright (c) 2026 Yuri Zaporozhets <yuriz@qsoe.net>
  * SPDX-License-Identifier: Apache-2.0
  */
 #ifndef LIBTASKMAN_CRED_H

@@ -28,7 +28,7 @@
  * either TLS-related (handled by rtld at startup) or unused at our
  * scale.  We deliberately do NOT touch GNU_IFUNC; rtld can deal.
  *
- * Copyright (c) 2026 Yuri Zaporozhets <r_tty@yahoo.co.uk>
+ * Copyright (c) 2026 Yuri Zaporozhets <yuriz@qsoe.net>
  * SPDX-License-Identifier: Apache-2.0
  */
 #ifndef LIBTASKMAN_RELOC_H
@@ -60,9 +60,8 @@ typedef int (*tm_reloc_write_q_fn)(void *user, uint64_t vaddr, uint64_t value);
 
 /* Optional per-skip logger.  Called once for every external symbol
  * that the walker had to leave NULL (no resolution path).  Lets the
- * caller surface a "WARN: reloc skip <name>" line per
- * feedback_stubs_announce -- silent NULL slots crash hours later
- * with no context, so we always announce them at load time too.
+ * caller surface a "WARN: reloc skip <name>" line at load time --
+ * silent NULL slots crash much later with no context.
  * `name` is a NUL-terminated pointer into the file blob; do NOT
  * retain past the tm_reloc_apply() call.  Pass NULL to suppress. */
 typedef void (*tm_reloc_skip_log_fn)(void *user, const char *name);
