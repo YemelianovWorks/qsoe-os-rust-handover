@@ -130,6 +130,27 @@ int tm_pathmgr_register(const char *path, const tm_pathmgr_obj_t *obj)
     return 0;
 }
 
+int tm_pathmgr_unregister_pid(pid_t pid)
+{
+    int dropped = 0;
+    /* Every node lives in the flat bump pool -- a linear sweep beats
+     * a tree walk.  Only EXTERNAL attachments are dropped: the
+     * taskman-internal handlers (console/cpiofs/null/zero/pmdir) are
+     * registered under taskman's own pid and must survive any
+     * process's detach.  Symlink nodes carry no object and are
+     * skipped by the has_obj gate. */
+    for (int i = 0; i < g_pool_used; ++i) {
+        pm_node_t *n = &g_pool[i];
+        if (n->has_obj &&
+            n->obj.handler_kind == PATHMGR_HANDLER_EXTERNAL &&
+            n->obj.server_pid == pid) {
+            n->has_obj = 0;
+            dropped++;
+        }
+    }
+    return dropped;
+}
+
 /* Inner walk: longest-prefix lookup, possibly stopping early at a
  * symlink node.  Returns the deepest matching node or 0.  When a
  * symlink stops the walk, *out_is_symlink is set to 1. */

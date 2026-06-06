@@ -48,8 +48,18 @@ void tm_pathmgr_init(void);
 
 /* Register obj at the given absolute path (must start with '/').  The
  * tree is grown on demand.  Returns 0 on success, -errno on failure
- * (-EINVAL bad path, -ENOMEM pool exhausted, -EEXIST already taken). */
+ * (-EINVAL bad path or path already taken, -ENOMEM pool exhausted). */
 int tm_pathmgr_register(const char *path, const tm_pathmgr_obj_t *obj);
+
+/* Drop every EXTERNAL registration owned by `pid`.  Called from the
+ * taskman proc-detach path so a server's registrations don't outlive
+ * it: a stale entry makes clients resolve a ghost (pid, chid) pair
+ * and park forever in MsgSend, and blocks the relaunched server's
+ * re-register with -EINVAL.  Nodes stay in the bump pool and are
+ * reused by name on the next register.  Taskman-internal handlers
+ * (console/cpiofs/null/...) are never dropped.  Returns the number of
+ * attachments removed. */
+int tm_pathmgr_unregister_pid(pid_t pid);
 
 /* Longest-prefix lookup.  On match, fills *out with the deepest
  * matching object and *out_consumed_bytes with the number of bytes in
