@@ -35,6 +35,7 @@
 #define PATHMGR_HANDLER_TASKMAN_NULL    3
 #define PATHMGR_HANDLER_TASKMAN_ZERO    4
 #define PATHMGR_HANDLER_TASKMAN_PMDIR   5
+#define PATHMGR_HANDLER_TASKMAN_SYSFS   6   /* synthetic read-only /sys */
 
 typedef struct tm_pathmgr_obj {
     pid_t    server_pid;
