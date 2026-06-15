@@ -16,3 +16,6 @@ boot/*.bin
 *.dat
 *.uImage
 
+# Build artifacts (the `make nvme` QEMU test image, etc.)
+build/
+
