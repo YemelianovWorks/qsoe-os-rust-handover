@@ -99,16 +99,67 @@ def build_header(disk_lbas, disk_guid, entries_crc):
     return bytes(hdr) + bytes(LBA_SIZE - len(hdr))
 
 
+def part_offsets(part_mibs):
+    """Return [(start_lba, nlba), ...] packing partitions back-to-back from
+    FIRST_USABLE -- the same layout build_entries lays down, so a later
+    --write-part call lands a payload at the exact partition it named."""
+    out = []
+    cursor = FIRST_USABLE
+    for mib in part_mibs:
+        nlba = (mib * 1024 * 1024) // LBA_SIZE
+        out.append((cursor, nlba))
+        cursor += nlba
+    return out
+
+
+def write_part(img_path, src_path, idx, part_mibs):
+    """Write the bytes of src_path into partition `idx` (1-based) of img_path.
+    The partition layout is recomputed from part_mibs, so the offset stays
+    consistent with the GPT this same tool wrote."""
+    offs = part_offsets(part_mibs)
+    if idx < 1 or idx > len(offs):
+        print(f"--write-part: partition {idx} out of range", file=sys.stderr)
+        sys.exit(1)
+    start_lba, nlba = offs[idx - 1]
+    cap = nlba * LBA_SIZE
+    data = open(src_path, "rb").read()
+    if len(data) > cap:
+        print(f"--write-part: {src_path} ({len(data)} B) exceeds "
+              f"partition {idx} capacity ({cap} B)", file=sys.stderr)
+        sys.exit(1)
+    with open(img_path, "r+b") as f:
+        f.seek(start_lba * LBA_SIZE)
+        f.write(data)
+    print(f"mkgpt: wrote {len(data)} B of {src_path} into p{idx} "
+          f"(LBA {start_lba}, offset {start_lba * LBA_SIZE})")
+
+
 def main():
     args = sys.argv[1:]
     fsqrv_idx = None
+    write_part_idx = None
     i = 0
     while i < len(args):
         if args[i] == "--fsqrv" and i + 1 < len(args):
             fsqrv_idx = int(args[i + 1])
             del args[i : i + 2]
             continue
+        if args[i] == "--write-part" and i + 1 < len(args):
+            write_part_idx = int(args[i + 1])
+            del args[i : i + 2]
+            continue
         i += 1
+
+    # --write-part N <image> <srcfile> <part1_mib> ...: blit a file into a
+    # partition instead of (re)writing the GPT.
+    if write_part_idx is not None:
+        if len(args) < 3:
+            print("usage: mkgpt.py --write-part N <image> <srcfile> "
+                  "<part1_mib> [part2_mib ...]", file=sys.stderr)
+            sys.exit(1)
+        write_part(args[0], args[1], write_part_idx,
+                   [int(x) for x in args[2:]])
+        return
 
     if len(args) < 2:
         print("usage: mkgpt.py [--fsqrv N] <image> <part1_mib> [part2_mib ...]",
