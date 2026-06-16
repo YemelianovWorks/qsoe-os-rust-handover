@@ -15,7 +15,7 @@
 # Copyright (c) 2026 Yuri Zaporozhets <yuriz@qsoe.net>
 # SPDX-License-Identifier: Apache-2.0
 
-.PHONY: all prepare nvme nvme-populate
+.PHONY: all prepare nvme nvme-populate virtio fsqrv-image
 
 all:
 	$(MAKE) -C nq
@@ -36,6 +36,13 @@ NVME_IMG       := build/nvme.img
 NVME_IMG_SIZE  := 192M
 NVME_NPARTS    := 8
 NVME_PARTS     := 16 16 16 16 16 16 16 16
+
+# ---- virtio QEMU test image (QSOE/L) --------------------------------
+# QSOE/L has no NVMe under QEMU (seL4 has no AIA), so it boots off a
+# virtio-mmio disk instead.  Unlike the NVMe image this is a RAW whole-disk
+# qrvfs (no GPT): devb-virtio serves it as /dev/vblk0 and fs-qrv mounts it
+# directly.  Same userspace, same mkfs-qrv -- only the container differs.
+VIRTIO_IMG     := build/virtio.img
 
 FSQRV_PART     := 8
 FSQRV_SIZE_MB  := 16
@@ -65,11 +72,12 @@ $(MKFS_QRV): host_tools/mkfs-qrv.c quser/fs/qrv/fs.h
 	@mkdir -p $(dir $@)
 	@cc -O2 -Wall -I quser/fs/qrv -o $@ $<
 
-# Populate p8 from a proto root assembled out of quser's build output.
-# Always runs (the on-disk userspace changes with quser); the staged tree
-# becomes /usr/bin/* under the mount.  If quser hasn't been built yet there
-# is nothing to stage, so the GPT skeleton is left intact with a note.
-nvme-populate: $(NVME_IMG) $(MKFS_QRV)
+# Build the qrvfs image once from a proto root assembled out of quser's
+# build output; the staged tree becomes /usr/bin/* under the mount.  Both
+# the NVMe (GPT p8) and virtio (raw whole-disk) images reuse it.  If quser
+# hasn't been built yet there is nothing to stage and FSQRV_IMG is removed
+# so the consumers know to leave their images alone.
+fsqrv-image: $(MKFS_QRV)
 	@rm -rf $(FSQRV_ROOT); mkdir -p $(FSQRV_ROOT)/bin; \
 	have=0; \
 	for pair in $(FSQRV_BINS); do \
@@ -78,9 +86,26 @@ nvme-populate: $(NVME_IMG) $(MKFS_QRV)
 	done; \
 	if [ $$have = 1 ]; then \
 		"$(MKFS_QRV)" -s $(FSQRV_SIZE_MB) $(FSQRV_IMG) $(FSQRV_ROOT) >/dev/null; \
+		echo "make: qrvfs image $(FSQRV_IMG) <- /usr/bin from $(FSQRV_ROOT)"; \
+	else \
+		rm -f $(FSQRV_IMG); \
+		echo "make: no fs binaries built -- qrvfs image skipped (build quser first)"; \
+	fi
+
+# NVMe: write the qrvfs image into the GPT image's p8.
+nvme-populate: $(NVME_IMG) fsqrv-image
+	@if [ -f $(FSQRV_IMG) ]; then \
 		host_tools/mkgpt.py --write-part $(FSQRV_PART) $(NVME_IMG) \
 			$(FSQRV_IMG) $(NVME_PARTS); \
-		echo "make nvme: p8 populated -> /usr/bin from $(FSQRV_ROOT)"; \
 	else \
-		echo "make nvme: no fs binaries built -- p8 left empty (build quser first)"; \
+		echo "make nvme: p8 left empty"; \
+	fi
+
+# virtio: the raw qrvfs image IS the whole disk (no GPT).
+virtio: fsqrv-image
+	@if [ -f $(FSQRV_IMG) ]; then \
+		cp $(FSQRV_IMG) $(VIRTIO_IMG); \
+		echo "make virtio: $(VIRTIO_IMG) ($(FSQRV_SIZE_MB) MiB raw qrvfs, /dev/vblk0)"; \
+	else \
+		echo "make virtio: $(VIRTIO_IMG) not built"; \
 	fi
