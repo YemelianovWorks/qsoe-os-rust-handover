@@ -60,7 +60,8 @@ FSQRV_SYSINIT  := quser/sbin/sysinit
 # in the boot cpio -- modpkg carries only what bring-up needs.
 FSQRV_BINS     := quser/build/test/suite/suite.elf:suite \
                   quser/build/test/msgpass/test_msgpass.elf:test_msgpass \
-                  quser/build/test/syncspace/test_syncspace.elf:test_syncspace
+                  quser/build/test/syncspace/test_syncspace.elf:test_syncspace \
+                  quser/build/utils/time.elf:time
 
 nvme: $(NVME_IMG) nvme-populate
 
