@@ -15,7 +15,7 @@
 # Copyright (c) 2026 Yuri Zaporozhets <yuriz@qsoe.net>
 # SPDX-License-Identifier: Apache-2.0
 
-.PHONY: all prepare nvme nvme-populate virtio fsqrv-image
+.PHONY: all prepare nvme nvme-populate virtio fsqrv-image tree
 
 all:
 	$(MAKE) -C nq
@@ -47,8 +47,13 @@ VIRTIO_IMG     := build/virtio.img
 FSQRV_PART     := 8
 FSQRV_SIZE_MB  := 16
 MKFS_QRV       := build/mkfs-qrv
+TREEQRVFS      := build/treeqrvfs
 FSQRV_ROOT     := build/fsqrv-root
 FSQRV_IMG      := build/fsqrv.img
+# On-disk staged init: the cpio /sbin/init mounts the fs and execs
+# /usr/sbin/sysinit/level1.sh from it.  Authored under quser, staged into
+# the image's /sbin/sysinit by fsqrv-image.
+FSQRV_SYSINIT  := quser/sbin/sysinit
 # The on-disk userspace, taken from quser's build output (built by nq/lq
 # before emu.sh delegates here).  Each "<src>:<name>" pair becomes
 # /usr/bin/<name> under the mount.  The test binaries live here rather than
@@ -72,6 +77,15 @@ $(MKFS_QRV): host_tools/mkfs-qrv.c quser/fs/qrv/fs.h
 	@mkdir -p $(dir $@)
 	@cc -O2 -Wall -I quser/fs/qrv -o $@ $<
 
+$(TREEQRVFS): host_tools/treeqrvfs.c quser/fs/qrv/fs.h
+	@mkdir -p $(dir $@)
+	@cc -O2 -Wall -I quser/fs/qrv -o $@ $<
+
+# Dump the staged qrvfs image's directory tree (build it first if needed).
+tree: $(TREEQRVFS) fsqrv-image
+	@if [ -f $(FSQRV_IMG) ]; then "$(TREEQRVFS)" $(FSQRV_IMG); \
+	else echo "make tree: $(FSQRV_IMG) not built (build quser first)"; fi
+
 # Build the qrvfs image once from a proto root assembled out of quser's
 # build output; the staged tree becomes /usr/bin/* under the mount.  Both
 # the NVMe (GPT p8) and virtio (raw whole-disk) images reuse it.  If quser
@@ -84,6 +98,11 @@ fsqrv-image: $(MKFS_QRV)
 		src=$${pair%%:*}; name=$${pair##*:}; \
 		if [ -f "$$src" ]; then cp "$$src" $(FSQRV_ROOT)/bin/$$name; have=1; fi; \
 	done; \
+	if [ -f $(FSQRV_SYSINIT)/level1.sh ]; then \
+		mkdir -p $(FSQRV_ROOT)/sbin/sysinit; \
+		cp $(FSQRV_SYSINIT)/level1.sh $(FSQRV_ROOT)/sbin/sysinit/; \
+		chmod +x $(FSQRV_ROOT)/sbin/sysinit/level1.sh; \
+	fi; \
 	if [ $$have = 1 ]; then \
 		"$(MKFS_QRV)" -s $(FSQRV_SIZE_MB) $(FSQRV_IMG) $(FSQRV_ROOT) >/dev/null; \
 		echo "make: qrvfs image $(FSQRV_IMG) <- /usr/bin from $(FSQRV_ROOT)"; \
