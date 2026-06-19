@@ -15,7 +15,7 @@
 # Copyright (c) 2026 Yuri Zaporozhets <yuriz@qsoe.net>
 # SPDX-License-Identifier: Apache-2.0
 
-.PHONY: all prepare nvme nvme-populate virtio fsqrv-image tree
+.PHONY: all prepare clean nvme nvme-populate virtio fsqrv-image tree
 
 all:
 	$(MAKE) -C nq
@@ -23,6 +23,19 @@ all:
 
 prepare:
 	./proj_obtain.sh
+
+# Whole-tree clean: every component owns its clean; we just descend into
+# each, then drop the umbrella's own build/ (disk images + host tools).
+# nq/lq clean also remove their per-kernel libc/ + libtaskman/ build dirs
+# (lq/build, nq/build); the libc/ and libtaskman/ cleans below cover their
+# standalone build dirs.  Use this to kill any build-staleness for good.
+CLEAN_DIRS := nq lq quser libc libtaskman
+clean:
+	@for d in $(CLEAN_DIRS); do \
+	    echo "==> clean $$d"; \
+	    $(MAKE) -C $$d clean || exit 1; \
+	done
+	rm -rf build boot/nvme_p*.dat
 
 # ---- NVMe QEMU test image -------------------------------------------
 # Eight 16-MiB partitions; p8 carries the fs-qrv type GUID (same as the
@@ -61,7 +74,8 @@ FSQRV_SYSINIT  := quser/sbin/sysinit
 FSQRV_BINS     := quser/build/test/suite/suite.elf:suite \
                   quser/build/test/msgpass/test_msgpass.elf:test_msgpass \
                   quser/build/test/syncspace/test_syncspace.elf:test_syncspace \
-                  quser/build/utils/time.elf:time
+                  quser/build/utils/time.elf:time \
+                  quser/build/utils/sysinfo.elf:sysinfo
 # On-disk /usr/sbin programs: getty + login live on the root fs, not the
 # boot cpio -- they cannot do their job without /usr mounted (login reads
 # /usr/conf via the /etc symlink), so a boot that can't mount /usr has
@@ -71,6 +85,11 @@ FSQRV_SBIN     := quser/build/sbin/getty/getty.elf:getty \
 # Credentials shipped on the image: /usr/conf/{passwd,shadow,group},
 # reached as /etc/* through the taskman /etc -> /usr/conf symlink.
 FSQRV_CONF     := quser/conf
+# Per-user home skeleton: quser/home/<user>/... -> /usr/home/<user>/...,
+# reached as /home/<user> through the /home -> /usr/home symlink.  Ships
+# user's ~/.profile so login's chdir(pw_dir) lands in a real, populated
+# home instead of falling back to /.
+FSQRV_HOME     := quser/home
 
 nvme: $(NVME_IMG) nvme-populate
 
@@ -123,6 +142,10 @@ fsqrv-image: $(MKFS_QRV)
 		for f in $(FSQRV_CONF)/passwd $(FSQRV_CONF)/shadow $(FSQRV_CONF)/group; do \
 			[ -f "$$f" ] && cp "$$f" $(FSQRV_ROOT)/conf/; \
 		done; \
+		have=1; \
+	fi; \
+	if [ -d $(FSQRV_HOME) ]; then \
+		cp -a $(FSQRV_HOME)/. $(FSQRV_ROOT)/home/; \
 		have=1; \
 	fi; \
 	if [ $$have = 1 ]; then \
