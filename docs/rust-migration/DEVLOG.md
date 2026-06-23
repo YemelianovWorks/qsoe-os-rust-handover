@@ -1,6 +1,6 @@
 # QSOE Rust Migration Development Log
 
-Last updated: 2026-06-23 23:11 CEST.
+Last updated: 2026-06-23 23:22 CEST.
 
 This log tracks the development process for the Rust migration and reproducible
 toolchain work. It records what changed, what was observed, what failed, and
@@ -23,6 +23,33 @@ Result:
 Follow-up:
 - ...
 ```
+
+## 2026-06-23 23:22 CEST - Wrapper State Tests Added
+
+Scope:
+
+- Added `DirectServer::dispatch_received`, the single receive-state dispatch
+  step used by the direct-service run loop.
+- Added host tests for message, pulse, and receive-error dispatch transitions
+  without creating a live QSOE channel.
+- Documented that host tests cover wrapper state transitions, while link and
+  boot smokes cover QSOE IPC behavior.
+- Marked the Phase 5 wrapper-level tests task complete.
+
+Commands:
+
+- `make rust-quality`
+- `make container-rust-slogger-link-smoke`
+- `make container-rust-service-example-link-smoke`
+
+Result:
+
+- Direct-service wrapper transitions are covered by the normal host test gate
+  without requiring QEMU.
+
+Follow-up:
+
+- Start Phase 6 by specifying the current virtio block driver behavior.
 
 ## 2026-06-23 23:11 CEST - Error Mapping Defined
 

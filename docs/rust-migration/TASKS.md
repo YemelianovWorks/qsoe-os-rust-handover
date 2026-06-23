@@ -169,7 +169,7 @@ small reviewable change unless it explicitly says otherwise.
   - Acceptance: Rust errors map to existing QSOE negative errno or status
     conventions without inventing a new ABI.
 
-- [ ] Add wrapper-level tests.
+- [x] Add wrapper-level tests.
   - Acceptance: host-side tests cover state transitions that do not require
     QEMU; in-guest smoke covers the rest.
 

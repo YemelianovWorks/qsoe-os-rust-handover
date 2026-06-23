@@ -75,6 +75,9 @@ as the current C `slogger`, it also exposes a safe direct-service surface:
   `slogger-rs` and `qsoe-service-example-rs` both use this bootstrap.
   The example service documents and tests a minimal request/reply policy for
   lifecycle, read, write, and unsupported operations.
+- `DirectServer::dispatch_received` is the host-testable receive-state step
+  used by the infinite `run` loop; tests cover message, pulse, and receive
+  error dispatch without requiring QEMU.
 - `ReplyStatus` models direct `MsgReply` labels: `0`/`EOK` on success and a
   positive QSOE errno on failure.
 - `MethodStatus` models the C resource-server method convention: non-negative
