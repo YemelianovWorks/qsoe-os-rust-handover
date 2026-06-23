@@ -15,7 +15,18 @@
 # Copyright (c) 2026 Yuri Zaporozhets <yuriz@qsoe.net>
 # SPDX-License-Identifier: Apache-2.0
 
-.PHONY: all prepare clean nvme nvme-populate virtio fsqrv-image tree
+.PHONY: all prepare clean nvme nvme-populate virtio fsqrv-image tree \
+        check-host-tools check-qrvfs-fixture check-qrvfs-rust-fixture \
+        check-gpt-fixture \
+        index-c index-c-files index-c-tags index-c-cscope index-c-global \
+        index-c-static index-c-compile-db \
+        elf-baseline rust-fast rust-quality rust-check rust-abi rust-deep \
+        rust-qsoe-link-smoke \
+        container-toolchain-build container-shell container-check \
+        container-index-c container-index-c-static container-index-c-compile-db \
+        container-elf-baseline container-rust-fast container-rust-quality \
+        container-rust-abi container-rust-deep container-rust-qsoe-link-smoke \
+        container-source-build
 
 all:
 	$(MAKE) -C nq
@@ -114,6 +125,96 @@ $(TREEQRVFS): host_tools/treeqrvfs.c quser/fs/qrv/fs.h
 tree: $(TREEQRVFS) fsqrv-image
 	@if [ -f $(FSQRV_IMG) ]; then "$(TREEQRVFS)" $(FSQRV_IMG); \
 	else echo "make tree: $(FSQRV_IMG) not built (build quser first)"; fi
+
+check-host-tools: check-qrvfs-fixture check-gpt-fixture
+
+check-qrvfs-fixture:
+	@scripts/check-qrvfs-fixture.sh
+
+check-qrvfs-rust-fixture:
+	@scripts/check-qrvfs-rust-fixture.sh
+
+check-gpt-fixture:
+	@scripts/check-gpt-fixture.py
+
+index-c: index-c-static
+
+index-c-files:
+	@scripts/c-index.sh files
+
+index-c-tags:
+	@scripts/c-index.sh tags
+
+index-c-cscope:
+	@scripts/c-index.sh cscope
+
+index-c-global:
+	@scripts/c-index.sh global
+
+index-c-static:
+	@scripts/c-index.sh static
+
+index-c-compile-db:
+	@scripts/c-index.sh compile-db
+
+elf-baseline:
+	@scripts/capture-elf-baseline.sh
+
+rust-fast:
+	@scripts/rust-workflow.sh fast
+
+rust-quality:
+	@scripts/rust-workflow.sh quality
+
+rust-check:
+	@scripts/rust-check.sh
+
+rust-abi:
+	@scripts/rust-workflow.sh abi
+
+rust-deep:
+	@scripts/rust-workflow.sh deep
+
+rust-qsoe-link-smoke:
+	@scripts/rust-qsoe-link-smoke.sh
+
+container-toolchain-build:
+	@scripts/container-toolchain.sh build
+
+container-shell:
+	@scripts/container-toolchain.sh shell
+
+container-check:
+	@scripts/container-toolchain.sh check
+
+container-index-c: container-index-c-static
+
+container-index-c-static:
+	@scripts/container-toolchain.sh index-c-static
+
+container-index-c-compile-db:
+	@scripts/container-toolchain.sh index-c-compile-db
+
+container-elf-baseline:
+	@scripts/container-toolchain.sh run scripts/capture-elf-baseline.sh
+
+container-rust-fast:
+	@scripts/container-toolchain.sh run make rust-fast
+
+container-rust-quality:
+	@scripts/container-toolchain.sh run make rust-quality
+
+container-rust-abi:
+	@scripts/container-toolchain.sh run make rust-abi
+
+container-rust-deep:
+	@scripts/container-toolchain.sh run make rust-deep
+
+container-rust-qsoe-link-smoke:
+	@scripts/container-toolchain.sh rust-link-smoke
+
+container-source-build:
+	@scripts/container-toolchain.sh source-build
 
 # Build the qrvfs image once from a proto root assembled out of quser's
 # build output; the staged tree becomes /usr/bin/* under the mount.  Both

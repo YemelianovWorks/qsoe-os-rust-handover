@@ -1,0 +1,21 @@
+[alias]
+qsoe-check = "check --workspace"
+qsoe-clippy = "clippy --workspace -- -D warnings"
+
+[target.riscv64gc-unknown-none-elf]
+linker = "rust-lld"
+rustflags = [
+    "-C", "panic=abort",
+    "-C", "code-model=medium",
+    "-C", "relocation-model=pic",
+    "-C", "target-feature=+f,+d,+zicsr,+zifencei",
+]
+
+[target.riscv64-qsoe-user]
+linker = "riscv64-linux-gnu-gcc"
+rustflags = [
+    "-C", "panic=abort",
+    "-C", "code-model=medium",
+    "-C", "relocation-model=pic",
+    "-C", "target-feature=+m,+a,+f,+d,+c,+zicsr,+zifencei",
+]

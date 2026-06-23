@@ -1,0 +1,7 @@
+CompileFlags:
+  CompilationDatabase: build/index/c
+  Remove:
+    - -Werror
+
+Index:
+  Background: Build

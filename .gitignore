@@ -19,3 +19,5 @@ boot/*.bin
 # Build artifacts (the `make nvme` QEMU test image, etc.)
 build/
 
+# Rust migration spike build artifacts
+rust/target/
