@@ -1,6 +1,6 @@
 # QSOE Rust Migration Development Log
 
-Last updated: 2026-06-23 22:45 CEST.
+Last updated: 2026-06-23 22:37 CEST.
 
 This log tracks the development process for the Rust migration and reproducible
 toolchain work. It records what changed, what was observed, what failed, and
@@ -24,7 +24,36 @@ Follow-up:
 - ...
 ```
 
-## 2026-06-23 22:45 CEST - Rust Slogger Boot Smoke Added
+## 2026-06-23 22:37 CEST - C And Rust Slogger Boot Logs Compared
+
+Scope:
+
+- Rebuilt and booted the default C `slogger` LQ image.
+- Compared C boot milestones against the latest Rust `slogger-rs` boot-smoke
+  log.
+- Documented reviewed differences in `SLOGGER_BOOT_COMPARE.md`.
+- Marked the Phase 4 boot-log comparison task complete.
+
+Commands:
+
+- `make -C quser cpio LIBC_SO=... RTLD_SO=... DYNLIBC_SO=...`
+- `make -C lq`
+- `scripts/boot-smoke.sh -k lq -t 180 -o build/boot-smoke-lq-c-compare.log`
+- `strings build/boot-smoke-lq-c-compare.log | rg "slogger|fs-qrv: mounted|login:|devb-virtio|dispatcher ready|spawning /sbin/init"`
+- `strings build/boot-smoke-lq-20260623-223518.log | rg "slogger|fs-qrv: mounted|login:|devb-virtio|dispatcher ready|spawning /sbin/init"`
+
+Result:
+
+- Both C and Rust boots reached login.
+- Rust startup logs are shorter: no pid, chid, or ring-size text yet.
+- Device, filesystem, and login milestones matched.
+
+Follow-up:
+
+- Decide whether pid/chid/ring-size startup parity is needed before replacing
+  the default C service.
+
+## 2026-06-23 22:35 CEST - Rust Slogger Boot Smoke Added
 
 Scope:
 

@@ -153,7 +153,7 @@ small reviewable change unless it explicitly says otherwise.
 - [x] Boot image with Rust `slogger`.
   - Acceptance: QEMU reaches login and console logs show `slogger-rs` alive.
 
-- [ ] Compare C and Rust boot logs.
+- [x] Compare C and Rust boot logs.
   - Acceptance: differences are reviewed and documented.
 
 ## Phase 5: Resource-Server Pattern Promotion
