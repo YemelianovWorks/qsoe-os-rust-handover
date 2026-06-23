@@ -219,7 +219,7 @@ small reviewable change unless it explicitly says otherwise.
   - Acceptance: each candidate has size, dependency, ABI surface, testability,
     and rollback scores.
 
-- [ ] Pick second Rust service.
+- [x] Pick second Rust service.
   - Acceptance: selected component has a written mini-spec and smoke test before
     implementation.
 

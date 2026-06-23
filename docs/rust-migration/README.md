@@ -28,11 +28,12 @@ Read in this order:
    acceptance contract.
 15. `SERVICE_RANKING.md`: remaining userland service scores for Phase 8
    selection.
-16. `SPEC.md`: technical constraints, allowed boundaries, runtime/linking rules,
+16. `PIPE.md`: selected second Rust service mini-spec and C registration smoke.
+17. `SPEC.md`: technical constraints, allowed boundaries, runtime/linking rules,
    and acceptance standards.
-17. `PLAN.md`: phased migration plan from baseline validation through possible
+18. `PLAN.md`: phased migration plan from baseline validation through possible
    kernel reassessment.
-18. `TASKS.md`: executable backlog with acceptance criteria.
+19. `TASKS.md`: executable backlog with acceptance criteria.
 
 The first implementation milestone should not be a subsystem rewrite. It should
 be a reproducible baseline plus artifact audit, followed by a minimal Rust

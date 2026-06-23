@@ -1,6 +1,6 @@
 # QSOE Rust Migration Development Log
 
-Last updated: 2026-06-24 01:44 CEST.
+Last updated: 2026-06-24 01:47 CEST.
 
 This log tracks the development process for the Rust migration and reproducible
 toolchain work. It records what changed, what was observed, what failed, and
@@ -23,6 +23,34 @@ Result:
 Follow-up:
 - ...
 ```
+
+## 2026-06-24 01:47 CEST - Pipe Selected As Second Rust Service
+
+Scope:
+
+- Added `PIPE.md` as the mini-spec for the selected second Rust service.
+- Added `scripts/pipe-smoke.sh`, `make pipe-smoke`, and
+  `make container-pipe-smoke` to verify the current C service starts and
+  registers `/dev/pipe` before implementation.
+- Documented current protocol, state model, rollback path, and later Rust
+  acceptance gates.
+- Linked the mini-spec from the migration docs index.
+- Marked the Phase 8 second-service selection task complete.
+
+Commands:
+
+- `sed -n '1,380p' quser/sbin/pipe/main.c`
+- `rg -n "pipe\\(|/dev/pipe|TM_REQ_PIPE_CREATE|PIPE_|pipe" quser libc libtaskman docs scripts -g '!build/**'`
+- `make pipe-smoke`
+
+Result:
+
+- `pipe` is selected, but the existing C implementation remains the default.
+  The new smoke reached login and confirmed `/dev/pipe` registration.
+
+Follow-up:
+
+- Pick the first Rust test helper.
 
 ## 2026-06-24 01:44 CEST - Remaining Userland Services Ranked
 
