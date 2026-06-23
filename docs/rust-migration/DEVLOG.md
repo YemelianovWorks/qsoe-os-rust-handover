@@ -1,6 +1,6 @@
 # QSOE Rust Migration Development Log
 
-Last updated: 2026-06-24 02:42 CEST.
+Last updated: 2026-06-24 02:46 CEST.
 
 This log tracks the development process for the Rust migration and reproducible
 toolchain work. It records what changed, what was observed, what failed, and
@@ -23,6 +23,36 @@ Result:
 Follow-up:
 - ...
 ```
+
+## 2026-06-24 02:46 CEST - Slog Readback Smoke Stacked
+
+Scope:
+
+- Ported the existing `/dev/slog` readback smoke into the active migration
+  stack.
+- Added `scripts/slog-readback-smoke.py`.
+- Added `make slog-readback-smoke`.
+- Documented the smoke in `SLOGGER.md`.
+- Marked the `/dev/slog` smoke backlog item complete in the stacked docs.
+
+Commands:
+
+- `git cherry-pick 0971d1faf80f0416339875aa7ea36cf761f40201`
+- `python3 -m py_compile scripts/slog-readback-smoke.py`
+- `make -n slog-readback-smoke`
+- `scripts/slog-readback-smoke.py -t 120 -o build/slog-readback-smoke-stacked.log`
+
+Result:
+
+- The stack now carries the readback smoke that had previously lived only on
+  side PR #43. This prevents later stacked docs from reopening the completed
+  `/dev/slog` smoke task.
+- The stacked smoke run observed a `pci-server:` entry through `/bin/sloginfo`.
+
+Follow-up:
+
+- Keep the side PR closed once this stacked PR is open, so issue #2 has one
+  active implementation path.
 
 ## 2026-06-24 02:42 CEST - Release Note Template Added
 

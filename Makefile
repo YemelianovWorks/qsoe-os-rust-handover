@@ -22,7 +22,7 @@ SELECTED_VIRTIO_ELF ?= build/rust/selected/sbin/devb-virtio.elf
 
 .PHONY: all prepare clean nvme nvme-populate virtio fsqrv-image tree \
         check-host-tools check-qrvfs-fixture check-qrvfs-rust-fixture \
-        check-elf-reloc-fixture check-gpt-fixture \
+        check-elf-reloc-fixture check-gpt-fixture slog-readback-smoke \
         index-c index-c-files index-c-tags index-c-cscope index-c-global \
         index-c-static index-c-compile-db tidy-c \
         elf-baseline audit-artifacts \
@@ -159,6 +159,9 @@ check-elf-reloc-fixture:
 
 check-gpt-fixture:
 	@scripts/check-gpt-fixture.py
+
+slog-readback-smoke:
+	@scripts/slog-readback-smoke.py
 
 index-c: index-c-static
 
