@@ -70,6 +70,9 @@ as the current C `slogger`, it also exposes a safe direct-service surface:
 - `IoRequest` and `IoReply` model the fixed 40-byte request header,
   32-byte pure reply header, and `TM_IO_MAX` inline payload shape used by
   `slogger`.
+- `DirectServer` and `DirectRequestHandler` provide the shared register,
+  daemon-ready, receive-loop, pulse, and receive-error path for direct services.
+  `slogger-rs` and `qsoe-service-example-rs` both use this bootstrap.
 
 Layout tests assert the current RV64 C ABI sizes and alignments.
 

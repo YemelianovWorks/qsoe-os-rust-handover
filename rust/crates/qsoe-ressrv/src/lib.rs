@@ -383,6 +383,61 @@ impl DirectService {
     }
 }
 
+pub trait DirectRequestHandler {
+    fn handle_message(&mut self, message: ReceivedMessage, request: &IoRequest);
+
+    fn handle_pulse(&mut self, _info: QsoeMsgInfo) {}
+
+    fn handle_receive_error(&mut self, _error: DirectError) {}
+}
+
+pub struct DirectServer<H> {
+    service: DirectService,
+    handler: H,
+}
+
+impl<H> DirectServer<H> {
+    pub fn register(path: &CStr, handler: H) -> DirectResult<Self> {
+        Ok(Self {
+            service: DirectService::register(path)?,
+            handler,
+        })
+    }
+
+    pub const fn from_service(service: DirectService, handler: H) -> Self {
+        Self { service, handler }
+    }
+
+    pub fn service(&self) -> &DirectService {
+        &self.service
+    }
+
+    pub fn handler(&self) -> &H {
+        &self.handler
+    }
+
+    pub fn handler_mut(&mut self) -> &mut H {
+        &mut self.handler
+    }
+
+    pub fn detach_ready(&self, status: c_int) -> DirectResult<()> {
+        self.service.detach_ready(status)
+    }
+}
+
+impl<H: DirectRequestHandler> DirectServer<H> {
+    pub fn run(&mut self) -> ! {
+        loop {
+            let mut req = IoRequest::zeroed();
+            match self.service.receive_request(&mut req) {
+                Ok(Receive::Message(message)) => self.handler.handle_message(message, &req),
+                Ok(Receive::Pulse(info)) => self.handler.handle_pulse(info),
+                Err(error) => self.handler.handle_receive_error(error),
+            }
+        }
+    }
+}
+
 pub enum Receive {
     Message(ReceivedMessage),
     Pulse(QsoeMsgInfo),

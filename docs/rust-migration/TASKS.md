@@ -158,7 +158,7 @@ small reviewable change unless it explicitly says otherwise.
 
 ## Phase 5: Resource-Server Pattern Promotion
 
-- [ ] Extract common service bootstrap.
+- [x] Extract common service bootstrap.
   - Acceptance: `slogger-rs` and a trivial example service share the same
     wrapper path.
 

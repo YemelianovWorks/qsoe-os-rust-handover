@@ -1,6 +1,6 @@
 # QSOE Rust Migration Development Log
 
-Last updated: 2026-06-23 22:37 CEST.
+Last updated: 2026-06-23 22:47 CEST.
 
 This log tracks the development process for the Rust migration and reproducible
 toolchain work. It records what changed, what was observed, what failed, and
@@ -23,6 +23,34 @@ Result:
 Follow-up:
 - ...
 ```
+
+## 2026-06-23 22:47 CEST - Direct Service Bootstrap Extracted
+
+Scope:
+
+- Added `DirectRequestHandler` and `DirectServer` to `qsoe-ressrv`.
+- Moved `slogger-rs` onto the shared direct-service register, detach, and
+  receive-loop path.
+- Added `qsoe-service-example-rs`, a tiny service that uses the same wrapper
+  path for connect, write, read, and close-style requests.
+- Added a link-smoke target and Rust README note for the example service.
+- Marked the Phase 5 common bootstrap task complete.
+
+Commands:
+
+- `make rust-quality`
+- `make container-rust-slogger-link-smoke`
+- `make container-rust-service-example-link-smoke`
+
+Result:
+
+- `slogger-rs` and the example service compile through the same direct-service
+  bootstrap path.
+- Both service binaries link through the QSOE userland CRT/libc path.
+
+Follow-up:
+
+- Expand the example into a documented resource-server sample.
 
 ## 2026-06-23 22:37 CEST - C And Rust Slogger Boot Logs Compared
 

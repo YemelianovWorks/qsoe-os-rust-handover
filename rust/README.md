@@ -81,6 +81,15 @@ It builds `qsoe-slogger-rs` as a no-std staticlib and links it through the same
 QSOE userland CRT/libc path. The C `slogger` remains the default service until
 the explicit build flag and boot smoke steps land.
 
+The shared direct-service bootstrap example can be linked with:
+
+```sh
+make rust-service-example-link-smoke
+```
+
+It builds `qsoe-service-example-rs`, a tiny `/dev/rust-example` service that
+uses the same `DirectServer` wrapper path as `slogger-rs`.
+
 ## Slogger Selection
 
 The tracked handover tree does not edit the ignored `quser/` component
