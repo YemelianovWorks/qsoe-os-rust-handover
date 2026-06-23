@@ -162,7 +162,7 @@ small reviewable change unless it explicitly says otherwise.
   - Acceptance: `slogger-rs` and a trivial example service share the same
     wrapper path.
 
-- [ ] Add resource-server example.
+- [x] Add resource-server example.
   - Acceptance: example compiles and demonstrates a minimal request/reply loop.
 
 - [ ] Define error mapping.

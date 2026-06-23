@@ -88,7 +88,9 @@ make rust-service-example-link-smoke
 ```
 
 It builds `qsoe-service-example-rs`, a tiny `/dev/rust-example` service that
-uses the same `DirectServer` wrapper path as `slogger-rs`.
+uses the same `DirectServer` wrapper path as `slogger-rs`. The package README
+documents its minimal connect, write, read, close, and unsupported-request
+replies.
 
 ## Slogger Selection
 

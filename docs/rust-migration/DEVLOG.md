@@ -1,6 +1,6 @@
 # QSOE Rust Migration Development Log
 
-Last updated: 2026-06-23 22:47 CEST.
+Last updated: 2026-06-23 23:01 CEST.
 
 This log tracks the development process for the Rust migration and reproducible
 toolchain work. It records what changed, what was observed, what failed, and
@@ -23,6 +23,31 @@ Result:
 Follow-up:
 - ...
 ```
+
+## 2026-06-23 23:01 CEST - Resource Server Example Documented
+
+Scope:
+
+- Turned `qsoe-service-example-rs` into a documented direct resource-server
+  example with a named request classifier.
+- Added `host-tests` feature coverage for lifecycle acknowledgements, write
+  byte counts, read payload caps, and unsupported request handling.
+- Included the example package in `make rust-quality` host tests.
+- Marked the Phase 5 resource-server example task complete.
+
+Commands:
+
+- `make rust-quality`
+- `make container-rust-service-example-link-smoke`
+
+Result:
+
+- The example compiles, documents its minimal request/reply loop, and links
+  through the QSOE userland CRT/libc path.
+
+Follow-up:
+
+- Define common error mapping for Rust direct services.
 
 ## 2026-06-23 22:47 CEST - Direct Service Bootstrap Extracted
 

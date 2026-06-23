@@ -10,6 +10,9 @@ name = "qsoe_service_example_rs"
 path = "src/lib.rs"
 crate-type = ["rlib", "staticlib"]
 
+[features]
+host-tests = []
+
 [dependencies]
 qsoe-ffi = { path = "../../crates/qsoe-ffi", version = "0.0.0" }
 qsoe-ressrv = { path = "../../crates/qsoe-ressrv", version = "0.0.0" }
