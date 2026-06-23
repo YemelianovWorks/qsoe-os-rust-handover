@@ -11,6 +11,9 @@ pub type SizeT = usize;
 pub type SsizeT = isize;
 pub type QsoeTimeT = u64;
 
+pub const EOK: i32 = 0;
+pub const ENOSYS: i32 = 37;
+
 pub const TASKMAN_PID: i32 = 1;
 pub const QSOE_SIDE_CHANNEL: u32 = 0x4000_0000;
 pub const TASKMAN_COID: i32 = QSOE_SIDE_CHANNEL as i32;
@@ -199,6 +202,8 @@ mod tests {
 
     #[test]
     fn qsoe_io_constants_match_c_headers() {
+        assert_eq!(EOK, 0);
+        assert_eq!(ENOSYS, 37);
         assert_eq!(TM_WIRE_BASE_BYTES, 40);
         assert_eq!(TM_IO_MAX, 896);
         assert_eq!(TM_REQ_IO_WRITE, 0x304);

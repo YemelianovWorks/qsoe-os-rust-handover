@@ -35,3 +35,12 @@ dependencies = [
 [[package]]
 name = "qsoe-slogger"
 version = "0.0.0"
+
+[[package]]
+name = "qsoe-slogger-rs"
+version = "0.0.0"
+dependencies = [
+ "qsoe-ffi",
+ "qsoe-ressrv",
+ "qsoe-slogger",
+]

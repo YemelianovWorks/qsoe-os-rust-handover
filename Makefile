@@ -21,12 +21,13 @@
         index-c index-c-files index-c-tags index-c-cscope index-c-global \
         index-c-static index-c-compile-db tidy-c \
         elf-baseline rust-fast rust-quality rust-check rust-abi rust-deep \
-        rust-qsoe-link-smoke \
+        rust-qsoe-link-smoke rust-slogger-link-smoke \
         container-toolchain-build container-shell container-check \
         container-index-c container-index-c-static container-index-c-compile-db \
         container-tidy-c \
         container-elf-baseline container-rust-fast container-rust-quality \
         container-rust-abi container-rust-deep container-rust-qsoe-link-smoke \
+        container-rust-slogger-link-smoke \
         container-source-build
 
 all:
@@ -182,6 +183,9 @@ rust-deep:
 rust-qsoe-link-smoke:
 	@scripts/rust-qsoe-link-smoke.sh
 
+rust-slogger-link-smoke:
+	@RUST_PACKAGE=qsoe-slogger-rs scripts/rust-qsoe-link-smoke.sh
+
 container-toolchain-build:
 	@scripts/container-toolchain.sh build
 
@@ -219,6 +223,9 @@ container-rust-deep:
 
 container-rust-qsoe-link-smoke:
 	@scripts/container-toolchain.sh rust-link-smoke
+
+container-rust-slogger-link-smoke:
+	@scripts/container-toolchain.sh run make rust-slogger-link-smoke
 
 container-source-build:
 	@scripts/container-toolchain.sh source-build

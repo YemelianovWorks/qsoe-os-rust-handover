@@ -143,7 +143,7 @@ small reviewable change unless it explicitly says otherwise.
   - Acceptance: host tests cover wraparound, full buffer behavior, and message
     truncation if applicable.
 
-- [ ] Implement QSOE service entry point.
+- [x] Implement QSOE service entry point.
   - Acceptance: `slogger-rs` links as a QSOE userland binary.
 
 - [ ] Add build flag for Rust `slogger`.

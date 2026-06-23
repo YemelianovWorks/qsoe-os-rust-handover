@@ -1,6 +1,6 @@
 # QSOE Rust Migration Development Log
 
-Last updated: 2026-06-23 21:32 CEST.
+Last updated: 2026-06-23 22:55 CEST.
 
 This log tracks the development process for the Rust migration and reproducible
 toolchain work. It records what changed, what was observed, what failed, and
@@ -23,6 +23,39 @@ Result:
 Follow-up:
 - ...
 ```
+
+## 2026-06-23 22:55 CEST - Rust Slogger Entry Point Added
+
+Scope:
+
+- Added `qsoe-slogger-rs`, a no-std staticlib that exports the QSOE userland
+  `main(argc, argv, envp)` entry point.
+- Registered `/dev/slog` through the direct resource-server wrapper.
+- Wired `_IO_CONNECT`, `_IO_DUP`, close, write, read, and fstat handlers to the
+  Rust slog ring.
+- Added QSOE `EOK` and `ENOSYS` ABI constants.
+- Parameterized the Rust QSOE link smoke helper and added
+  `make rust-slogger-link-smoke`.
+- Marked the Phase 4 service-entry-point task complete.
+
+Commands:
+
+- `make rust-quality`
+- `make container-rust-qsoe-link-smoke`
+- `make container-rust-slogger-link-smoke`
+- `bash -n scripts/rust-qsoe-link-smoke.sh scripts/rust-workflow.sh scripts/rust-check.sh`
+
+Result:
+
+- `slogger-rs` links through the QSOE `crt0.o` and `libc.so` userland path.
+- The link smoke strips inert unwind metadata before the strict ELF audit.
+- The existing minimal Rust link smoke still passes with the parameterized
+  script.
+- The C `slogger` remains the default boot service.
+
+Follow-up:
+
+- Add the explicit build flag that selects Rust `slogger` for boot images.
 
 ## 2026-06-23 21:32 CEST - Rust Slogger Ring Added
 

@@ -70,6 +70,17 @@ The smoke target preserves the current QSOE userland contract:
 
 The script audits the linked ELF when a compatible `readelf` tool is available.
 
+The first Rust service pilot can be linked without selecting it for the boot
+image:
+
+```sh
+make rust-slogger-link-smoke
+```
+
+It builds `qsoe-slogger-rs` as a no-std staticlib and links it through the same
+QSOE userland CRT/libc path. The C `slogger` remains the default service until
+the explicit build flag and boot smoke steps land.
+
 ## Host qrvfs Parser
 
 The first host-side Rust parser is:
