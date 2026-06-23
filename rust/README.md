@@ -119,6 +119,30 @@ It builds a temporary `build/rust-slogger/modpkg-lq-rust-slogger.cpio`,
 rebuilds the LQ QEMU image with `MODPKG_CPIO` pointing at that archive, and
 waits for both `[slogger-rs] alive` and `login:`.
 
+## Virtio Driver Selection
+
+The opt-in Rust virtio block driver can be linked and audited without changing
+the boot default:
+
+```sh
+make rust-virtio-link-smoke
+```
+
+It builds `qsoe-devb-virtio-rs` as a no-std staticlib and links it with
+`libressrv` through the same QSOE userland CRT/libc path. The selected artifact
+target mirrors the slogger pattern:
+
+```sh
+make virtio-artifact
+QSOE_RUST_VIRTIO=1 make virtio-artifact
+```
+
+With the default `QSOE_RUST_VIRTIO=0`, the target stages the existing C
+`quser/build/dev/virtio/devb-virtio.elf`. With `QSOE_RUST_VIRTIO=1`, it first
+links and audits `qsoe-devb-virtio-rs`. Both modes write the selected binary to
+`build/rust/selected/sbin/devb-virtio.elf`; the C driver remains the boot
+default until the explicit Rust boot-smoke step lands.
+
 ## Host qrvfs Parser
 
 The first host-side Rust parser is:
@@ -151,3 +175,13 @@ exercise the wrapper against an in-memory register array. The crate also models
 the C virtqueue descriptor, available-ring, used-ring, and block-request
 layouts, with explicit descriptor ownership, device mutability metadata, and
 host-side descriptor free-list tests. The C driver remains the boot default.
+
+The opt-in driver binary is:
+
+```text
+bins/devb-virtio-rs
+```
+
+It discovers the same QEMU virtio-mmio slots, initializes one legacy block
+queue, publishes `/dev/vblk0` through `libressrv`, and keeps writes disabled on
+the resource-server surface.

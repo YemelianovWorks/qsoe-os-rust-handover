@@ -1,6 +1,6 @@
 # QSOE Rust Migration Development Log
 
-Last updated: 2026-06-24 00:20 CEST.
+Last updated: 2026-06-24 00:32 CEST.
 
 This log tracks the development process for the Rust migration and reproducible
 toolchain work. It records what changed, what was observed, what failed, and
@@ -23,6 +23,40 @@ Result:
 Follow-up:
 - ...
 ```
+
+## 2026-06-24 00:32 CEST - Opt-In Rust Virtio Driver Added
+
+Scope:
+
+- Added `qsoe-devb-virtio-rs`, a no-std Rust `devb-virtio` staticlib that
+  discovers QEMU virtio-mmio block slots, initializes the legacy block queue,
+  and publishes `/dev/vblk0` through `libressrv`.
+- Added QSOE ABI errno/block-mode constants and FFI bindings needed by the
+  driver (`munmap`, `sched_yield`).
+- Extended the Rust link-smoke script with optional extra link flags/libs so
+  Rust resource-server binaries can link `libressrv`.
+- Added `make rust-virtio-link-smoke`, `make virtio-artifact`, and container
+  wrappers; `QSOE_RUST_VIRTIO=0` keeps the C driver selected by default, while
+  `QSOE_RUST_VIRTIO=1` stages the audited Rust ELF.
+- Marked the Phase 6 opt-in Rust virtio block driver task complete.
+
+Commands:
+
+- `make rust-quality`
+- `make rust-virtio-link-smoke`
+- `QSOE_RUST_VIRTIO=1 make virtio-artifact`
+- `make virtio-artifact`
+
+Result:
+
+- `build/rust/qsoe-devb-virtio-rs.elf` links as a QSOE RISC-V userland ELF and
+  passes `scripts/audit-elf.sh --strict-qsoe-user`.
+- The selected artifact path exists for both C-default and Rust opt-in modes.
+
+Follow-up:
+
+- Build an opt-in QSOE/L boot image with the Rust virtio artifact and verify
+  `/dev/vblk0`, `/usr` mount, and login.
 
 ## 2026-06-24 00:20 CEST - Host-Side Virtqueue Tests Added
 

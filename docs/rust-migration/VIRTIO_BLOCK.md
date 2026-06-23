@@ -267,3 +267,28 @@ shapes used by the C driver:
 Host tests cover the current three-descriptor request shape, descriptor
 exhaustion without partial consumption, device-owned chain rejection, reclaim,
 and descriptor reuse without touching hardware.
+
+## Rust Opt-In Driver Artifact
+
+`rust/bins/devb-virtio-rs` is the opt-in Rust driver binary. It is built as a
+no-std staticlib and linked through the existing QSOE userland path with
+`libressrv`:
+
+```sh
+make rust-virtio-link-smoke
+```
+
+The link smoke emits `build/rust/qsoe-devb-virtio-rs.elf` and runs
+`scripts/audit-elf.sh --strict-qsoe-user` on it.
+
+Selection stays explicit:
+
+```sh
+make virtio-artifact
+QSOE_RUST_VIRTIO=1 make virtio-artifact
+```
+
+The default `QSOE_RUST_VIRTIO=0` stages the C `devb-virtio` artifact. The Rust
+mode stages the audited Rust ELF at
+`build/rust/selected/sbin/devb-virtio.elf`, ready for the next boot-smoke task
+to place into an opt-in QSOE/L image.

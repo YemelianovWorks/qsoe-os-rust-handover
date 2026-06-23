@@ -189,7 +189,7 @@ small reviewable change unless it explicitly says otherwise.
   - Acceptance: tests cover descriptor chaining and free-list behavior without
     hardware.
 
-- [ ] Implement opt-in Rust virtio block driver.
+- [x] Implement opt-in Rust virtio block driver.
   - Acceptance: binary links and passes artifact audit.
 
 - [ ] Boot with Rust virtio block driver.
