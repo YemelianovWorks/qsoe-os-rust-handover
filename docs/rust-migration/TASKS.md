@@ -200,7 +200,7 @@ small reviewable change unless it explicitly says otherwise.
 
 ## Phase 7: Shared Parsers
 
-- [ ] Add CPIO parser crate.
+- [x] Add CPIO parser crate.
   - Acceptance: parser handles valid and malformed fixtures without panics.
 
 - [ ] Add syscfg/sysmap view crate.

@@ -184,6 +184,20 @@ make check-qrvfs-rust-fixture
 This crate is read-only. The C `mkfs-qrv` tool remains the writer and source of
 truth for image construction.
 
+## Host CPIO Parser
+
+The first shared archive parser is:
+
+```text
+crates/qsoe-cpio
+```
+
+It parses `newc` CPIO archives, exposes borrowed entries by iterator, index, or
+path lookup, and reports archive info such as file count and maximum path
+length. The crate is dependency-free and `no_std`; host tests cover a valid
+archive plus malformed headers, names, UTF-8, and truncated data so parser
+errors stay explicit instead of panicking.
+
 ## Virtio MMIO Wrapper
 
 The first Rust driver-support crate is:
