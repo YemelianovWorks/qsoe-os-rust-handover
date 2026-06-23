@@ -175,7 +175,7 @@ small reviewable change unless it explicitly says otherwise.
 
 ## Phase 6: `devb-virtio-rs`
 
-- [ ] Specify current virtio block driver behavior.
+- [x] Specify current virtio block driver behavior.
   - Acceptance: docs cover device discovery, queue setup, request lifecycle,
     exposed device path, and mount dependency.
 

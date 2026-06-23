@@ -1,6 +1,6 @@
 # QSOE Rust Migration Development Log
 
-Last updated: 2026-06-23 23:22 CEST.
+Last updated: 2026-06-23 23:44 CEST.
 
 This log tracks the development process for the Rust migration and reproducible
 toolchain work. It records what changed, what was observed, what failed, and
@@ -23,6 +23,31 @@ Result:
 Follow-up:
 - ...
 ```
+
+## 2026-06-23 23:44 CEST - Virtio Block Behavior Specified
+
+Scope:
+
+- Added `VIRTIO_BLOCK.md` to specify the current C `devb-virtio` behavior
+  before starting the Rust driver pilot.
+- Documented QEMU virtio-mmio discovery, DMA layout, legacy queue setup,
+  request lifecycle, `/dev/vblk0` resource-server surface, and `/usr` mount
+  dependency.
+- Linked the new spec from the Rust migration README.
+- Marked the Phase 6 current-behavior specification task complete.
+
+Commands:
+
+- `git diff --check`
+
+Result:
+
+- The Rust `devb-virtio-rs` pilot now has a concrete behavior contract and
+  acceptance baseline.
+
+Follow-up:
+
+- Build typed volatile MMIO wrappers for the virtio-mmio register block.
 
 ## 2026-06-23 23:22 CEST - Wrapper State Tests Added
 
