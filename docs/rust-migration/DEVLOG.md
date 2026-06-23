@@ -1,6 +1,6 @@
 # QSOE Rust Migration Development Log
 
-Last updated: 2026-06-24 01:40 CEST.
+Last updated: 2026-06-24 01:44 CEST.
 
 This log tracks the development process for the Rust migration and reproducible
 toolchain work. It records what changed, what was observed, what failed, and
@@ -23,6 +23,31 @@ Result:
 Follow-up:
 - ...
 ```
+
+## 2026-06-24 01:44 CEST - Remaining Userland Services Ranked
+
+Scope:
+
+- Added `SERVICE_RANKING.md` for Phase 8 candidate selection.
+- Ranked remaining userland services by size, dependency, ABI surface,
+  testability, and rollback scores.
+- Excluded `slogger` and `devb-virtio` because they already have Rust pilots.
+- Linked the ranking from the migration docs index.
+- Marked the Phase 8 ranking task complete.
+
+Commands:
+
+- `find quser/build -type f -name '*.elf' -printf '%s %p\n'`
+- `wc -l` over candidate service source files
+
+Result:
+
+- `pipe` is the best next service candidate, with `getty` and `login` close
+  behind once focused login-path smoke coverage exists.
+
+Follow-up:
+
+- Use the ranking to pick the second Rust service and write its mini-spec.
 
 ## 2026-06-24 01:40 CEST - Parser Reused In Host And Guest Contexts
 

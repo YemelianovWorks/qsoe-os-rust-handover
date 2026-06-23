@@ -26,11 +26,13 @@ Read in this order:
 13. `SLOGGER_BOOT_COMPARE.md`: C vs Rust `slogger` boot-log comparison.
 14. `VIRTIO_BLOCK.md`: current C `devb-virtio` behavior and Rust pilot
    acceptance contract.
-15. `SPEC.md`: technical constraints, allowed boundaries, runtime/linking rules,
+15. `SERVICE_RANKING.md`: remaining userland service scores for Phase 8
+   selection.
+16. `SPEC.md`: technical constraints, allowed boundaries, runtime/linking rules,
    and acceptance standards.
-16. `PLAN.md`: phased migration plan from baseline validation through possible
+17. `PLAN.md`: phased migration plan from baseline validation through possible
    kernel reassessment.
-17. `TASKS.md`: executable backlog with acceptance criteria.
+18. `TASKS.md`: executable backlog with acceptance criteria.
 
 The first implementation milestone should not be a subsystem rewrite. It should
 be a reproducible baseline plus artifact audit, followed by a minimal Rust

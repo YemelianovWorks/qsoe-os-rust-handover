@@ -215,7 +215,7 @@ small reviewable change unless it explicitly says otherwise.
 
 ## Phase 8: Additional Migrations
 
-- [ ] Rank remaining userland services.
+- [x] Rank remaining userland services.
   - Acceptance: each candidate has size, dependency, ABI surface, testability,
     and rollback scores.
 
