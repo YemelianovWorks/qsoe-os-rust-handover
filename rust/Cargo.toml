@@ -6,6 +6,7 @@ members = [
     "crates/qsoe-qrvfs",
     "crates/qsoe-ressrv",
     "crates/qsoe-slogger",
+    "crates/qsoe-virtio",
     "bins/minimal-rs",
     "bins/service-example-rs",
     "bins/slogger-rs",

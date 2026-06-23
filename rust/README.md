@@ -136,3 +136,16 @@ make check-qrvfs-rust-fixture
 
 This crate is read-only. The C `mkfs-qrv` tool remains the writer and source of
 truth for image construction.
+
+## Virtio MMIO Wrapper
+
+The first Rust driver-support crate is:
+
+```text
+crates/qsoe-virtio
+```
+
+It contains legacy virtio-mmio register constants and `VirtioMmio`, a no-std
+volatile register wrapper for the future `devb-virtio-rs` pilot. Host tests
+exercise the wrapper against an in-memory register array; the C driver remains
+the boot default.

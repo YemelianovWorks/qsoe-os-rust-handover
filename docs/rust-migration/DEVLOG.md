@@ -1,6 +1,6 @@
 # QSOE Rust Migration Development Log
 
-Last updated: 2026-06-23 23:44 CEST.
+Last updated: 2026-06-23 23:52 CEST.
 
 This log tracks the development process for the Rust migration and reproducible
 toolchain work. It records what changed, what was observed, what failed, and
@@ -23,6 +23,33 @@ Result:
 Follow-up:
 - ...
 ```
+
+## 2026-06-23 23:52 CEST - Virtio MMIO Wrapper Added
+
+Scope:
+
+- Added the `qsoe-virtio` crate with legacy virtio-mmio register constants and
+  a `VirtioMmio` volatile register wrapper.
+- Isolated volatile pointer reads and writes inside the wrapper; callers only
+  provide the mapped register base through an unsafe constructor.
+- Added host tests for device probing, register reads/writes, feature masking,
+  config reads, and interrupt acknowledgement.
+- Included `qsoe-virtio` in the Rust workspace, Rust README, and
+  `make rust-quality`.
+- Marked the Phase 6 volatile MMIO wrapper task complete.
+
+Commands:
+
+- `make rust-quality`
+
+Result:
+
+- Unsafe MMIO pointer access for the Rust virtio pilot is contained in one
+  reviewed wrapper and covered by host tests.
+
+Follow-up:
+
+- Build the virtqueue descriptor model.
 
 ## 2026-06-23 23:44 CEST - Virtio Block Behavior Specified
 

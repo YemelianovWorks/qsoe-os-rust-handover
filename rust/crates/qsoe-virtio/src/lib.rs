@@ -1,0 +1,277 @@
+#![no_std]
+
+use core::marker::PhantomData;
+use core::ptr::{read_volatile, write_volatile, NonNull};
+
+pub const MMIO_BYTES: usize = 0x1000;
+pub const REGISTER_BYTES: usize = core::mem::size_of::<u32>();
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct Register {
+    offset: usize,
+}
+
+impl Register {
+    pub const fn new(offset: usize) -> Self {
+        Self { offset }
+    }
+
+    pub const fn offset(self) -> usize {
+        self.offset
+    }
+
+    pub const fn word_index(self) -> usize {
+        self.offset / REGISTER_BYTES
+    }
+}
+
+pub mod regs {
+    use super::Register;
+
+    pub const MAGIC_VALUE: Register = Register::new(0x000);
+    pub const VERSION: Register = Register::new(0x004);
+    pub const DEVICE_ID: Register = Register::new(0x008);
+    pub const VENDOR_ID: Register = Register::new(0x00c);
+    pub const DEVICE_FEATURES: Register = Register::new(0x010);
+    pub const DRIVER_FEATURES: Register = Register::new(0x020);
+    pub const GUEST_PAGE_SIZE: Register = Register::new(0x028);
+    pub const QUEUE_SEL: Register = Register::new(0x030);
+    pub const QUEUE_NUM_MAX: Register = Register::new(0x034);
+    pub const QUEUE_NUM: Register = Register::new(0x038);
+    pub const QUEUE_ALIGN: Register = Register::new(0x03c);
+    pub const QUEUE_PFN: Register = Register::new(0x040);
+    pub const QUEUE_NOTIFY: Register = Register::new(0x050);
+    pub const INTERRUPT_STATUS: Register = Register::new(0x060);
+    pub const INTERRUPT_ACK: Register = Register::new(0x064);
+    pub const STATUS: Register = Register::new(0x070);
+    pub const CONFIG: Register = Register::new(0x100);
+}
+
+pub const VIRTIO_MAGIC: u32 = 0x7472_6976;
+pub const VIRTIO_VERSION_LEGACY: u32 = 1;
+pub const VIRTIO_DEVID_BLK: u32 = 2;
+
+pub const STATUS_ACKNOWLEDGE: u32 = 1;
+pub const STATUS_DRIVER: u32 = 2;
+pub const STATUS_DRIVER_OK: u32 = 4;
+pub const STATUS_FEATURES_OK: u32 = 8;
+
+pub const GUEST_PAGE_SIZE: u32 = 4096;
+
+pub const BLK_F_RO: u32 = 5;
+pub const BLK_F_SCSI: u32 = 7;
+pub const BLK_F_CONFIG_WCE: u32 = 11;
+pub const BLK_F_MQ: u32 = 12;
+pub const F_ANY_LAYOUT: u32 = 27;
+pub const RING_F_INDIRECT_DESC: u32 = 28;
+pub const RING_F_EVENT_IDX: u32 = 29;
+
+pub const fn feature_bit(bit: u32) -> u32 {
+    1u32 << bit
+}
+
+pub const UNSUPPORTED_BLOCK_FEATURES: u32 = feature_bit(BLK_F_RO)
+    | feature_bit(BLK_F_SCSI)
+    | feature_bit(BLK_F_CONFIG_WCE)
+    | feature_bit(BLK_F_MQ)
+    | feature_bit(F_ANY_LAYOUT)
+    | feature_bit(RING_F_INDIRECT_DESC)
+    | feature_bit(RING_F_EVENT_IDX);
+
+pub const fn accepted_block_features(device_features: u32) -> u32 {
+    device_features & !UNSUPPORTED_BLOCK_FEATURES
+}
+
+pub struct VirtioMmio {
+    base: NonNull<u32>,
+    _not_send_sync: PhantomData<*mut u32>,
+}
+
+impl VirtioMmio {
+    /// Build a wrapper around a mapped virtio-mmio register window.
+    ///
+    /// # Safety
+    ///
+    /// `base` must point to a live, writable `MMIO_BYTES` virtio-mmio mapping
+    /// whose lifetime outlives the returned wrapper. The mapping must not be
+    /// concurrently accessed through other Rust references.
+    pub unsafe fn new(base: *mut u32) -> Option<Self> {
+        NonNull::new(base).map(|base| Self {
+            base,
+            _not_send_sync: PhantomData,
+        })
+    }
+
+    pub fn read(&self, register: Register) -> u32 {
+        assert_valid_register(register);
+        // SAFETY: `new`'s caller guarantees that `base` is a live MMIO window
+        // of `MMIO_BYTES`. `assert_valid_register` bounds the 32-bit offset.
+        unsafe { read_volatile(self.base.as_ptr().add(register.word_index())) }
+    }
+
+    pub fn write(&self, register: Register, value: u32) {
+        assert_valid_register(register);
+        // SAFETY: `new`'s caller guarantees that `base` is a live writable
+        // MMIO window of `MMIO_BYTES`. `assert_valid_register` bounds the
+        // 32-bit offset.
+        unsafe { write_volatile(self.base.as_ptr().add(register.word_index()), value) };
+    }
+
+    pub fn is_legacy_block_device(&self) -> bool {
+        self.read(regs::MAGIC_VALUE) == VIRTIO_MAGIC
+            && self.read(regs::VERSION) == VIRTIO_VERSION_LEGACY
+            && self.read(regs::DEVICE_ID) == VIRTIO_DEVID_BLK
+    }
+
+    pub fn device_features(&self) -> u32 {
+        self.read(regs::DEVICE_FEATURES)
+    }
+
+    pub fn write_driver_features(&self, features: u32) {
+        self.write(regs::DRIVER_FEATURES, features);
+    }
+
+    pub fn status(&self) -> u32 {
+        self.read(regs::STATUS)
+    }
+
+    pub fn write_status(&self, status: u32) {
+        self.write(regs::STATUS, status);
+    }
+
+    pub fn reset_status(&self) {
+        self.write_status(0);
+    }
+
+    pub fn select_queue(&self, queue: u32) {
+        self.write(regs::QUEUE_SEL, queue);
+    }
+
+    pub fn queue_num_max(&self) -> u32 {
+        self.read(regs::QUEUE_NUM_MAX)
+    }
+
+    pub fn write_queue_num(&self, queue_num: u32) {
+        self.write(regs::QUEUE_NUM, queue_num);
+    }
+
+    pub fn write_guest_page_size(&self, page_size: u32) {
+        self.write(regs::GUEST_PAGE_SIZE, page_size);
+    }
+
+    pub fn write_queue_pfn(&self, pfn: u32) {
+        self.write(regs::QUEUE_PFN, pfn);
+    }
+
+    pub fn notify_queue(&self, queue: u32) {
+        self.write(regs::QUEUE_NOTIFY, queue);
+    }
+
+    pub fn interrupt_status(&self) -> u32 {
+        self.read(regs::INTERRUPT_STATUS)
+    }
+
+    pub fn acknowledge_interrupts(&self, mask: u32) {
+        self.write(regs::INTERRUPT_ACK, self.interrupt_status() & mask);
+    }
+
+    pub fn read_config_u64(&self, offset: usize) -> u64 {
+        let lo = self.read(Register::new(regs::CONFIG.offset() + offset)) as u64;
+        let hi = self.read(Register::new(
+            regs::CONFIG.offset() + offset + REGISTER_BYTES,
+        )) as u64;
+        lo | (hi << 32)
+    }
+}
+
+fn assert_valid_register(register: Register) {
+    assert_eq!(register.offset() % REGISTER_BYTES, 0);
+    assert!(register.offset() + REGISTER_BYTES <= MMIO_BYTES);
+}
+
+#[cfg(test)]
+extern crate std;
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn with_regs<T>(f: impl FnOnce(VirtioMmio, &mut [u32; MMIO_BYTES / REGISTER_BYTES]) -> T) -> T {
+        let mut regs = [0u32; MMIO_BYTES / REGISTER_BYTES];
+        // SAFETY: the backing array is writable, register-sized, and lives for
+        // the duration of the wrapper used in this test.
+        let mmio = unsafe { VirtioMmio::new(regs.as_mut_ptr()).unwrap() };
+        f(mmio, &mut regs)
+    }
+
+    #[test]
+    fn register_offsets_match_legacy_virtio_mmio_layout() {
+        assert_eq!(regs::MAGIC_VALUE.word_index(), 0x000 / 4);
+        assert_eq!(regs::DEVICE_FEATURES.word_index(), 0x010 / 4);
+        assert_eq!(regs::QUEUE_PFN.word_index(), 0x040 / 4);
+        assert_eq!(regs::STATUS.word_index(), 0x070 / 4);
+        assert_eq!(regs::CONFIG.word_index(), 0x100 / 4);
+    }
+
+    #[test]
+    fn probes_legacy_block_identity_registers() {
+        with_regs(|mmio, regs| {
+            regs[regs::MAGIC_VALUE.word_index()] = VIRTIO_MAGIC;
+            regs[regs::VERSION.word_index()] = VIRTIO_VERSION_LEGACY;
+            regs[regs::DEVICE_ID.word_index()] = VIRTIO_DEVID_BLK;
+            assert!(mmio.is_legacy_block_device());
+
+            regs[regs::DEVICE_ID.word_index()] = 1;
+            assert!(!mmio.is_legacy_block_device());
+        });
+    }
+
+    #[test]
+    fn reads_and_writes_registers_through_volatile_accessors() {
+        with_regs(|mmio, regs| {
+            mmio.write_status(STATUS_ACKNOWLEDGE | STATUS_DRIVER);
+            assert_eq!(
+                regs[regs::STATUS.word_index()],
+                STATUS_ACKNOWLEDGE | STATUS_DRIVER
+            );
+            assert_eq!(mmio.status(), STATUS_ACKNOWLEDGE | STATUS_DRIVER);
+
+            mmio.select_queue(0);
+            mmio.write_queue_num(8);
+            mmio.write_guest_page_size(GUEST_PAGE_SIZE);
+            mmio.write_queue_pfn(0x1234);
+            mmio.notify_queue(0);
+
+            assert_eq!(regs[regs::QUEUE_SEL.word_index()], 0);
+            assert_eq!(regs[regs::QUEUE_NUM.word_index()], 8);
+            assert_eq!(regs[regs::GUEST_PAGE_SIZE.word_index()], GUEST_PAGE_SIZE);
+            assert_eq!(regs[regs::QUEUE_PFN.word_index()], 0x1234);
+            assert_eq!(regs[regs::QUEUE_NOTIFY.word_index()], 0);
+        });
+    }
+
+    #[test]
+    fn strips_unsupported_block_features() {
+        let supported = feature_bit(0) | feature_bit(1) | feature_bit(2);
+        let device_features = supported | UNSUPPORTED_BLOCK_FEATURES;
+        assert_eq!(accepted_block_features(device_features), supported);
+    }
+
+    #[test]
+    fn reads_64_bit_config_values_from_low_high_words() {
+        with_regs(|mmio, regs| {
+            regs[regs::CONFIG.word_index()] = 0x89ab_cdef;
+            regs[regs::CONFIG.word_index() + 1] = 0x0123_4567;
+            assert_eq!(mmio.read_config_u64(0), 0x0123_4567_89ab_cdef);
+        });
+    }
+
+    #[test]
+    fn acknowledges_only_interrupt_bits_selected_by_mask() {
+        with_regs(|mmio, regs| {
+            regs[regs::INTERRUPT_STATUS.word_index()] = 0b1011;
+            mmio.acknowledge_interrupts(0b0011);
+            assert_eq!(regs[regs::INTERRUPT_ACK.word_index()], 0b0011);
+        });
+    }
+}

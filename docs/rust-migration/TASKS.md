@@ -179,7 +179,7 @@ small reviewable change unless it explicitly says otherwise.
   - Acceptance: docs cover device discovery, queue setup, request lifecycle,
     exposed device path, and mount dependency.
 
-- [ ] Build volatile MMIO wrapper.
+- [x] Build volatile MMIO wrapper.
   - Acceptance: unsafe pointer access is isolated and reviewed.
 
 - [ ] Build virtqueue descriptor model.

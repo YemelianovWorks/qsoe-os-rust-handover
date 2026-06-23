@@ -226,3 +226,23 @@ The first Rust `devb-virtio-rs` must keep these externally visible behaviors:
 - keep writes disabled through the resource-server surface.
 - detach only after `/dev/vblk0` is registered and ready.
 - allow `fs-qrv /dev/vblk0 /usr` to mount and the boot smoke to reach `login:`.
+
+## Rust MMIO Wrapper
+
+`rust/crates/qsoe-virtio` contains the first Rust wrapper for the legacy
+virtio-mmio register block. Its scope is intentionally only the volatile
+register boundary:
+
+- `VirtioMmio` owns a non-null base pointer to one mapped 4 KiB register
+  window.
+- register offsets and identity/status/queue constants match
+  `quser/dev/virtio/virtio_blk.h`.
+- all volatile pointer reads and writes are contained inside `VirtioMmio`.
+- the constructor is `unsafe` because the caller must prove the mapping is
+  live, writable, register-sized, and outlives the wrapper.
+- host tests use a plain `[u32; 0x1000 / 4]` backing array to cover probing,
+  register reads/writes, feature masking, config reads, and interrupt
+  acknowledgement without requiring QEMU.
+
+Future Rust queue and driver code should use this crate instead of performing
+raw pointer arithmetic at each call site.
