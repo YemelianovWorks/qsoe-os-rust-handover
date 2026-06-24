@@ -35,6 +35,20 @@ name = "qsoe-minimal-rs"
 version = "0.0.0"
 dependencies = [
  "qsoe-abi",
+ "qsoe-cpio",
+]
+
+[[package]]
+name = "qsoe-pipe"
+version = "0.0.0"
+
+[[package]]
+name = "qsoe-pipe-rs"
+version = "0.0.0"
+dependencies = [
+ "qsoe-ffi",
+ "qsoe-pipe",
+ "qsoe-ressrv",
 ]
 
 [[package]]
@@ -73,6 +87,14 @@ dependencies = [
 [[package]]
 name = "qsoe-sysview"
 version = "0.0.0"
+
+[[package]]
+name = "qsoe-test-msgpass-rs"
+version = "0.0.0"
+dependencies = [
+ "qsoe-ffi",
+ "qsoe-ressrv",
+]
 
 [[package]]
 name = "qsoe-virtio"
