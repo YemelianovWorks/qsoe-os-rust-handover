@@ -1,6 +1,6 @@
 # QSOE Rust Migration Development Log
 
-Last updated: 2026-06-24 07:33 CEST.
+Last updated: 2026-06-24 07:54 CEST.
 
 This log tracks the development process for the Rust migration and reproducible
 toolchain work. It records what changed, what was observed, what failed, and
@@ -23,6 +23,47 @@ Result:
 Follow-up:
 - ...
 ```
+
+## 2026-06-24 07:54 CEST - Rust Test Msgpass Helper Opt-In
+
+Scope:
+
+- Added `qsoe-test-msgpass-rs`, a no-std Rust replacement for the C
+  `/usr/bin/test_msgpass` helper.
+- Added the `QSOE_RUST_TEST_MSGPASS=1` selector and
+  `make test-msgpass-artifact`.
+- Added `make rust-test-msgpass-link-smoke` and
+  `make rust-test-msgpass-smoke`.
+- Made top-level `FSQRV_BINS` environment-overridable so focused smokes can
+  preserve an explicit qrvfs binary list through `lq/emu.sh`'s idempotent
+  `make virtio` rebuild without editing the nested `lq` component.
+- Added the root `README.md` migration-progress handover.
+
+Commands:
+
+- `bash -n scripts/rust-test-msgpass-smoke.sh scripts/select-test-msgpass-artifact.sh lq/emu.sh`
+- `cargo test --manifest-path rust/Cargo.toml -p qsoe-test-msgpass-rs --features host-tests`
+- `make rust-test-msgpass-link-smoke`
+- `QSOE_RUST_TEST_MSGPASS=1 make test-msgpass-artifact`
+- `scripts/rust-test-msgpass-smoke.sh -t 240 -o build/rust-test-msgpass/boot-smoke-lq-rust-test-msgpass-env-override.log`
+
+Result:
+
+- The initial fixed 4 MiB Rust `.bss` buffer failed QSOE/L spawn with
+  `frame table overflow (>256 pages)`. The helper now allocates the receive
+  buffer at runtime through libc `malloc`/`free`.
+- The first Rust-selected round trip passes the 4 MiB minus 2 byte bulk IPC
+  payload and halfword-swap checks.
+- The helper retries `/dev/msgpass` registration so the `--no-reply` subcase
+  waits for stale path cleanup instead of attaching to an old channel.
+- `rust-test-msgpass-smoke.sh` passed. The wider suite still contains the
+  known unrelated QSOE/L sync failure, so this smoke verifies the `[msgpass]`
+  markers and boot-to-login rather than requiring a clean full-suite exit.
+
+Follow-up:
+
+- Keep the C helper as the default until CI/runner evidence supports a
+  Rust-default test-image decision.
 
 ## 2026-06-24 07:31 CEST - Rust Slogger Readback Smoke
 
