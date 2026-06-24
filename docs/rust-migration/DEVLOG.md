@@ -1,6 +1,6 @@
 # QSOE Rust Migration Development Log
 
-Last updated: 2026-06-24 00:45 CEST.
+Last updated: 2026-06-24 00:56 CEST.
 
 This log tracks the development process for the Rust migration and reproducible
 toolchain work. It records what changed, what was observed, what failed, and
@@ -23,6 +23,31 @@ Result:
 Follow-up:
 - ...
 ```
+
+## 2026-06-24 00:56 CEST - CPIO Parser Crate Added
+
+Scope:
+
+- Added `qsoe-cpio`, a dependency-free `no_std` crate for parsing `newc` CPIO
+  archives.
+- Covered valid archives, ordered iteration, lookup by index/name, archive
+  info, and malformed header/name/data cases without panics.
+- Added the crate to the normal Rust workflow gates.
+- Marked the Phase 7 CPIO parser crate task complete.
+
+Commands:
+
+- `cargo test --manifest-path rust/Cargo.toml -p qsoe-cpio`
+
+Result:
+
+- `qsoe-cpio` parsed the valid fixture and rejected truncated, bad-magic,
+  invalid-hex, zero-name-size, unterminated-name, invalid-UTF-8-name, and
+  truncated-data fixtures through typed errors.
+
+Follow-up:
+
+- Add syscfg/sysmap read-only view coverage next.
 
 ## 2026-06-24 00:45 CEST - Rust Virtio File Access Smoke Added
 
