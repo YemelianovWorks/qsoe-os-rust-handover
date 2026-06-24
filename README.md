@@ -37,7 +37,7 @@ Detailed planning lives under `docs/rust-migration/`. Start with:
   are closed as #82, #83, and #84.
 - Use the Rust pipe data-path smoke evidence before any Rust-default pipe
   release-candidate decision. CI now includes `container-rust-pipe-data-smoke`
-  on the configured `[self-hosted, X64]` runner.
+  on the configured `[self-hosted, X64]` runner for trusted PRs and pushes.
 - `slogger-rs` now has a Rust-default release-candidate path with explicit C
   rollback. Keep C retirement blocked until that RC evidence window is accepted.
   Tracked by #26.

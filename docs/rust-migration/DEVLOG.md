@@ -30,6 +30,8 @@ Scope:
 
 - Added `make container-rust-pipe-data-smoke` to the main GitHub Actions CI job
   on the configured `[self-hosted, X64]` runner.
+- Gated that self-hosted smoke step to trusted contexts only: push,
+  `workflow_dispatch`, and same-repository pull requests.
 - Extended CI artifact upload coverage to include `build/rust-pipe-data/*.log`.
 - Refreshed the handover and status docs after PR #93 landed at
   `338517613bd507db18bfe82da8c9d2818bc67dfe`.
@@ -46,13 +48,14 @@ Result:
 - The next pipe gate is now represented directly in CI. A green run of this
   workflow provides the hosted-runner data-path evidence needed before a
   Rust-default pipe release-candidate decision.
+- The new self-hosted smoke step is skipped for forked pull requests.
 - Local host smoke still passes and verifies `[pipe-rs] /dev/pipe registered`,
   `[test_pipe_data] pipe round-trip ok`, `[test_pipe_data] pipe eof ok`, and
   `rust-pipe-data-smoke: helper exited 0`.
 
 Follow-up:
 
-- Wait for a green CI run before opening a Rust-default pipe RC PR.
+- Wait for a green trusted CI run before opening a Rust-default pipe RC PR.
 - Keep #26 blocked until the `slogger-rs` RC evidence window is accepted and
   `RETIREMENT.md` is satisfied.
 

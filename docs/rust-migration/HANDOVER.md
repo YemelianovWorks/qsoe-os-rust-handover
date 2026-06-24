@@ -254,8 +254,9 @@ The strict ELF audit showed:
   so the smoke gates targeted `[msgpass]` markers and boot-to-login.
 - `pipe` has an opt-in Rust service, registration boot smoke, and data-path
   smoke. CI includes `container-rust-pipe-data-smoke` on the configured
-  `[self-hosted, X64]` runner so a green run can be used as hosted-runner
-  evidence before any Rust-default pipe release candidate. C remains rollback.
+  `[self-hosted, X64]` runner for trusted PRs and pushes, so a green run can be
+  used as hosted-runner evidence before any Rust-default pipe release
+  candidate. C remains rollback.
 
 ## Current Decisions
 
@@ -271,9 +272,9 @@ The active decision log is `DECISIONS.md`. Most relevant recent decisions:
 
 1. Run and accept the `slogger-rs` RC window from `SLOGGER_RC.md`; do not retire
    the C `slogger` until #26's retirement checklist is satisfied.
-2. Use a green CI run of `make container-rust-pipe-data-smoke` on the configured
-   `[self-hosted, X64]` runner as hosted-runner evidence before considering
-   Rust pipe for a default-selection release candidate.
+2. Use a green trusted CI run of `make container-rust-pipe-data-smoke` on the
+   configured `[self-hosted, X64]` runner as hosted-runner evidence before
+   considering Rust pipe for a default-selection release candidate.
 3. Use the `test_msgpass-rs` smoke evidence if planning a Rust-default
    test-image decision; keep C rollback paths available.
 4. Continue with a Rust `tm_procfs` provider only after adding host tests for
