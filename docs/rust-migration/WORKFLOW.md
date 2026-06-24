@@ -116,6 +116,10 @@ pass. A component that can enter an image needs:
   dynamic dependencies;
 - QEMU boot smoke before replacing a C default.
 
+Rust migration PRs must include an unsafe-review line. Use
+`UNSAFE_REVIEW.md` for the checklist, or state that the PR adds no new unsafe
+code or FFI boundary changes.
+
 For current pilot work, the order is:
 
 1. Prove behavior with host tests and fixtures.
