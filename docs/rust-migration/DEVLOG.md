@@ -1,6 +1,6 @@
 # QSOE Rust Migration Development Log
 
-Last updated: 2026-06-23 21:20 EEST.
+Last updated: 2026-06-24 08:32 CEST.
 
 This log tracks the development process for the Rust migration and reproducible
 toolchain work. It records what changed, what was observed, what failed, and
@@ -23,6 +23,1278 @@ Result:
 Follow-up:
 - ...
 ```
+
+## 2026-06-24 08:32 CEST - Rust Pipe Opt-In
+
+Scope:
+
+- Added `qsoe-pipe`, a dependency-free no-std state machine for the current C
+  `/sbin/pipe` behavior: fixed pipe pool, 4 KiB rings, badge decode,
+  wrong-end errors, parked reader/writer wakeups, close handling, EOF, and pool
+  exhaustion.
+- Added `qsoe-pipe-rs`, a direct QSOE resource-server wrapper for `/dev/pipe`.
+- Added `QSOE_RUST_PIPE=1 make pipe-artifact`, `make rust-pipe-link-smoke`,
+  `make rust-pipe-smoke`, and container wrappers.
+- Updated pipe migration docs and the root progress README.
+
+Commands:
+
+- `cargo fmt --manifest-path rust/Cargo.toml --all`
+- `cargo test --manifest-path rust/Cargo.toml -p qsoe-pipe`
+- `cargo check --manifest-path rust/Cargo.toml -p qsoe-pipe-rs --target riscv64gc-unknown-none-elf`
+- `bash -n scripts/select-pipe-artifact.sh scripts/rust-pipe-smoke.sh`
+- `make -n rust-pipe-link-smoke pipe-artifact rust-pipe-smoke container-rust-pipe-link-smoke container-pipe-artifact container-rust-pipe-smoke`
+- `make rust-pipe-link-smoke`
+- `QSOE_RUST_PIPE=1 make pipe-artifact`
+- `scripts/rust-pipe-smoke.sh -t 180 -o build/rust-pipe/boot-smoke-lq-rust-pipe.log`
+
+Result:
+
+- `qsoe-pipe` passed 11 host tests.
+- `qsoe-pipe-rs` linked as a QSOE RISC-V userland ELF and passed the strict
+  ELF audit.
+- The Rust-selected LQ boot smoke reached `login:` and found both
+  `[pipe-rs] /dev/pipe registered` and
+  `rust-pipe-smoke: started /sbin/pipe` in the boot log.
+
+Follow-up:
+
+- Keep the C pipe manager as the default until a data-path smoke exists for
+  real pipe creation through libc/taskman and a Rust-default release candidate
+  with C rollback is approved. The data-path smoke is tracked by #90.
+
+## 2026-06-24 07:54 CEST - Rust Test Msgpass Helper Opt-In
+
+Scope:
+
+- Added `qsoe-test-msgpass-rs`, a no-std Rust replacement for the C
+  `/usr/bin/test_msgpass` helper.
+- Added the `QSOE_RUST_TEST_MSGPASS=1` selector and
+  `make test-msgpass-artifact`.
+- Added `make rust-test-msgpass-link-smoke` and
+  `make rust-test-msgpass-smoke`.
+- Made top-level `FSQRV_BINS` environment-overridable so focused smokes can
+  preserve an explicit qrvfs binary list through `lq/emu.sh`'s idempotent
+  `make virtio` rebuild without editing the nested `lq` component.
+- Added the root `README.md` migration-progress handover.
+
+Commands:
+
+- `bash -n scripts/rust-test-msgpass-smoke.sh scripts/select-test-msgpass-artifact.sh lq/emu.sh`
+- `cargo test --manifest-path rust/Cargo.toml -p qsoe-test-msgpass-rs --features host-tests`
+- `make rust-test-msgpass-link-smoke`
+- `QSOE_RUST_TEST_MSGPASS=1 make test-msgpass-artifact`
+- `scripts/rust-test-msgpass-smoke.sh -t 240 -o build/rust-test-msgpass/boot-smoke-lq-rust-test-msgpass-env-override.log`
+
+Result:
+
+- The initial fixed 4 MiB Rust `.bss` buffer failed QSOE/L spawn with
+  `frame table overflow (>256 pages)`. The helper now allocates the receive
+  buffer at runtime through libc `malloc`/`free`.
+- The first Rust-selected round trip passes the 4 MiB minus 2 byte bulk IPC
+  payload and halfword-swap checks.
+- The helper retries `/dev/msgpass` registration so the `--no-reply` subcase
+  waits for stale path cleanup instead of attaching to an old channel.
+- `rust-test-msgpass-smoke.sh` passed. The wider suite still contains the
+  known unrelated QSOE/L sync failure, so this smoke verifies the `[msgpass]`
+  markers and boot-to-login rather than requiring a clean full-suite exit.
+
+Follow-up:
+
+- Keep the C helper as the default until CI/runner evidence supports a
+  Rust-default test-image decision.
+
+## 2026-06-24 07:31 CEST - Rust Slogger Readback Smoke
+
+Scope:
+
+- Added `--rust-slogger` to `scripts/slog-readback-smoke.py`.
+- Made the default readback smoke prepare a C-slogger LQ image before checking
+  `[slogger] alive`.
+- Added `--prepare-only` to `scripts/rust-slogger-boot-smoke.sh` so narrower
+  smokes can reuse the Rust-slogger CPIO/image preparation without running the
+  login boot smoke first.
+- Added `make rust-slog-readback-smoke` and
+  `make container-rust-slog-readback-smoke`.
+- Updated `SLOGGER.md`, `STATUS.md`, and `rust/README.md` for the new parity
+  evidence.
+
+Commands:
+
+- `python3 -m py_compile scripts/slog-readback-smoke.py`
+- `bash -n scripts/rust-slogger-boot-smoke.sh`
+- `make -n slog-readback-smoke rust-slog-readback-smoke container-rust-slog-readback-smoke`
+- `git diff --check`
+- `scripts/slog-readback-smoke.py -t 180 -o build/slog-readback-smoke-lq-c-slogger-after-rust.log`
+- `scripts/slog-readback-smoke.py --rust-slogger -t 180 -o build/slog-readback-smoke-lq-rust-slogger-final.log`
+
+Result:
+
+- The default C-selected readback smoke rebuilt a C-slogger LQ image and
+  observed the `pci-server` slog entry through `/bin/sloginfo`.
+- The Rust-selected readback smoke rebuilt an opt-in `slogger-rs` LQ image and
+  observed the same `pci-server` slog entry through `/bin/sloginfo`.
+
+Follow-up:
+
+- Use the #86 evidence for #85 before any Rust-default release-candidate
+  decision.
+- The next `slogger` gate remains a Rust-default release candidate with C
+  rollback.
+
+## 2026-06-24 07:25 CEST - Current Follow-up Issues Created
+
+Scope:
+
+- Created GitHub issues for the current handover blockers and next execution
+  steps:
+  - #82: restore self-hosted runner availability for the draft stack.
+  - #83: resolve or explicitly record the CodeRabbit usage-credit blocker.
+  - #84: prepare the draft stack for bottom-up merge.
+  - #85: add Rust-selected `/dev/slog` readback parity smoke.
+- Updated `HANDOVER.md` to reference those issue numbers from the blocker and
+  next-work sections.
+
+Commands:
+
+- `gh issue list --state all --limit 120 --json number,title,state,labels,url`
+- GitHub issue creation through the connected GitHub tool.
+
+Result:
+
+- The latest plan is tracked in GitHub instead of only in local migration docs.
+
+Follow-up:
+
+- Use #82 and #83 to decide when the draft stack can become ready for review.
+- Use #85 as the next slogger parity task after the current stack lands.
+
+## 2026-06-24 07:21 CEST - Handover Status Refreshed
+
+Scope:
+
+- Updated `HANDOVER.md` from the old macOS/GitLab snapshot to the current Linux
+  GitHub handover repository.
+- Recorded the active stacked PR chain from #42 through #80.
+- Documented the #42 self-hosted runner queue and #60 CodeRabbit credit status
+  as external blockers.
+- Replaced stale next-work items with current merge-readiness and post-stack
+  implementation tasks.
+
+Commands:
+
+- `git remote -v`
+- `gh pr list --state open --limit 120 --json number,title,headRefName,baseRefName,isDraft,mergeable,statusCheckRollup,url`
+- `gh run list --limit 20 --json databaseId,displayTitle,status,conclusion,workflowName,headBranch,event,createdAt,updatedAt,url`
+
+Result:
+
+- The checked-in handover now matches the current machine, branch tip, stack
+  shape, validation state, and remaining blockers.
+
+Follow-up:
+
+- Update `HANDOVER.md` again after the draft stack is marked ready, merged, or
+  retargeted.
+
+## 2026-06-24 02:46 CEST - Slog Readback Smoke Stacked
+
+Scope:
+
+- Ported the existing `/dev/slog` readback smoke into the active migration
+  stack.
+- Added `scripts/slog-readback-smoke.py`.
+- Added `make slog-readback-smoke`.
+- Documented the smoke in `SLOGGER.md`.
+- Marked the `/dev/slog` smoke backlog item complete in the stacked docs.
+
+Commands:
+
+- `git cherry-pick 0971d1faf80f0416339875aa7ea36cf761f40201`
+- `python3 -m py_compile scripts/slog-readback-smoke.py`
+- `make -n slog-readback-smoke`
+- `scripts/slog-readback-smoke.py -t 120 -o build/slog-readback-smoke-stacked.log`
+
+Result:
+
+- The stack now carries the readback smoke that had previously lived only on
+  side PR #43. This prevents later stacked docs from reopening the completed
+  `/dev/slog` smoke task.
+- The stacked smoke run observed a `pci-server:` entry through `/bin/sloginfo`.
+- Follow-up docs now distinguish the C readback baseline from the later
+  Rust-selected readback parity gate.
+
+Follow-up:
+
+- Keep the side PR closed once this stacked PR is open, so issue #2 has one
+  active implementation path.
+
+## 2026-06-24 02:42 CEST - Release Note Template Added
+
+Scope:
+
+- Added `RELEASE_NOTE_TEMPLATE.md` for Rust migration release notes.
+- Required language-change, rollback, test-evidence, known-limitation, and
+  unsafe-review fields in the template.
+- Linked the template from the migration index, release/rollback policy, and
+  retirement checklist.
+- Marked the release-note-template task complete.
+
+Commands:
+
+- `gh issue view 40 --json number,title,body,state,url,labels`
+- `rg -n "release note|release-note|language change|rollback|known limitations|template|Release And Rollback|C rollback|Rust default|Retired" docs .github Makefile scripts -g "!build/**" -g "!rust/target/**" -g "!rust/fuzz/target/**"`
+
+Result:
+
+- Future Rust opt-in, Rust-default, and C-retirement notes have one template for
+  language changes, rollback flags, test evidence, and limitations.
+
+Follow-up:
+
+- Use the template when a component changes selector state, default language, or
+  retirement status.
+
+## 2026-06-24 02:38 CEST - Migration Status Matrix Added
+
+Scope:
+
+- Added `STATUS.md` as the current migration status matrix.
+- Listed every tracked replacement candidate with C default, Rust opt-in, Rust
+  default, and retired status.
+- Linked the matrix from the migration index and retirement gate.
+- Marked the migration-status-table task complete.
+
+Commands:
+
+- `gh issue view 39 --json number,title,body,state,url,labels`
+- `rg -n "status|default|opt-in|retired|retirement|component|slogger|virtio|pipe|procfs|minimal|service-example|Rust" docs/rust-migration -g "*.md"`
+- `rg -n "QSOE_RUST|USE_RUST|RUST_.*=|rust-.*smoke|link-smoke|boot|artifact|retire|default" Makefile scripts rust quser lq docs/rust-migration/SLOGGER.md docs/rust-migration/SLOGGER_BOOT_COMPARE.md docs/rust-migration/VIRTIO_BLOCK.md docs/rust-migration/PIPE.md docs/rust-migration/TEST_HELPER.md docs/rust-migration/TASK_MANAGER_PROCFS_BOUNDARY.md -g "!rust/target/**" -g "!rust/fuzz/target/**"`
+
+Result:
+
+- The docs now show that the host `treeqrvfs` inspector, `slogger`, and
+  `devb-virtio` are C-default with Rust opt-in coverage, while `pipe`,
+  `test_msgpass`, and `tm_procfs` remain C-default future candidates. No
+  component is Rust-default or retired.
+
+Follow-up:
+
+- Update `STATUS.md` whenever a component gains a Rust selector, flips default,
+  or enters a retirement PR.
+
+## 2026-06-24 02:34 CEST - Unsafe Review Checklist Added
+
+Scope:
+
+- Added `UNSAFE_REVIEW.md` for Rust migration PRs.
+- Required PRs to state either "no new unsafe code" or summarize the unsafe
+  review checklist.
+- Linked the checklist from the migration index, workflow, and unsafe-code
+  policy in `SPEC.md`.
+- Marked the cross-cutting unsafe-review checklist task complete.
+
+Commands:
+
+- `gh issue view 38 --json number,title,body,state,url,labels`
+- `rg -n "unsafe|checklist|review|SAFETY|unsafe block|Unsafe" docs rust -g '!build/**' -g '!rust/target/**' -g '!rust/fuzz/target/**'`
+- `rg -n "unsafe" rust -g '*.rs' -g '!target/**' -g '!fuzz/target/**'`
+
+Result:
+
+- Future Rust migration PRs have a documented unsafe review reference and a
+  concrete checklist for invariants, evidence, and residual risk.
+
+Follow-up:
+
+- Use the checklist in PR bodies whenever unsafe Rust, FFI, MMIO, DMA, or
+  global mutable state changes.
+
+## 2026-06-24 02:32 CEST - Rust Coverage Reporting Added
+
+Scope:
+
+- Added `scripts/rust-coverage.sh` for host-side parser and ABI coverage.
+- Added `make rust-coverage` and `make container-rust-coverage`.
+- Wired coverage into `make rust-deep` when cargo-llvm-cov is installed.
+- Documented LCOV and text summary outputs under ignored
+  `build/rust-coverage/`.
+- Marked the cross-cutting Rust coverage task complete.
+
+Commands:
+
+- `gh issue view 37 --json number,title,body,state,url,labels`
+- `cargo llvm-cov --version`
+- Reviewed cargo-llvm-cov README for `--text`, `--lcov`, and `--output-path`
+  report flags.
+
+Result:
+
+- Host crates can now produce coverage for parser and ABI tests without adding
+  generated report files to git. The local environment skipped execution
+  because cargo-llvm-cov is not installed.
+
+Follow-up:
+
+- Install cargo-llvm-cov in any environment that should publish coverage
+  artifacts or enforce coverage thresholds.
+
+## 2026-06-24 02:25 CEST - Parser Fuzz Targets Added
+
+Scope:
+
+- Added a `rust/fuzz` cargo-fuzz package outside the main workspace.
+- Added bounded parser fuzz targets for `qrvfs`, `cpio`, `elf`, `syscfg`, and
+  `sysmap`.
+- Added `scripts/rust-fuzz-smoke.sh`, `make rust-fuzz-smoke`, and
+  `make container-rust-fuzz-smoke`.
+- Wired the fuzz smoke into `make rust-deep` when cargo-fuzz is installed.
+- Documented that GPT should join the same fuzz package once a Rust GPT parser
+  crate exists.
+- Marked the cross-cutting parser-fuzz task complete.
+
+Commands:
+
+- `gh issue view 36 --json number,title,body,state,url,labels`
+- `rg -n "pub struct|pub enum|pub fn|impl<'a>|impl Archive|fn parse|fn new|fn iter|entries|relocations|sections|Sys|View|Image" rust/crates/qsoe-cpio/src/lib.rs rust/crates/qsoe-elf/src/lib.rs rust/crates/qsoe-sysview/src/lib.rs rust/crates/qsoe-qrvfs/src/lib.rs`
+- `cargo fuzz --help`
+
+Result:
+
+- Parser fuzzing is available as an optional deep/local gate without changing
+  the default Rust workspace or normal CI dependencies.
+
+Follow-up:
+
+- Add a GPT fuzz target when the migration has a Rust GPT parser crate.
+
+## 2026-06-24 02:21 CEST - Installed Artifact Audit Target Added
+
+Scope:
+
+- Added `scripts/audit-artifacts.sh` to discover ELF files installed into the
+  boot CPIO staging root and qrvfs `/usr` staging root.
+- Added `make audit-artifacts` and `make container-audit-artifacts`.
+- Added the installed-artifact audit to GitHub Actions after the source build.
+- Documented the CI step in `WORKFLOW.md`.
+- Marked the cross-cutting artifact-audit target task complete.
+
+Commands:
+
+- `gh issue view 35 --json number,title,body,state,url,labels`
+- `find quser/build/modpkg-root -type f`
+- `find build/fsqrv-root -type f`
+- `sed -n '1,260p' quser/Makefile`
+- `sed -n '1,220p' scripts/capture-elf-baseline.sh`
+
+Result:
+
+- One command now audits the ELF artifacts that are actually staged for
+  userland images, instead of only the representative baseline sample.
+
+Follow-up:
+
+- Keep strict Rust artifact gates separate from the current C userland audit,
+  because existing C binaries intentionally contain unwind metadata.
+
+## 2026-06-24 02:17 CEST - Kernel Artifact Audit Needs Defined
+
+Scope:
+
+- Added `KERNEL_ARTIFACT_AUDIT.md` for Phase 10.
+- Recorded the current NQ kernel compile/link posture from `nq/Makefile` and
+  `kernel/arch/riscv/kernel.ld`.
+- Defined future audit requirements for Rust codegen assumptions, live
+  sections, linker-script compatibility, panic behavior, and forbidden runtime
+  references.
+- Marked the Phase 10 kernel artifact-audit task complete.
+
+Commands:
+
+- `gh issue view 33 --json number,title,body,state,url`
+- `sed -n '1,240p' nq/Makefile`
+- `sed -n '1,140p' nq/kernel/arch/riscv/kernel.ld`
+- `sed -n '1,130p' rust/targets/riscv64-qsoe-user.json`
+- `rg -n 'no_std|panic_handler|eh_personality|compiler_builtins|memcpy|memset|extern "C"|panic' rust -g '*.rs' -g '*.toml'`
+
+Result:
+
+- The kernel audit requirement is documented without adding Rust objects,
+  kernel build flags, or `nq` wiring. Future kernel work must inspect both
+  Rust input objects and the final linked kernel ELF.
+
+Follow-up:
+
+- Keep Phase 10 blocked on documentation until `D-021` is superseded.
+
+## 2026-06-24 02:13 CEST - Kernel Candidates Inventoried
+
+Scope:
+
+- Added `KERNEL_CANDIDATES.md` for Phase 10.
+- Listed explicit exclusions for traps, context switching, scheduler core,
+  boot assembly, interrupt routing, syscall/user-copy paths, and QSOE/L seL4
+  capability assumptions.
+- Ranked only fixture or helper-prototype candidates: trace-ring formatting,
+  queue invariant modeling, sysmap TLV encoding, sysinfo record formatting, and
+  read-only FDT walking.
+- Kept `D-021` intact: no Rust crate or build flag is approved for `nq`.
+- Marked the Phase 10 kernel-candidate task complete.
+
+Commands:
+
+- `gh issue view 32 --json number,title,body,state,url`
+- `find nq/kernel nq/include/skimmer -path '*/build/*' -prune -o -type f \\( -name '*.c' -o -name '*.h' -o -name '*.S' \\) -print | sort`
+- `rg -n "trace_ring|TRACE_FN|trace_ring_dump|ln_put|sysmap_emit|sysmap_init|sysinfo|TM_PRIV_SYSINFO|copy_to_user|fdt_|TAILQ|SLIST|STAILQ" nq/kernel nq/include/skimmer -g '*.c' -g '*.h' -g '*.S'`
+
+Result:
+
+- Kernel work remains documentation-only. The safest future prototype is
+  trace-ring formatting because it can be host-tested without entering traps,
+  switching, scheduling, boot assembly, or live platform setup.
+
+Follow-up:
+
+- Define the kernel artifact audit needs before any later implementation
+  reconsideration.
+
+## 2026-06-24 02:09 CEST - Kernel Rust Decision Recorded
+
+Scope:
+
+- Added decision `D-021` rejecting near-term Rust implementation work inside
+  `nq`.
+- Based the decision on completed parser, userland pilot, virtio smoke,
+  retirement-gate, and task-manager procfs evidence.
+- Kept Phase 10 kernel work limited to candidate and artifact-audit
+  documentation.
+- Marked the Phase 10 kernel decision task complete.
+
+Commands:
+
+- `gh issue view 31 --repo dmytro-yemelianov/qsoe-os-rust-handover --json number,title,body,state,labels,url`
+- `rg -n "^## D-[0-9]+" docs/rust-migration/DECISIONS.md`
+
+Result:
+
+- Near-term kernel Rust is explicitly rejected until at least one Rust
+  component completes a Rust-default release candidate with C rollback and
+  task-manager pilot evidence moves beyond documentation.
+
+Follow-up:
+
+- Identify safe kernel candidates while excluding traps, context switching,
+  scheduler core, boot assembly, and seL4 capability assumptions.
+
+## 2026-06-24 02:05 CEST - Procfs Boot Smoke Added
+
+Scope:
+
+- Added `scripts/procfs-smoke.sh`.
+- Added `make procfs-smoke` and `make container-procfs-smoke`.
+- The smoke injects a temporary `/usr/conf/sysinit` fragment, rebuilds the
+  normal C-default QSOE/L image, lists `/proc`, reads `/proc/1/info`, and
+  verifies the `taskman` process info lines in the console log.
+- Updated the `tm_procfs` selection and boundary docs to require the smoke.
+- Marked the Phase 9 targeted-coverage task complete.
+
+Commands:
+
+- `bash -n scripts/procfs-smoke.sh`
+- `make -n procfs-smoke container-procfs-smoke`
+- `make procfs-smoke`
+
+Result:
+
+- The current C `tm_procfs` path has targeted boot coverage before any Rust
+  taskman changes land.
+
+Follow-up:
+
+- Start the Phase 10 kernel reassessment decision record after the Phase 9
+  stack lands.
+
+## 2026-06-24 02:03 CEST - Procfs Boundary Designed
+
+Scope:
+
+- Added `TASK_MANAGER_PROCFS_BOUNDARY.md` for the selected task-manager pilot.
+- Kept `tm_procfs.h` as the authoritative C ABI.
+- Documented data ownership for callbacks, C strings, and caller-owned output
+  buffers.
+- Recorded failure behavior for path resolution, info formatting, and readdir.
+- Defined the opt-in rollback flag shape `QSOE_RUST_TM_PROCFS`.
+- Linked the boundary from the migration docs index and procfs selection doc.
+- Marked the Phase 9 boundary-design task complete.
+
+Commands:
+
+- `gh issue view 29 --repo dmytro-yemelianov/qsoe-os-rust-handover --json number,title,body,state,labels,url`
+- `sed -n '1,220p' libtaskman/include/tm_procfs.h`
+
+Result:
+
+- The boundary review preserves C as the default and keeps spawn, capability,
+  relocation, loader, and LQ dispatch code outside the first Rust pilot.
+
+Follow-up:
+
+- Add targeted boot and `/proc` coverage before implementation.
+
+## 2026-06-24 02:02 CEST - Task Manager Procfs Pilot Selected
+
+Scope:
+
+- Added `TASK_MANAGER_PROCFS.md` selecting portable `tm_procfs` as the first
+  non-critical internal task-manager module.
+- Documented why the module has no direct effect on initial process creation.
+- Excluded LQ process table, connection context, open/read dispatch, spawn,
+  dispatcher, and seL4 invocation code from the first pilot.
+- Compared `tm_procfs` against other candidate modules from the inventory.
+- Added required host-test and `/proc` smoke evidence for later implementation.
+- Linked the selection from the migration docs index.
+- Marked the Phase 9 module-selection task complete.
+
+Commands:
+
+- `sed -n '1,220p' libtaskman/src/tm_procfs.c`
+- `sed -n '1,220p' lq/taskman/path/procfs.c`
+
+Result:
+
+- `tm_procfs` is selected because it is bounded, read-only, callback-driven,
+  diagnostic logic and avoids spawn, capability, relocation, and loader paths.
+
+Follow-up:
+
+- Design the C/Rust boundary for the `tm_procfs` pilot.
+
+## 2026-06-24 02:00 CEST - Task Manager Modules Inventoried
+
+Scope:
+
+- Added `TASK_MANAGER.md` for the Phase 9 task-manager readiness inventory.
+- Split taskman code into portable `libtaskman`, LQ rootserver, and embedded
+  archive boundaries.
+- Separated pure logic and diagnostic candidates from spawn-critical,
+  capability-critical, relocation-critical, and loader-critical paths.
+- Identified portable `/proc` model code as the best next candidate because it
+  is read-only diagnostic logic with no direct effect on initial process
+  creation.
+- Linked the inventory from the migration docs index.
+- Marked the Phase 9 inventory task complete.
+
+Commands:
+
+- `find libtaskman lq/taskman -path '*/build/*' -prune -o -path '*/.git/*' -prune -o -type f \\( -name '*.c' -o -name '*.h' -o -name '*.S' -o -name 'Makefile' \\) -print | sort`
+- `wc -l $(find libtaskman lq/taskman -path '*/build/*' -prune -o -path '*/.git/*' -prune -o -type f \\( -name '*.c' -o -name '*.h' -o -name '*.S' \\) -print | sort)`
+- `rg -n "tm_cred|tm_procfs|tm_sysfs|tm_pathmgr|tm_cpio|tm_script|tm_syscfg|tm_elf|tm_reloc" libtaskman lq/taskman -g '*.c' -g '*.h'`
+
+Result:
+
+- The inventory documents that Phase 9 should avoid spawn, capability,
+  relocation, and loader code until a later design review. `tm_procfs` is the
+  leading non-critical internal module for selection.
+
+Follow-up:
+
+- Select one non-critical internal module for the first task-manager pilot.
+
+## 2026-06-24 01:56 CEST - C Retirement Gate Documented
+
+Scope:
+
+- Added `RETIREMENT.md` to make the C removal gate explicit.
+- Recorded the state model from C default through Rust opt-in, Rust-default RC,
+  and retired.
+- Listed the mandatory evidence for any future C removal PR.
+- Recorded that `slogger`, `devb-virtio`, `pipe`, and `test_msgpass` are not
+  currently retireable.
+- Linked the gate from the migration docs index.
+- Left the Phase 8 retirement task open because no component has completed a
+  Rust-default release candidate with C rollback.
+
+Commands:
+
+- `rg -n "retire|remove|rollback|release candidate|default|C implementation|parity" docs/rust-migration docs -g '!build/**'`
+- `gh issue view 26 --repo dmytro-yemelianov/qsoe-os-rust-handover --json number,title,body,state,labels,assignees,url`
+
+Result:
+
+- No C implementation was removed. Issue #26 is gated on release-candidate
+  evidence rather than eligible for immediate retirement.
+
+Follow-up:
+
+- Start Phase 9 task-manager module inventory.
+
+## 2026-06-24 01:53 CEST - First Rust Test Helper Selected
+
+Scope:
+
+- Added `TEST_HELPER.md` selecting `test_msgpass-rs` as the first Rust
+  in-guest test helper candidate.
+- Documented the existing C helper contract, IPC behavior, safety constraints,
+  and Rust acceptance gates.
+- Compared `test_msgpass` with `test_syncspace`; selected `test_msgpass`
+  because it validates the bulk IPC path on QSOE/L today.
+- Linked the selection from the migration docs index.
+- Marked the Phase 8 test-helper selection task complete.
+
+Commands:
+
+- `sed -n '1,260p' quser/test/msgpass/main.c`
+- `sed -n '450,560p' quser/test/suite/sync.c`
+- `sed -n '1,260p' quser/test/suite/msgpass_test.c`
+
+Result:
+
+- `test_msgpass-rs` is selected for later implementation. The C helper remains
+  the default `/usr/bin/test_msgpass` until an opt-in Rust artifact passes the
+  existing suite `[msgpass]` section.
+
+Follow-up:
+
+- Define the proof period needed before retiring a C implementation.
+
+## 2026-06-24 01:47 CEST - Pipe Selected As Second Rust Service
+
+Scope:
+
+- Added `PIPE.md` as the mini-spec for the selected second Rust service.
+- Added `scripts/pipe-smoke.sh`, `make pipe-smoke`, and
+  `make container-pipe-smoke` to verify the current C service starts and
+  registers `/dev/pipe` before implementation.
+- Documented current protocol, state model, rollback path, and later Rust
+  acceptance gates.
+- Linked the mini-spec from the migration docs index.
+- Marked the Phase 8 second-service selection task complete.
+
+Commands:
+
+- `sed -n '1,380p' quser/sbin/pipe/main.c`
+- `rg -n "pipe\\(|/dev/pipe|TM_REQ_PIPE_CREATE|PIPE_|pipe" quser libc libtaskman docs scripts -g '!build/**'`
+- `make pipe-smoke`
+
+Result:
+
+- `pipe` is selected, but the existing C implementation remains the default.
+  The new smoke reached login and confirmed `/dev/pipe` registration.
+
+Follow-up:
+
+- Pick the first Rust test helper.
+
+## 2026-06-24 01:44 CEST - Remaining Userland Services Ranked
+
+Scope:
+
+- Added `SERVICE_RANKING.md` for Phase 8 candidate selection.
+- Ranked remaining userland services by size, dependency, ABI surface,
+  testability, and rollback scores.
+- Excluded `slogger` and `devb-virtio` because they already have Rust pilots.
+- Linked the ranking from the migration docs index.
+- Marked the Phase 8 ranking task complete.
+
+Commands:
+
+- `find quser/build -type f -name '*.elf' -printf '%s %p\n'`
+- `wc -l` over candidate service source files
+
+Result:
+
+- `pipe` is the best next service candidate, with `getty` and `login` close
+  behind once focused login-path smoke coverage exists.
+
+Follow-up:
+
+- Use the ranking to pick the second Rust service and write its mini-spec.
+
+## 2026-06-24 01:40 CEST - Parser Reused In Host And Guest Contexts
+
+Scope:
+
+- Reused `qsoe-cpio` from `qsoe-minimal-rs`, the no-std guest link-smoke
+  binary.
+- Added a static `newc` archive parser smoke that runs through the same
+  borrowed `Archive` API used by host tests.
+- Added a `host-tests` feature for `qsoe-minimal-rs` so the parser reuse path
+  also runs under `cargo test`.
+- Added the minimal binary host test to Rust workflow gates.
+- Marked the Phase 7 parser reuse task complete.
+
+Commands:
+
+- `cargo test --manifest-path rust/Cargo.toml -p qsoe-minimal-rs --features host-tests`
+- `cargo build --manifest-path rust/Cargo.toml -p qsoe-minimal-rs --target riscv64gc-unknown-none-elf --release`
+
+Result:
+
+- The same `qsoe-cpio` crate now builds and runs in host tests and compiles into
+  the no-std guest smoke binary.
+
+Follow-up:
+
+- Start Phase 8 candidate ranking.
+
+## 2026-06-24 01:35 CEST - ELF Inspection Crate Added
+
+Scope:
+
+- Added `qsoe-elf`, a dependency-free `no_std` crate for read-only ELF64
+  little-endian header, section, and REL/RELA relocation inspection.
+- Added RISC-V relocation naming for the relocation types used by QSOE
+  userland artifacts.
+- Added host tests for a synthetic ELF and for the representative built QSOE C
+  binaries recorded in `ELF_BASELINE.md`.
+- Added `make check-elf-reloc-fixture` and included it in the container check
+  path after the source build.
+- Added the crate to Rust workflow gates.
+- Marked the Phase 7 ELF inspection task complete.
+
+Commands:
+
+- `cargo test --manifest-path rust/Cargo.toml -p qsoe-elf`
+- `make check-elf-reloc-fixture`
+
+Result:
+
+- Host tests identify the existing QSOE binary relocation types and counts:
+  `R_RISCV_64` and `R_RISCV_JUMP_SLOT` across the representative C userland
+  artifacts.
+
+Follow-up:
+
+- Reuse one shared parser in both host and guest contexts next.
+
+## 2026-06-24 01:05 CEST - Syscfg/Sysmap View Crate Added
+
+Scope:
+
+- Added `qsoe-sysview`, a dependency-free `no_std` crate for read-only
+  `syscfg` and `sysmap` TLV views.
+- Added bounds-checked scalar, string, range, timebase, cmdline, and generic TLV
+  accessors.
+- Covered malformed syscfg and sysmap inputs that truncate payloads, omit END
+  tags, mis-size scalar/range fields, expose unterminated strings, or carry an
+  invalid sysmap header.
+- Added the crate to Rust workflow gates.
+- Marked the Phase 7 syscfg/sysmap view task complete.
+
+Commands:
+
+- `cargo test --manifest-path rust/Cargo.toml -p qsoe-sysview`
+
+Result:
+
+- The crate exposes no raw struct references; callers receive typed values or
+  borrowed payload slices only after the containing TLV and requested field
+  bounds are validated.
+
+Follow-up:
+
+- Add ELF inspection coverage next.
+
+## 2026-06-24 00:56 CEST - CPIO Parser Crate Added
+
+Scope:
+
+- Added `qsoe-cpio`, a dependency-free `no_std` crate for parsing `newc` CPIO
+  archives.
+- Covered valid archives, ordered iteration, lookup by index/name, archive
+  info, and malformed header/name/data cases without panics.
+- Added the crate to the normal Rust workflow gates.
+- Marked the Phase 7 CPIO parser crate task complete.
+
+Commands:
+
+- `cargo test --manifest-path rust/Cargo.toml -p qsoe-cpio`
+
+Result:
+
+- `qsoe-cpio` parsed the valid fixture and rejected truncated, bad-magic,
+  invalid-hex, zero-name-size, unterminated-name, invalid-UTF-8-name, and
+  truncated-data fixtures through typed errors.
+
+Follow-up:
+
+- Add syscfg/sysmap read-only view coverage next.
+
+## 2026-06-24 00:45 CEST - Rust Virtio File Access Smoke Added
+
+Scope:
+
+- Added `scripts/rust-virtio-file-smoke.sh` to boot with `devb-virtio-rs` and
+  a temporary `/usr/conf/sysinit` fragment that runs inside the guest.
+- Extended qrvfs image staging to include `/usr/conf/sysinit` fragments.
+- Added `make rust-virtio-file-smoke` and a container wrapper.
+- Marked the Phase 6 Rust virtio file-access smoke task complete.
+
+Commands:
+
+- `scripts/rust-virtio-file-smoke.sh -t 240 -o build/boot-smoke-lq-rust-virtio-file.log`
+- `strings build/boot-smoke-lq-rust-virtio-file.log | rg "rust-virtio-file-smoke|devb-virtio-rs|fs-qrv: mounted|login:"`
+
+Result:
+
+- QEMU reached `login:` with `[devb-virtio-rs] /dev/vblk0 ready`,
+  `fs-qrv: mounted qrvfs at /usr (dev=/dev/vblk0)`, and
+  `rust-virtio-file-smoke: read /usr/conf/passwd ok` in the console log.
+
+Follow-up:
+
+- Continue Phase 7 shared-parser work.
+
+## 2026-06-24 00:37 CEST - Rust Virtio Boot Smoke Passed
+
+Scope:
+
+- Added `scripts/rust-virtio-boot-smoke.sh` to build a temporary QSOE/L boot
+  CPIO with `qsoe-devb-virtio-rs` installed as `/sbin/devb-virtio`.
+- Added `QSOE_BOOT_VIRTIO_PATTERN` to `scripts/boot-smoke.sh` so the same boot
+  gate can validate C or Rust virtio driver milestones.
+- Added `make rust-virtio-boot-smoke` and a container wrapper.
+- Marked the Phase 6 Rust virtio boot task complete.
+
+Commands:
+
+- `scripts/rust-virtio-boot-smoke.sh -t 240 -o build/boot-smoke-lq-rust-virtio.log`
+- `strings build/boot-smoke-lq-rust-virtio.log | rg "devb-virtio-rs|fs-qrv: mounted|login:|dispatcher ready|spawning /sbin/init|\\[slogger\\] alive"`
+
+Result:
+
+- QEMU reached `login:` with `[devb-virtio-rs] /dev/vblk0 ready` and
+  `fs-qrv: mounted qrvfs at /usr (dev=/dev/vblk0)` in the console log.
+
+Follow-up:
+
+- Run a file access smoke through `/usr` while booted with the Rust virtio
+  driver.
+
+## 2026-06-24 00:32 CEST - Opt-In Rust Virtio Driver Added
+
+Scope:
+
+- Added `qsoe-devb-virtio-rs`, a no-std Rust `devb-virtio` staticlib that
+  discovers QEMU virtio-mmio block slots, initializes the legacy block queue,
+  and publishes `/dev/vblk0` through `libressrv`.
+- Added QSOE ABI errno/block-mode constants and FFI bindings needed by the
+  driver (`munmap`, `sched_yield`).
+- Extended the Rust link-smoke script with optional extra link flags/libs so
+  Rust resource-server binaries can link `libressrv`.
+- Added `make rust-virtio-link-smoke`, `make virtio-artifact`, and container
+  wrappers; `QSOE_RUST_VIRTIO=0` keeps the C driver selected by default, while
+  `QSOE_RUST_VIRTIO=1` stages the audited Rust ELF.
+- Marked the Phase 6 opt-in Rust virtio block driver task complete.
+
+Commands:
+
+- `make rust-quality`
+- `make rust-virtio-link-smoke`
+- `QSOE_RUST_VIRTIO=1 make virtio-artifact`
+- `make virtio-artifact`
+
+Result:
+
+- `build/rust/qsoe-devb-virtio-rs.elf` links as a QSOE RISC-V userland ELF and
+  passes `scripts/audit-elf.sh --strict-qsoe-user`.
+- The selected artifact path exists for both C-default and Rust opt-in modes.
+
+Follow-up:
+
+- Build an opt-in QSOE/L boot image with the Rust virtio artifact and verify
+  `/dev/vblk0`, `/usr` mount, and login.
+
+## 2026-06-24 00:20 CEST - Host-Side Virtqueue Tests Added
+
+Scope:
+
+- Added `DescriptorBuffer`, `DescriptorFreeList`, and queue errors to
+  `qsoe-virtio` for fixed-size descriptor chain allocation without hardware.
+- Mirrored the C driver's first-free descriptor map behavior.
+- Added host tests for three-descriptor request chaining, exhaustion without
+  partial consumption, device-owned chain rejection, reclaim, reuse, and double
+  free rejection.
+- Marked the Phase 6 host-side queue tests task complete.
+
+Commands:
+
+- `make rust-quality`
+
+Result:
+
+- Descriptor chaining and free-list behavior are covered by host-side Rust
+  tests before implementing the opt-in Rust block driver.
+
+Follow-up:
+
+- Implement the opt-in Rust virtio block driver binary.
+
+## 2026-06-24 00:16 CEST - Virtqueue Descriptor Model Added
+
+Scope:
+
+- Added C-compatible Rust virtqueue layouts to `qsoe-virtio`: descriptor,
+  available ring, used ring, used element, and virtio-blk request header.
+- Added `DescriptorIndex`, `DescriptorAccess`, `DescriptorOwner`, and
+  `DescriptorModel` so descriptor bounds, device mutability, and
+  driver/device ownership are represented explicitly.
+- Added host tests for layout sizes, bounded descriptor ids, descriptor flag
+  conversion, ownership transitions, and block request direction encoding.
+- Marked the Phase 6 virtqueue descriptor model task complete.
+
+Commands:
+
+- `make rust-quality`
+
+Result:
+
+- The Rust virtio pilot has a typed descriptor model without adding allocator
+  or free-list behavior yet.
+
+Follow-up:
+
+- Add host-side queue tests for descriptor chain allocation and free-list
+  behavior.
+
+## 2026-06-23 23:52 CEST - Virtio MMIO Wrapper Added
+
+Scope:
+
+- Added the `qsoe-virtio` crate with legacy virtio-mmio register constants and
+  a `VirtioMmio` volatile register wrapper.
+- Isolated volatile pointer reads and writes inside the wrapper; callers only
+  provide the mapped register base through an unsafe constructor.
+- Added host tests for device probing, register reads/writes, feature masking,
+  config reads, and interrupt acknowledgement.
+- Included `qsoe-virtio` in the Rust workspace, Rust README, and
+  `make rust-quality`.
+- Marked the Phase 6 volatile MMIO wrapper task complete.
+
+Commands:
+
+- `make rust-quality`
+
+Result:
+
+- Unsafe MMIO pointer access for the Rust virtio pilot is contained in one
+  reviewed wrapper and covered by host tests.
+
+Follow-up:
+
+- Build the virtqueue descriptor model.
+
+## 2026-06-23 23:44 CEST - Virtio Block Behavior Specified
+
+Scope:
+
+- Added `VIRTIO_BLOCK.md` to specify the current C `devb-virtio` behavior
+  before starting the Rust driver pilot.
+- Documented QEMU virtio-mmio discovery, DMA layout, legacy queue setup,
+  request lifecycle, `/dev/vblk0` resource-server surface, and `/usr` mount
+  dependency.
+- Linked the new spec from the Rust migration README.
+- Marked the Phase 6 current-behavior specification task complete.
+
+Commands:
+
+- `git diff --check`
+
+Result:
+
+- The Rust `devb-virtio-rs` pilot now has a concrete behavior contract and
+  acceptance baseline.
+
+Follow-up:
+
+- Build typed volatile MMIO wrappers for the virtio-mmio register block.
+
+## 2026-06-23 23:22 CEST - Wrapper State Tests Added
+
+Scope:
+
+- Added `DirectServer::dispatch_received`, the single receive-state dispatch
+  step used by the direct-service run loop.
+- Added host tests for message, pulse, and receive-error dispatch transitions
+  without creating a live QSOE channel.
+- Documented that host tests cover wrapper state transitions, while link and
+  boot smokes cover QSOE IPC behavior.
+- Marked the Phase 5 wrapper-level tests task complete.
+
+Commands:
+
+- `make rust-quality`
+- `make container-rust-slogger-link-smoke`
+- `make container-rust-service-example-link-smoke`
+
+Result:
+
+- Direct-service wrapper transitions are covered by the normal host test gate
+  without requiring QEMU.
+
+Follow-up:
+
+- Start Phase 6 by specifying the current virtio block driver behavior.
+
+## 2026-06-23 23:11 CEST - Error Mapping Defined
+
+Scope:
+
+- Added explicit Rust wrappers for the two existing QSOE status conventions:
+  `ReplyStatus` for direct `MsgReply` labels and `MethodStatus` for
+  resource-server method returns.
+- Added host tests for positive direct errno labels, negative method errno
+  results, and the `QSOE_DEFER` sentinel.
+- Documented that Rust code preserves the current `0`/positive errno and
+  `>=0`/`-errno`/defer ABI conventions.
+- Marked the Phase 5 error-mapping task complete.
+
+Commands:
+
+- `make rust-quality`
+
+Result:
+
+- Direct-service and method-style Rust error mapping is explicit and covered
+  by the normal host quality gate.
+
+Follow-up:
+
+- Add wrapper-level tests for state transitions and receive-loop behavior.
+
+## 2026-06-23 23:01 CEST - Resource Server Example Documented
+
+Scope:
+
+- Turned `qsoe-service-example-rs` into a documented direct resource-server
+  example with a named request classifier.
+- Added `host-tests` feature coverage for lifecycle acknowledgements, write
+  byte counts, read payload caps, and unsupported request handling.
+- Included the example package in `make rust-quality` host tests.
+- Marked the Phase 5 resource-server example task complete.
+
+Commands:
+
+- `make rust-quality`
+- `make container-rust-service-example-link-smoke`
+
+Result:
+
+- The example compiles, documents its minimal request/reply loop, and links
+  through the QSOE userland CRT/libc path.
+
+Follow-up:
+
+- Define common error mapping for Rust direct services.
+
+## 2026-06-23 22:47 CEST - Direct Service Bootstrap Extracted
+
+Scope:
+
+- Added `DirectRequestHandler` and `DirectServer` to `qsoe-ressrv`.
+- Moved `slogger-rs` onto the shared direct-service register, detach, and
+  receive-loop path.
+- Added `qsoe-service-example-rs`, a tiny service that uses the same wrapper
+  path for connect, write, read, and close-style requests.
+- Added a link-smoke target and Rust README note for the example service.
+- Marked the Phase 5 common bootstrap task complete.
+
+Commands:
+
+- `make rust-quality`
+- `make container-rust-slogger-link-smoke`
+- `make container-rust-service-example-link-smoke`
+
+Result:
+
+- `slogger-rs` and the example service compile through the same direct-service
+  bootstrap path.
+- Both service binaries link through the QSOE userland CRT/libc path.
+
+Follow-up:
+
+- Expand the example into a documented resource-server sample.
+
+## 2026-06-23 22:37 CEST - C And Rust Slogger Boot Logs Compared
+
+Scope:
+
+- Rebuilt and booted the default C `slogger` LQ image.
+- Compared C boot milestones against the latest Rust `slogger-rs` boot-smoke
+  log.
+- Documented reviewed differences in `SLOGGER_BOOT_COMPARE.md`.
+- Marked the Phase 4 boot-log comparison task complete.
+
+Commands:
+
+- `make -C quser cpio LIBC_SO=... RTLD_SO=... DYNLIBC_SO=...`
+- `make -C lq`
+- `scripts/boot-smoke.sh -k lq -t 180 -o build/boot-smoke-lq-c-compare.log`
+- `strings build/boot-smoke-lq-c-compare.log | rg "slogger|fs-qrv: mounted|login:|devb-virtio|dispatcher ready|spawning /sbin/init"`
+- `strings build/boot-smoke-lq-20260623-223518.log | rg "slogger|fs-qrv: mounted|login:|devb-virtio|dispatcher ready|spawning /sbin/init"`
+
+Result:
+
+- Both C and Rust boots reached login.
+- Rust startup logs are shorter: no pid, chid, or ring-size text yet.
+- Device, filesystem, and login milestones matched.
+
+Follow-up:
+
+- Decide whether pid/chid/ring-size startup parity is needed before replacing
+  the default C service.
+
+## 2026-06-23 22:35 CEST - Rust Slogger Boot Smoke Added
+
+Scope:
+
+- Added `make rust-slogger-boot-smoke`.
+- Added a wrapper that builds an LQ modpkg archive with only
+  `sbin/slogger` replaced by the selected Rust artifact.
+- Rebuilt the LQ QEMU image with `MODPKG_CPIO` pointing at that opt-in archive.
+- Let `boot-smoke.sh` accept a custom slogger startup pattern.
+- Marked the Phase 4 Rust boot-image task complete.
+
+Commands:
+
+- `make rust-slogger-boot-smoke`
+
+Result:
+
+- QEMU reached login with `[slogger-rs] alive` in the console log.
+
+Follow-up:
+
+- Compare C and Rust boot logs before making the Rust service less
+  experimental.
+
+## 2026-06-23 22:28 CEST - Rust Slogger Build Flag Added
+
+Scope:
+
+- Added `QSOE_RUST_SLOGGER`, defaulting to the existing C `slogger`.
+- Added `make slogger-artifact`, which stages the selected implementation at
+  `build/rust/selected/sbin/slogger.elf`.
+- Added `QSOE_RUST_SLOGGER=1 make slogger-artifact` for the Rust pilot.
+- Kept CPIO and boot-image substitution for the next task.
+- Marked the Phase 4 build-flag task complete.
+
+Commands:
+
+- `make slogger-artifact`
+- `QSOE_RUST_SLOGGER=1 make slogger-artifact`
+- `make container-slogger-artifact`
+- `QSOE_RUST_SLOGGER=1 make container-slogger-artifact`
+
+Result:
+
+- The C service remains the default selected artifact.
+- One explicit make variable selects the Rust `slogger-rs` artifact.
+
+Follow-up:
+
+- Use the selected artifact in an opt-in boot image and run the Rust `slogger`
+  boot smoke.
+
+## 2026-06-23 22:25 CEST - Rust Slogger Entry Point Added
+
+Scope:
+
+- Added `qsoe-slogger-rs`, a no-std staticlib that exports the QSOE userland
+  `main(argc, argv, envp)` entry point.
+- Registered `/dev/slog` through the direct resource-server wrapper.
+- Wired `_IO_CONNECT`, `_IO_DUP`, close, write, read, and fstat handlers to the
+  Rust slog ring.
+- Added QSOE `EOK` and `ENOSYS` ABI constants.
+- Parameterized the Rust QSOE link smoke helper and added
+  `make rust-slogger-link-smoke`.
+- Marked the Phase 4 service-entry-point task complete.
+
+Commands:
+
+- `make rust-quality`
+- `make container-rust-qsoe-link-smoke`
+- `make container-rust-slogger-link-smoke`
+- `bash -n scripts/rust-qsoe-link-smoke.sh scripts/rust-workflow.sh scripts/rust-check.sh`
+
+Result:
+
+- `slogger-rs` links through the QSOE `crt0.o` and `libc.so` userland path.
+- The link smoke strips inert unwind metadata before the strict ELF audit.
+- The existing minimal Rust link smoke still passes with the parameterized
+  script.
+- The C `slogger` remains the default boot service.
+
+Follow-up:
+
+- Add the explicit build flag that selects Rust `slogger` for boot images.
+
+## 2026-06-23 21:32 CEST - Rust Slogger Ring Added
+
+Scope:
+
+- Added the `qsoe-slogger` no-std crate.
+- Implemented the byte-ring behavior needed by `slogger-rs`.
+- Documented that the slog event header is the current 24-byte LP64 ABI layout,
+  not the stale 16-byte wording in the ignored component header.
+- Recorded that the stale `sys/slog.h` ring-size comment still needs an
+  upstream component-source correction because `libc/` is ignored here.
+- Added the crate to Rust workflow test coverage.
+- Marked the Phase 4 Rust ring-buffer task complete.
+
+Commands:
+
+- `cargo test --manifest-path rust/Cargo.toml -p qsoe-slogger`
+- `make rust-quality`
+- `scripts/container-toolchain.sh run bash -lc 'cd rust && cargo check -p qsoe-slogger --target riscv64gc-unknown-none-elf'`
+- RISC-V C layout probe for `qsoe_slog_event_t` with
+  `riscv64-linux-gnu-gcc`.
+
+Result:
+
+- Host tests passed, including append, drain, wraparound, exact-full,
+  drop-oldest eviction, oversized rejection, incomplete-event read guard, read
+  caps, and corrupt head-event clamping during eviction.
+- `qsoe-slogger` compiled for the RISC-V no-std target in the Debian
+  container. The compile emitted the existing `f`/`d` target-feature warnings.
+
+Follow-up:
+
+- Add the `/dev/slog` readback smoke before replacing the C service.
+- Correct the stale `libc/include/sys/slog.h` comments in the component source
+  repository.
+
+## 2026-06-23 21:25 CEST - Direct Resource-Server Wrapper Added
+
+Scope:
+
+- Added shared Rust ABI constants for the `_IO_*` resource-manager protocol.
+- Added `tm_stat_t` as `qsoe_abi::TmStat`.
+- Added a direct-service wrapper surface in `qsoe-ressrv` for the current
+  `slogger` model: channel ownership, path registration, daemon-ready detach,
+  receive, pulse detection, replies, and explicit shutdown.
+- Added `IoRequest` and `IoReply` wire buffers for the `slogger` request/reply
+  shape.
+- Marked the Phase 3 `slogger` wrapper task complete.
+
+Commands:
+
+- `cargo check --manifest-path rust/Cargo.toml --workspace`
+- `cargo test --manifest-path rust/Cargo.toml -p qsoe-abi -p qsoe-ressrv`
+- `make rust-quality`
+- `scripts/container-toolchain.sh run bash -lc 'cd rust && cargo check -p qsoe-ressrv --target riscv64gc-unknown-none-elf'`
+
+Result:
+
+- Host Rust quality checks passed.
+- `qsoe-abi` and `qsoe-ressrv` layout and helper tests passed.
+- `qsoe-ressrv` compiled for the RISC-V no-std target in the Debian
+  container. The compile emitted the existing `f`/`d` target-feature warnings.
+
+Follow-up:
+
+- Implement the Rust `slogger` ring buffer with host tests before linking a
+  `slogger-rs` binary.
 
 ## 2026-06-23 21:20 EEST - Linux Handover Written
 

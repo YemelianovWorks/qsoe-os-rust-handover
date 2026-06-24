@@ -84,12 +84,14 @@ Read policy:
 - If an event header claims a size larger than `g_used`, reading stops.
 - Empty or incomplete rings return zero event bytes rather than blocking.
 
-Known documentation mismatch:
+Historical documentation mismatch:
 
-- `libc/include/sys/slog.h` says the ring is `256 KiB`.
+- `libc/include/sys/slog.h` previously said the ring was `256 KiB`.
 - The implementation and observed boot log use `64 KiB`.
-- The Rust port must preserve the implemented `64 KiB` behavior unless a
-  separate decision changes the ring size and updates all docs.
+- The Rust port preserves the implemented `64 KiB` behavior unless a separate
+  decision changes the ring size. The component header lives under the ignored
+  `libc/` release tree in this handover repo, so the source-comment correction
+  remains an upstream component follow-up.
 
 ## Wire Protocol
 
@@ -191,6 +193,11 @@ typedef struct {
 } qsoe_slog_event_t;
 ```
 
+The current LP64 layout is 24 bytes: 20 bytes of fields plus 4 bytes of tail
+padding from the `uint64_t` alignment. The Rust port must use `sizeof`-matched
+layout, not the stale 16-byte wording that previously appeared in
+`libc/include/sys/slog.h`.
+
 Header fields:
 
 - `magic = QSOE_SLOG_MAGIC` (`0x534c`, `SL`).
@@ -204,7 +211,7 @@ Header fields:
 Payload constraints:
 
 - `QSOE_SLOG_MAX_PAYLOAD` is `240`.
-- One event write is at most `16 + 240 = 256` bytes.
+- One event write is at most `24 + 240 = 264` bytes on the current LP64 ABI.
 - `vslogf` uses a minimal formatter supporting `%s`, `%d`, `%u`, `%x`, `%p`,
   `%c`, `%%`, and width such as `%08x`.
 - `slogb` rejects negative payload sizes and sizes above `240` with `EINVAL`.
@@ -236,15 +243,33 @@ Binary events print as `<N bytes binary>`.
 - `slogf(_SLOGC_TEST, _SLOG_WARNING, ...)`
 - `slogf(_SLOGC_TEST, _SLOG_DEBUG1, ...)`
 
-It checks return values from `slogf`. It does not currently automate a
-`sloginfo` readback assertion.
+It checks return values from `slogf`.
+
+`scripts/slog-readback-smoke.py` boots QSOE/L without the virtio disk so init
+falls into the cpio rescue shell after starting `slogger` and `pci-server`.
+`pci-server` writes known `slogf` entries during startup. The smoke runs
+`/bin/sloginfo` from the rescue shell and verifies that a `pci-server:` entry is
+observable through `/dev/slog`.
+
+The same smoke can prepare and boot an opt-in image whose `/sbin/slogger`
+artifact is `slogger-rs`:
+
+```sh
+make rust-slog-readback-smoke
+```
+
+This target keeps the C `slogger` as the default image path while proving that
+the Rust-selected service can register `/dev/slog`, store boot-time client log
+events, and return them through `sloginfo`.
 
 ## Rust Port Acceptance
 
 Before `slogger-rs` is linked into an image:
 
 - Ring-buffer host tests cover append, drain, wraparound, drop-oldest eviction,
-  oversized append, empty read, incomplete event guard, and read cap behavior.
+  exact-full behavior, oversized append, empty read, incomplete event guard,
+  corrupt head-event eviction, and read cap behavior. This is implemented in
+  `rust/crates/qsoe-slogger`.
 - Wire structs preserve LP64 request and reply layout.
 - Startup messages either match the C strings or are intentionally documented
   for boot-log comparison.
@@ -252,12 +277,13 @@ Before `slogger-rs` is linked into an image:
 - `_IO_CONNECT`, `_IO_DUP`, and close remain state-free `EOK` replies.
 - FSTAT values match the C implementation.
 - Unknown opcodes reply `ENOSYS`.
+- `make rust-slogger-link-smoke` links `qsoe-slogger-rs` through the same QSOE
+  `crt0.o` and `libc.so` userland path as the minimal Rust smoke.
 - The artifact passes `scripts/audit-elf.sh --strict-qsoe-user`.
-- C `slogger` remains the default until Rust boot smoke and readback smoke pass.
+- C `slogger` remains the default until Rust boot smoke, Rust readback smoke,
+  and the Rust-default release-candidate gate pass.
 
 ## Open Follow-Ups
 
-- Add an automated `/dev/slog` readback smoke that writes known messages and
-  verifies `sloginfo` can observe them.
-- Fix or explicitly update the stale `256 KiB` ring comment in
-  `libc/include/sys/slog.h`.
+- Correct the stale `libc/include/sys/slog.h` comments in the component source
+  repository.

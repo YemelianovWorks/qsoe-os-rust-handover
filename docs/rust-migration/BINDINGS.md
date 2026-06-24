@@ -56,7 +56,47 @@ It also exposes raw C lifecycle functions and thin wrappers for:
 - provider listen.
 - dispatch loop entry.
 
+For direct resource servers that do not use the C dispatch framework yet, such
+as the current C `slogger`, it also exposes a safe direct-service surface:
+
+- `Channel` owns `ChannelCreate` / `ChannelDestroy`.
+- `DirectService::register` creates a channel and registers a C string path
+  with the path manager.
+- `DirectService::detach_ready` wraps `procmgr_detach`.
+- `receive_bytes` and `receive_request` wrap `MsgReceive` and distinguish
+  messages from pulses.
+- `ReceivedMessage` consumes the receive token when sending status-only,
+  word-sized, or byte-slice replies through `MsgReply`.
+- `IoRequest` and `IoReply` model the fixed 40-byte request header,
+  32-byte pure reply header, and `TM_IO_MAX` inline payload shape used by
+  `slogger`.
+- `DirectServer` and `DirectRequestHandler` provide the shared register,
+  daemon-ready, receive-loop, pulse, and receive-error path for direct services.
+  `slogger-rs` and `qsoe-service-example-rs` both use this bootstrap.
+  The example service documents and tests a minimal request/reply policy for
+  lifecycle, read, write, and unsupported operations.
+- `DirectServer::dispatch_received` is the host-testable receive-state step
+  used by the infinite `run` loop; tests cover message, pulse, and receive
+  error dispatch without requiring QEMU.
+- `ReplyStatus` models direct `MsgReply` labels: `0`/`EOK` on success and a
+  positive QSOE errno on failure.
+- `MethodStatus` models the C resource-server method convention: non-negative
+  success values, `-errno` failures, or the existing `QSOE_DEFER` sentinel.
+  It only converts into `ReplyStatus` for the `-errno` case, preserving the
+  current QSOE ABI instead of adding a Rust-specific status layer.
+
 Layout tests assert the current RV64 C ABI sizes and alignments.
+
+### `qsoe-slogger`
+
+`qsoe-slogger` is `no_std` and contains the pure ring-buffer logic for the
+future `slogger-rs` binary. It preserves the implemented 64 KiB byte-ring
+behavior and uses the current 24-byte LP64 `qsoe_slog_event_t` header size when
+sizing events.
+
+Host tests cover append, drain, wraparound, exact-full behavior, drop-oldest
+eviction, oversized record rejection, incomplete event reads, read caps, and
+corrupt head-event clamping during eviction.
 
 ## Current Boundary
 
@@ -70,6 +110,7 @@ They are not yet a full safe resource-server framework. In particular:
 - buffer validity remains the caller/framework contract.
 - no Rust allocator contract is assumed.
 - `qsoe_errno` access is intentionally absent.
+- direct services still own their request parsing and policy decisions.
 
 ## Validation
 

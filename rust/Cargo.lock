@@ -7,6 +7,23 @@ name = "qsoe-abi"
 version = "0.0.0"
 
 [[package]]
+name = "qsoe-cpio"
+version = "0.0.0"
+
+[[package]]
+name = "qsoe-devb-virtio-rs"
+version = "0.0.0"
+dependencies = [
+ "qsoe-ffi",
+ "qsoe-ressrv",
+ "qsoe-virtio",
+]
+
+[[package]]
+name = "qsoe-elf"
+version = "0.0.0"
+
+[[package]]
 name = "qsoe-ffi"
 version = "0.0.0"
 dependencies = [
@@ -18,6 +35,20 @@ name = "qsoe-minimal-rs"
 version = "0.0.0"
 dependencies = [
  "qsoe-abi",
+ "qsoe-cpio",
+]
+
+[[package]]
+name = "qsoe-pipe"
+version = "0.0.0"
+
+[[package]]
+name = "qsoe-pipe-rs"
+version = "0.0.0"
+dependencies = [
+ "qsoe-ffi",
+ "qsoe-pipe",
+ "qsoe-ressrv",
 ]
 
 [[package]]
@@ -29,4 +60,42 @@ name = "qsoe-ressrv"
 version = "0.0.0"
 dependencies = [
  "qsoe-abi",
+ "qsoe-ffi",
 ]
+
+[[package]]
+name = "qsoe-service-example-rs"
+version = "0.0.0"
+dependencies = [
+ "qsoe-ffi",
+ "qsoe-ressrv",
+]
+
+[[package]]
+name = "qsoe-slogger"
+version = "0.0.0"
+
+[[package]]
+name = "qsoe-slogger-rs"
+version = "0.0.0"
+dependencies = [
+ "qsoe-ffi",
+ "qsoe-ressrv",
+ "qsoe-slogger",
+]
+
+[[package]]
+name = "qsoe-sysview"
+version = "0.0.0"
+
+[[package]]
+name = "qsoe-test-msgpass-rs"
+version = "0.0.0"
+dependencies = [
+ "qsoe-ffi",
+ "qsoe-ressrv",
+]
+
+[[package]]
+name = "qsoe-virtio"
+version = "0.0.0"
