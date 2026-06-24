@@ -3,7 +3,9 @@ resolver = "2"
 members = [
     "crates/qsoe-abi",
     "crates/qsoe-cpio",
+    "crates/qsoe-elf",
     "crates/qsoe-ffi",
+    "crates/qsoe-pipe",
     "crates/qsoe-qrvfs",
     "crates/qsoe-ressrv",
     "crates/qsoe-slogger",
@@ -13,6 +15,8 @@ members = [
     "bins/service-example-rs",
     "bins/slogger-rs",
     "bins/devb-virtio-rs",
+    "bins/test-msgpass-rs",
+    "bins/pipe-rs",
 ]
 
 [workspace.package]
