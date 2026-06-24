@@ -1,6 +1,6 @@
 # QSOE Rust Migration Development Log
 
-Last updated: 2026-06-24 02:05 CEST.
+Last updated: 2026-06-24 02:09 CEST.
 
 This log tracks the development process for the Rust migration and reproducible
 toolchain work. It records what changed, what was observed, what failed, and
@@ -23,6 +23,34 @@ Result:
 Follow-up:
 - ...
 ```
+
+## 2026-06-24 02:09 CEST - Kernel Rust Decision Recorded
+
+Scope:
+
+- Added decision `D-021` rejecting near-term Rust implementation work inside
+  `nq`.
+- Based the decision on completed parser, userland pilot, virtio smoke,
+  retirement-gate, and task-manager procfs evidence.
+- Kept Phase 10 kernel work limited to candidate and artifact-audit
+  documentation.
+- Marked the Phase 10 kernel decision task complete.
+
+Commands:
+
+- `gh issue view 31 --repo dmytro-yemelianov/qsoe-os-rust-handover --json number,title,body,state,labels,url`
+- `rg -n "^## D-[0-9]+" docs/rust-migration/DECISIONS.md`
+
+Result:
+
+- Near-term kernel Rust is explicitly rejected until at least one Rust
+  component completes a Rust-default release candidate with C rollback and
+  task-manager pilot evidence moves beyond documentation.
+
+Follow-up:
+
+- Identify safe kernel candidates while excluding traps, context switching,
+  scheduler core, boot assembly, and seL4 capability assumptions.
 
 ## 2026-06-24 02:05 CEST - Procfs Boot Smoke Added
 

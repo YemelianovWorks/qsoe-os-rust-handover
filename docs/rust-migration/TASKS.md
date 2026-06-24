@@ -250,7 +250,7 @@ small reviewable change unless it explicitly says otherwise.
 
 ## Phase 10: Kernel Reassessment
 
-- [ ] Write kernel Rust decision record.
+- [x] Write kernel Rust decision record.
   - Acceptance: decision uses evidence from completed userland migrations and
     explicitly accepts or rejects near-term kernel Rust work.
 
