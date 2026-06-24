@@ -251,6 +251,17 @@ falls into the cpio rescue shell after starting `slogger` and `pci-server`.
 `/bin/sloginfo` from the rescue shell and verifies that a `pci-server:` entry is
 observable through `/dev/slog`.
 
+The same smoke can prepare and boot an opt-in image whose `/sbin/slogger`
+artifact is `slogger-rs`:
+
+```sh
+make rust-slog-readback-smoke
+```
+
+This target keeps the C `slogger` as the default image path while proving that
+the Rust-selected service can register `/dev/slog`, store boot-time client log
+events, and return them through `sloginfo`.
+
 ## Rust Port Acceptance
 
 Before `slogger-rs` is linked into an image:
@@ -269,11 +280,10 @@ Before `slogger-rs` is linked into an image:
 - `make rust-slogger-link-smoke` links `qsoe-slogger-rs` through the same QSOE
   `crt0.o` and `libc.so` userland path as the minimal Rust smoke.
 - The artifact passes `scripts/audit-elf.sh --strict-qsoe-user`.
-- C `slogger` remains the default until Rust boot smoke and readback smoke pass.
+- C `slogger` remains the default until Rust boot smoke, Rust readback smoke,
+  and the Rust-default release-candidate gate pass.
 
 ## Open Follow-Ups
 
-- Extend the `/dev/slog` readback smoke to run against the Rust-selected
-  `slogger-rs` boot path before any Rust-default release candidate.
 - Correct the stale `libc/include/sys/slog.h` comments in the component source
   repository.

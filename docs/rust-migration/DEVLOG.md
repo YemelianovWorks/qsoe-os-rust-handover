@@ -1,6 +1,6 @@
 # QSOE Rust Migration Development Log
 
-Last updated: 2026-06-24 07:25 CEST.
+Last updated: 2026-06-24 07:33 CEST.
 
 This log tracks the development process for the Rust migration and reproducible
 toolchain work. It records what changed, what was observed, what failed, and
@@ -23,6 +23,44 @@ Result:
 Follow-up:
 - ...
 ```
+
+## 2026-06-24 07:31 CEST - Rust Slogger Readback Smoke
+
+Scope:
+
+- Added `--rust-slogger` to `scripts/slog-readback-smoke.py`.
+- Made the default readback smoke prepare a C-slogger LQ image before checking
+  `[slogger] alive`.
+- Added `--prepare-only` to `scripts/rust-slogger-boot-smoke.sh` so narrower
+  smokes can reuse the Rust-slogger CPIO/image preparation without running the
+  login boot smoke first.
+- Added `make rust-slog-readback-smoke` and
+  `make container-rust-slog-readback-smoke`.
+- Updated `SLOGGER.md`, `STATUS.md`, and `rust/README.md` for the new parity
+  evidence.
+
+Commands:
+
+- `python3 -m py_compile scripts/slog-readback-smoke.py`
+- `bash -n scripts/rust-slogger-boot-smoke.sh`
+- `make -n slog-readback-smoke rust-slog-readback-smoke container-rust-slog-readback-smoke`
+- `git diff --check`
+- `scripts/slog-readback-smoke.py -t 180 -o build/slog-readback-smoke-lq-c-slogger-after-rust.log`
+- `scripts/slog-readback-smoke.py --rust-slogger -t 180 -o build/slog-readback-smoke-lq-rust-slogger-final.log`
+
+Result:
+
+- The default C-selected readback smoke rebuilt a C-slogger LQ image and
+  observed the `pci-server` slog entry through `/bin/sloginfo`.
+- The Rust-selected readback smoke rebuilt an opt-in `slogger-rs` LQ image and
+  observed the same `pci-server` slog entry through `/bin/sloginfo`.
+
+Follow-up:
+
+- Use the #86 evidence for #85 before any Rust-default release-candidate
+  decision.
+- The next `slogger` gate remains a Rust-default release candidate with C
+  rollback.
 
 ## 2026-06-24 07:25 CEST - Current Follow-up Issues Created
 

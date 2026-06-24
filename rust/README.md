@@ -121,11 +121,16 @@ default:
 
 ```sh
 make rust-slogger-boot-smoke
+make rust-slog-readback-smoke
 ```
 
 It builds a temporary `build/rust-slogger/modpkg-lq-rust-slogger.cpio`,
 rebuilds the LQ QEMU image with `MODPKG_CPIO` pointing at that archive, and
 waits for both `[slogger-rs] alive` and `login:`.
+
+The readback smoke uses the same Rust-selected image path, boots without the
+virtio disk so QSOE/L enters the rescue shell, runs `/bin/sloginfo`, and
+verifies that boot-time `pci-server` messages are readable through `/dev/slog`.
 
 ## Virtio Driver Selection
 

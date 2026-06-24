@@ -23,6 +23,7 @@ SELECTED_VIRTIO_ELF ?= build/rust/selected/sbin/devb-virtio.elf
 .PHONY: all prepare clean nvme nvme-populate virtio fsqrv-image tree \
         check-host-tools check-qrvfs-fixture check-qrvfs-rust-fixture \
         check-elf-reloc-fixture check-gpt-fixture slog-readback-smoke \
+        rust-slog-readback-smoke \
         index-c index-c-files index-c-tags index-c-cscope index-c-global \
         index-c-static index-c-compile-db tidy-c \
         elf-baseline audit-artifacts \
@@ -44,6 +45,7 @@ SELECTED_VIRTIO_ELF ?= build/rust/selected/sbin/devb-virtio.elf
         container-rust-slogger-link-smoke container-rust-service-example-link-smoke \
         container-rust-virtio-link-smoke container-slogger-artifact \
         container-virtio-artifact container-rust-virtio-boot-smoke \
+        container-rust-slog-readback-smoke \
         container-rust-virtio-file-smoke container-pipe-smoke \
         container-procfs-smoke \
         container-source-build
@@ -162,6 +164,9 @@ check-gpt-fixture:
 
 slog-readback-smoke:
 	@scripts/slog-readback-smoke.py
+
+rust-slog-readback-smoke:
+	@scripts/slog-readback-smoke.py --rust-slogger
 
 index-c: index-c-static
 
@@ -322,6 +327,9 @@ container-virtio-artifact:
 
 container-rust-virtio-boot-smoke:
 	@scripts/container-toolchain.sh run make rust-virtio-boot-smoke
+
+container-rust-slog-readback-smoke:
+	@scripts/container-toolchain.sh run make rust-slog-readback-smoke
 
 container-rust-virtio-file-smoke:
 	@scripts/container-toolchain.sh run make rust-virtio-file-smoke
