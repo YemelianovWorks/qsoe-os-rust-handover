@@ -239,7 +239,7 @@ small reviewable change unless it explicitly says otherwise.
   - Acceptance: docs separate pure logic from spawn, cap, relocation, and loader
     critical paths.
 
-- [ ] Select one non-critical internal module.
+- [x] Select one non-critical internal module.
   - Acceptance: module has no direct effect on initial process creation.
 
 - [ ] Design C/Rust boundary for task-manager pilot.

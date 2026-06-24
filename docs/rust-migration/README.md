@@ -35,11 +35,13 @@ Read in this order:
    removal checklist.
 19. `TASK_MANAGER.md`: task-manager module inventory for Phase 9 candidate
    selection.
-20. `SPEC.md`: technical constraints, allowed boundaries, runtime/linking rules,
+20. `TASK_MANAGER_PROCFS.md`: selected non-critical task-manager pilot module
+   and scope exclusions.
+21. `SPEC.md`: technical constraints, allowed boundaries, runtime/linking rules,
    and acceptance standards.
-21. `PLAN.md`: phased migration plan from baseline validation through possible
+22. `PLAN.md`: phased migration plan from baseline validation through possible
    kernel reassessment.
-22. `TASKS.md`: executable backlog with acceptance criteria.
+23. `TASKS.md`: executable backlog with acceptance criteria.
 
 The first implementation milestone should not be a subsystem rewrite. It should
 be a reproducible baseline plus artifact audit, followed by a minimal Rust

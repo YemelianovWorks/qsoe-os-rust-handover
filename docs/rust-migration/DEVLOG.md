@@ -1,6 +1,6 @@
 # QSOE Rust Migration Development Log
 
-Last updated: 2026-06-24 02:00 CEST.
+Last updated: 2026-06-24 02:02 CEST.
 
 This log tracks the development process for the Rust migration and reproducible
 toolchain work. It records what changed, what was observed, what failed, and
@@ -23,6 +23,34 @@ Result:
 Follow-up:
 - ...
 ```
+
+## 2026-06-24 02:02 CEST - Task Manager Procfs Pilot Selected
+
+Scope:
+
+- Added `TASK_MANAGER_PROCFS.md` selecting portable `tm_procfs` as the first
+  non-critical internal task-manager module.
+- Documented why the module has no direct effect on initial process creation.
+- Excluded LQ process table, connection context, open/read dispatch, spawn,
+  dispatcher, and seL4 invocation code from the first pilot.
+- Compared `tm_procfs` against other candidate modules from the inventory.
+- Added required host-test and `/proc` smoke evidence for later implementation.
+- Linked the selection from the migration docs index.
+- Marked the Phase 9 module-selection task complete.
+
+Commands:
+
+- `sed -n '1,220p' libtaskman/src/tm_procfs.c`
+- `sed -n '1,220p' lq/taskman/path/procfs.c`
+
+Result:
+
+- `tm_procfs` is selected because it is bounded, read-only, callback-driven,
+  diagnostic logic and avoids spawn, capability, relocation, and loader paths.
+
+Follow-up:
+
+- Design the C/Rust boundary for the `tm_procfs` pilot.
 
 ## 2026-06-24 02:00 CEST - Task Manager Modules Inventoried
 
