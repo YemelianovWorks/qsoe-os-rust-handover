@@ -1,6 +1,6 @@
 # QSOE Rust Migration Development Log
 
-Last updated: 2026-06-24 02:25 CEST.
+Last updated: 2026-06-24 02:32 CEST.
 
 This log tracks the development process for the Rust migration and reproducible
 toolchain work. It records what changed, what was observed, what failed, and
@@ -23,6 +23,35 @@ Result:
 Follow-up:
 - ...
 ```
+
+## 2026-06-24 02:32 CEST - Rust Coverage Reporting Added
+
+Scope:
+
+- Added `scripts/rust-coverage.sh` for host-side parser and ABI coverage.
+- Added `make rust-coverage` and `make container-rust-coverage`.
+- Wired coverage into `make rust-deep` when cargo-llvm-cov is installed.
+- Documented LCOV and text summary outputs under ignored
+  `build/rust-coverage/`.
+- Marked the cross-cutting Rust coverage task complete.
+
+Commands:
+
+- `gh issue view 37 --json number,title,body,state,url,labels`
+- `cargo llvm-cov --version`
+- Reviewed cargo-llvm-cov README for `--text`, `--lcov`, and `--output-path`
+  report flags.
+
+Result:
+
+- Host crates can now produce coverage for parser and ABI tests without adding
+  generated report files to git. The local environment skipped execution
+  because cargo-llvm-cov is not installed.
+
+Follow-up:
+
+- Install cargo-llvm-cov in any environment that should publish coverage
+  artifacts or enforce coverage thresholds.
 
 ## 2026-06-24 02:25 CEST - Parser Fuzz Targets Added
 

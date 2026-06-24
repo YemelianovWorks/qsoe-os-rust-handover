@@ -24,6 +24,7 @@ environment:
   CARGO_TARGET_DIR          override generated artifact directory
   QSOE_RUST_DEEP_REQUIRE=1  fail deep mode if optional tools are missing
   QSOE_RUST_FUZZ_REQUIRE=1  fail fuzz smoke if nightly cargo-fuzz is missing
+  QSOE_RUST_COVERAGE_REQUIRE=1 fail coverage if cargo-llvm-cov is missing
 EOF
 }
 
@@ -104,6 +105,11 @@ run_deep() {
 
     if run_optional "cargo-fuzz" cargo +nightly fuzz; then
         "$ROOT/scripts/rust-fuzz-smoke.sh"
+        ran_optional=1
+    fi
+
+    if run_optional "cargo-llvm-cov" cargo llvm-cov; then
+        "$ROOT/scripts/rust-coverage.sh"
         ran_optional=1
     fi
 

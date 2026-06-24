@@ -303,7 +303,7 @@ small reviewable change unless it explicitly says otherwise.
   - Acceptance: qrvfs and future GPT/ELF/CPIO parsers have cargo-fuzz targets
     and a bounded smoke command suitable for a deep local gate.
 
-- [ ] Add Rust coverage reporting.
+- [x] Add Rust coverage reporting.
   - Acceptance: host crates can produce coverage for parser and ABI tests,
     preferably with generated output under ignored build directories.
 

@@ -192,6 +192,19 @@ the optional tools with `rustup toolchain install nightly` and
 `cargo install cargo-fuzz`. GPT should be added to the same fuzz package once a
 Rust GPT parser crate exists.
 
+## Coverage
+
+Host-side parser and ABI coverage reports are optional and generated under the
+ignored `build/` directory:
+
+```sh
+make rust-coverage
+```
+
+When `cargo-llvm-cov` is installed, the target writes
+`build/rust-coverage/summary.txt` and `build/rust-coverage/lcov.info`.
+Set `QSOE_RUST_COVERAGE_HTML=1` to also write an HTML report.
+
 ## Host qrvfs Parser
 
 The first host-side Rust parser is:

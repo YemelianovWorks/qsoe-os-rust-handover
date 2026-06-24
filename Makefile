@@ -27,6 +27,7 @@ SELECTED_VIRTIO_ELF ?= build/rust/selected/sbin/devb-virtio.elf
         index-c-static index-c-compile-db tidy-c \
         elf-baseline audit-artifacts \
         rust-fast rust-quality rust-check rust-abi rust-deep rust-fuzz-smoke \
+        rust-coverage \
         rust-qsoe-link-smoke rust-slogger-link-smoke \
         rust-service-example-link-smoke rust-virtio-link-smoke \
         slogger-artifact virtio-artifact rust-slogger-boot-smoke \
@@ -38,6 +39,7 @@ SELECTED_VIRTIO_ELF ?= build/rust/selected/sbin/devb-virtio.elf
         container-elf-baseline container-audit-artifacts \
         container-rust-fast container-rust-quality \
         container-rust-abi container-rust-deep container-rust-fuzz-smoke \
+        container-rust-coverage \
         container-rust-qsoe-link-smoke \
         container-rust-slogger-link-smoke container-rust-service-example-link-smoke \
         container-rust-virtio-link-smoke container-slogger-artifact \
@@ -205,6 +207,9 @@ rust-deep:
 rust-fuzz-smoke:
 	@scripts/rust-fuzz-smoke.sh
 
+rust-coverage:
+	@scripts/rust-coverage.sh
+
 rust-qsoe-link-smoke:
 	@scripts/rust-qsoe-link-smoke.sh
 
@@ -286,6 +291,9 @@ container-rust-deep:
 
 container-rust-fuzz-smoke:
 	@scripts/container-toolchain.sh run make rust-fuzz-smoke
+
+container-rust-coverage:
+	@scripts/container-toolchain.sh run make rust-coverage
 
 container-rust-qsoe-link-smoke:
 	@scripts/container-toolchain.sh rust-link-smoke

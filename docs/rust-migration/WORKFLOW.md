@@ -134,6 +134,7 @@ For current pilot work, the order is:
 - `cargo miri test` is used when Miri is installed.
 - `cargo deny check -c rust/deny.toml` is used when cargo-deny is installed.
 - `scripts/rust-fuzz-smoke.sh` is used when nightly cargo-fuzz is available.
+- `scripts/rust-coverage.sh` is used when cargo-llvm-cov is installed.
 
 Set this when missing optional tools should fail the run:
 
@@ -155,6 +156,15 @@ The current fuzz package covers `qrvfs`, `cpio`, `elf`, `syscfg`, and `sysmap`.
 The wrapper prefers `cargo +nightly fuzz` because cargo-fuzz needs sanitizer
 flags that are not available on the pinned stable toolchain. Add GPT to the
 same `rust/fuzz` package when a Rust GPT parser crate exists.
+
+Generate parser and ABI coverage reports with:
+
+```sh
+make rust-coverage
+```
+
+The coverage wrapper uses cargo-llvm-cov when installed and writes LCOV plus
+text summary output under `build/rust-coverage/`, which is ignored by git.
 
 ## CI Shape
 
