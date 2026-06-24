@@ -1,6 +1,6 @@
 # QSOE Rust Migration Development Log
 
-Last updated: 2026-06-24 00:32 CEST.
+Last updated: 2026-06-24 00:56 CEST.
 
 This log tracks the development process for the Rust migration and reproducible
 toolchain work. It records what changed, what was observed, what failed, and
@@ -23,6 +23,82 @@ Result:
 Follow-up:
 - ...
 ```
+
+## 2026-06-24 00:56 CEST - CPIO Parser Crate Added
+
+Scope:
+
+- Added `qsoe-cpio`, a dependency-free `no_std` crate for parsing `newc` CPIO
+  archives.
+- Covered valid archives, ordered iteration, lookup by index/name, archive
+  info, and malformed header/name/data cases without panics.
+- Added the crate to the normal Rust workflow gates.
+- Marked the Phase 7 CPIO parser crate task complete.
+
+Commands:
+
+- `cargo test --manifest-path rust/Cargo.toml -p qsoe-cpio`
+
+Result:
+
+- `qsoe-cpio` parsed the valid fixture and rejected truncated, bad-magic,
+  invalid-hex, zero-name-size, unterminated-name, invalid-UTF-8-name, and
+  truncated-data fixtures through typed errors.
+
+Follow-up:
+
+- Add syscfg/sysmap read-only view coverage next.
+
+## 2026-06-24 00:45 CEST - Rust Virtio File Access Smoke Added
+
+Scope:
+
+- Added `scripts/rust-virtio-file-smoke.sh` to boot with `devb-virtio-rs` and
+  a temporary `/usr/conf/sysinit` fragment that runs inside the guest.
+- Extended qrvfs image staging to include `/usr/conf/sysinit` fragments.
+- Added `make rust-virtio-file-smoke` and a container wrapper.
+- Marked the Phase 6 Rust virtio file-access smoke task complete.
+
+Commands:
+
+- `scripts/rust-virtio-file-smoke.sh -t 240 -o build/boot-smoke-lq-rust-virtio-file.log`
+- `strings build/boot-smoke-lq-rust-virtio-file.log | rg "rust-virtio-file-smoke|devb-virtio-rs|fs-qrv: mounted|login:"`
+
+Result:
+
+- QEMU reached `login:` with `[devb-virtio-rs] /dev/vblk0 ready`,
+  `fs-qrv: mounted qrvfs at /usr (dev=/dev/vblk0)`, and
+  `rust-virtio-file-smoke: read /usr/conf/passwd ok` in the console log.
+
+Follow-up:
+
+- Continue Phase 7 shared-parser work.
+
+## 2026-06-24 00:37 CEST - Rust Virtio Boot Smoke Passed
+
+Scope:
+
+- Added `scripts/rust-virtio-boot-smoke.sh` to build a temporary QSOE/L boot
+  CPIO with `qsoe-devb-virtio-rs` installed as `/sbin/devb-virtio`.
+- Added `QSOE_BOOT_VIRTIO_PATTERN` to `scripts/boot-smoke.sh` so the same boot
+  gate can validate C or Rust virtio driver milestones.
+- Added `make rust-virtio-boot-smoke` and a container wrapper.
+- Marked the Phase 6 Rust virtio boot task complete.
+
+Commands:
+
+- `scripts/rust-virtio-boot-smoke.sh -t 240 -o build/boot-smoke-lq-rust-virtio.log`
+- `strings build/boot-smoke-lq-rust-virtio.log | rg "devb-virtio-rs|fs-qrv: mounted|login:|dispatcher ready|spawning /sbin/init|\\[slogger\\] alive"`
+
+Result:
+
+- QEMU reached `login:` with `[devb-virtio-rs] /dev/vblk0 ready` and
+  `fs-qrv: mounted qrvfs at /usr (dev=/dev/vblk0)` in the console log.
+
+Follow-up:
+
+- Run a file access smoke through `/usr` while booted with the Rust virtio
+  driver.
 
 ## 2026-06-24 00:32 CEST - Opt-In Rust Virtio Driver Added
 

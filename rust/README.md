@@ -143,6 +143,29 @@ links and audits `qsoe-devb-virtio-rs`. Both modes write the selected binary to
 `build/rust/selected/sbin/devb-virtio.elf`; the C driver remains the boot
 default until the explicit Rust boot-smoke step lands.
 
+The opt-in LQ boot smoke uses that selected artifact without changing the C
+default:
+
+```sh
+make rust-virtio-boot-smoke
+```
+
+It builds a temporary `build/rust-virtio/modpkg-lq-rust-virtio.cpio`, rebuilds
+the LQ QEMU image with `MODPKG_CPIO` pointing at that archive, and waits for
+`[devb-virtio-rs] /dev/vblk0 ready`, the `/usr` qrvfs mount, and `login:`.
+
+The file-access smoke adds an in-guest `/usr` read check on top of the same
+Rust virtio boot path:
+
+```sh
+make rust-virtio-file-smoke
+```
+
+It temporarily stages a `/usr/conf/sysinit` fragment into the qrvfs image; that
+fragment runs after `/usr` is mounted and prints
+`rust-virtio-file-smoke: read /usr/conf/passwd ok` only after `/bin/cat` can
+read the file through the Rust-backed `/dev/vblk0` mount.
+
 ## Host qrvfs Parser
 
 The first host-side Rust parser is:
@@ -160,6 +183,20 @@ make check-qrvfs-rust-fixture
 
 This crate is read-only. The C `mkfs-qrv` tool remains the writer and source of
 truth for image construction.
+
+## Host CPIO Parser
+
+The first shared archive parser is:
+
+```text
+crates/qsoe-cpio
+```
+
+It parses `newc` CPIO archives, exposes borrowed entries by iterator, index, or
+path lookup, and reports archive info such as file count and maximum path
+length. The crate is dependency-free and `no_std`; host tests cover a valid
+archive plus malformed headers, names, UTF-8, and truncated data so parser
+errors stay explicit instead of panicking.
 
 ## Virtio MMIO Wrapper
 
