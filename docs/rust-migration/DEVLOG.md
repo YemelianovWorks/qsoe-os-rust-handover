@@ -1,6 +1,6 @@
 # QSOE Rust Migration Development Log
 
-Last updated: 2026-06-24 02:46 CEST.
+Last updated: 2026-06-24 07:25 CEST.
 
 This log tracks the development process for the Rust migration and reproducible
 toolchain work. It records what changed, what was observed, what failed, and
@@ -23,6 +23,61 @@ Result:
 Follow-up:
 - ...
 ```
+
+## 2026-06-24 07:25 CEST - Current Follow-up Issues Created
+
+Scope:
+
+- Created GitHub issues for the current handover blockers and next execution
+  steps:
+  - #82: restore self-hosted runner availability for the draft stack.
+  - #83: resolve or explicitly record the CodeRabbit usage-credit blocker.
+  - #84: prepare the draft stack for bottom-up merge.
+  - #85: add Rust-selected `/dev/slog` readback parity smoke.
+- Updated `HANDOVER.md` to reference those issue numbers from the blocker and
+  next-work sections.
+
+Commands:
+
+- `gh issue list --state all --limit 120 --json number,title,state,labels,url`
+- GitHub issue creation through the connected GitHub tool.
+
+Result:
+
+- The latest plan is tracked in GitHub instead of only in local migration docs.
+
+Follow-up:
+
+- Use #82 and #83 to decide when the draft stack can become ready for review.
+- Use #85 as the next slogger parity task after the current stack lands.
+
+## 2026-06-24 07:21 CEST - Handover Status Refreshed
+
+Scope:
+
+- Updated `HANDOVER.md` from the old macOS/GitLab snapshot to the current Linux
+  GitHub handover repository.
+- Recorded the active stacked PR chain from #42 through #80.
+- Documented the #42 self-hosted runner queue and #60 CodeRabbit credit status
+  as external blockers.
+- Replaced stale next-work items with current merge-readiness and post-stack
+  implementation tasks.
+
+Commands:
+
+- `git remote -v`
+- `gh pr list --state open --limit 120 --json number,title,headRefName,baseRefName,isDraft,mergeable,statusCheckRollup,url`
+- `gh run list --limit 20 --json databaseId,displayTitle,status,conclusion,workflowName,headBranch,event,createdAt,updatedAt,url`
+
+Result:
+
+- The checked-in handover now matches the current machine, branch tip, stack
+  shape, validation state, and remaining blockers.
+
+Follow-up:
+
+- Update `HANDOVER.md` again after the draft stack is marked ready, merged, or
+  retargeted.
 
 ## 2026-06-24 02:46 CEST - Slog Readback Smoke Stacked
 

@@ -1,28 +1,29 @@
 # QSOE Migration Handover
 
-Last updated: 2026-06-23 21:20 EEST.
+Last updated: 2026-06-24 07:25 CEST.
 
 This handover captures the current QSOE Rust migration and workflow work so it
 can move from the macOS/container setup to a native Linux development machine.
 
 ## Repository Snapshot
 
-Current local repository:
+Current Linux repository:
 
 ```text
-/Users/dmytro/Documents/github/qsoe/os
+/home/dmytro/github/qsoe-os-rust-handover
 ```
 
-Current upstream remote:
+Current GitHub remote:
 
 ```text
-origin https://gitlab.com/qsoe/os.git
+origin git@github.com:dmytro-yemelianov/qsoe-os-rust-handover.git
 ```
 
-Private GitHub handover remote:
+Current stack tip:
 
 ```text
-github-handover https://github.com/dmytro-yemelianov/qsoe-os-rust-handover.git
+codex/slog-readback-smoke-stacked
+4d09b2b Update slog readback status
 ```
 
 The local tree adds:
@@ -33,7 +34,8 @@ The local tree adds:
 - a pinned Rust workspace under `rust/`;
 - C indexing/clangd plumbing via `.clangd` and `scripts/c-index.sh`;
 - top-level Make targets for checks, Rust workflow tiers, container workflow,
-  ELF audits, boot smoke, and C indexes.
+  ELF audits, boot smoke, C indexes, fuzz smoke, coverage, artifact audit, and
+  targeted component smokes.
 
 Generated build output stays out of git:
 
@@ -42,6 +44,68 @@ build/
 rust/target/
 sel4-bootstrap/
 ```
+
+## GitHub Stack
+
+The active handover stack is a linear draft PR chain:
+
+```text
+#42  main -> codex/handover-ci-slogger-prep
+#44  -> codex/slogger-rs-entrypoint
+#45  -> codex/slogger-build-flag
+#46  -> codex/slogger-rs-boot-image
+#47  -> codex/slogger-boot-log-compare
+#48  -> codex/direct-service-bootstrap
+#49  -> codex/resource-server-example
+#50  -> codex/error-mapping
+#51  -> codex/wrapper-level-tests
+#52  -> codex/virtio-block-spec
+#53  -> codex/virtio-mmio-wrapper
+#54  -> codex/virtqueue-descriptor-model
+#55  -> codex/host-side-queue-tests
+#56  -> codex/virtio-rust-driver-opt-in
+#57  -> codex/rust-virtio-boot-smoke
+#58  -> codex/rust-virtio-file-smoke
+#59  -> codex/cpio-parser-crate
+#60  -> codex/syscfg-sysmap-view-crate
+#61  -> codex/elf-inspection-crate
+#62  -> codex/parser-host-guest-reuse
+#63  -> codex/rank-userland-services
+#64  -> codex/pick-pipe-second-service
+#65  -> codex/pick-rust-test-helper
+#66  -> codex/c-retirement-gate
+#67  -> codex/taskman-module-inventory
+#68  -> codex/select-taskman-procfs-pilot
+#69  -> codex/taskman-procfs-boundary
+#70  -> codex/procfs-boot-smoke
+#71  -> codex/kernel-rust-decision
+#72  -> codex/kernel-safe-candidates
+#73  -> codex/kernel-artifact-audit
+#74  -> codex/audit-artifacts-target
+#75  -> codex/rust-parser-fuzz-targets
+#76  -> codex/rust-coverage-reporting
+#77  -> codex/unsafe-review-checklist
+#78  -> codex/migration-status-table
+#79  -> codex/release-note-template
+#80  -> codex/slog-readback-smoke-stacked
+```
+
+PR #43 was closed as superseded by #80 because it was a side branch from
+`main`; #80 carries the same `/dev/slog` readback smoke on top of the active
+stack.
+
+Current external blockers:
+
+- #42 CI uses `runs-on: [self-hosted, X64]`, matching the active Rapsody CI
+  runner label, but run `28054197652` has been queued since
+  `2026-06-23 20:16 UTC` with no steps started. This is runner
+  availability/access, not a workflow-label mismatch. Tracked by #82.
+- #60 has a red CodeRabbit status due to insufficient usage credits. The
+  earlier actionable sysview findings have been fixed at the branch tip.
+  Tracked by #83.
+- The only unchecked backlog item is C retirement, which is intentionally
+  blocked until a component completes a Rust-default release candidate with C
+  rollback. Tracked by #26.
 
 ## Linux Machine Setup
 
@@ -154,7 +218,8 @@ QSOE_INDEX_DB_FLAVOR=container make index-c-compile-db
 
 ## Verified State Before Handover
 
-The following checks passed in the macOS plus Debian-container environment:
+The following checks passed across the stacked work and are recorded in
+`DEVLOG.md`:
 
 ```sh
 bash -n scripts/*.sh
@@ -170,6 +235,13 @@ make container-toolchain-build
 make container-check
 make container-rust-abi
 make container-index-c-static
+make audit-artifacts
+QSOE_RUST_FUZZ_RUNS=1 QSOE_RUST_FUZZ_SECONDS=2 make rust-fuzz-smoke
+make rust-coverage
+make procfs-smoke
+make pipe-smoke
+make rust-virtio-file-smoke
+scripts/slog-readback-smoke.py -t 120 -o build/slog-readback-smoke-stacked.log
 ```
 
 `make container-index-c-static` generated static C indexes for 816 QSOE-owned
@@ -200,6 +272,9 @@ The strict ELF audit showed:
   unwind, and out of the default image.
 - C implementations remain the rollback path until a Rust service has host
   tests, fixture parity, ELF audit, boot evidence, and documented differences.
+- `slogger` has a C-path `/dev/slog` readback baseline. A Rust-selected
+  readback parity smoke is still required before any Rust-default release
+  candidate.
 
 ## Current Decisions
 
@@ -209,14 +284,18 @@ The active decision log is `DECISIONS.md`. Most relevant recent decisions:
 - D-018: separate Cargo target dirs by host/workflow.
 - D-019: start Rust supply-chain policy with cargo-deny.
 - D-020: use layered C indexing rather than clangd alone.
+- D-021: reject near-term Rust implementation inside `nq` kernel code.
 
 ## Next Recommended Work
 
-1. On Linux, run `make prepare`, `make`, `make rust-quality`, `make rust-abi`,
-   and `scripts/boot-smoke.sh -k lq -t 120`.
-2. Capture a focused compile database before doing a full clean Bear capture.
-3. Add a bounded clang-tidy wrapper over `build/index/c/compile_commands.json`.
-4. Add `/dev/slog` readback smoke coverage.
-5. Add a safe `slogger` resource-server wrapper surface.
-6. Implement the Rust slogger ring buffer with host tests.
-7. Only then start an opt-in `slogger-rs` QSOE userland binary.
+1. Restore runner availability for #42 or rerun the queued workflow once the
+   `[self-hosted, X64]` runner is available; see #82.
+2. Decide whether to mark the draft stack ready for review and merge it
+   bottom-up from #42 through #81; see #84.
+3. Resolve the #60 CodeRabbit usage-credit status or record it as an external
+   billing blocker when merging; see #83.
+4. After the stack lands, extend `/dev/slog` readback coverage to the
+   Rust-selected `slogger-rs` boot path; see #85.
+5. Continue implementation with an opt-in Rust `pipe`, Rust `test_msgpass`, or
+   Rust `tm_procfs` provider. Do not start C retirement until the
+   release-candidate gate in `RETIREMENT.md` is satisfied; see #26.
