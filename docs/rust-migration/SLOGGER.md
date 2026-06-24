@@ -262,6 +262,28 @@ This target keeps the C `slogger` as the default image path while proving that
 the Rust-selected service can register `/dev/slog`, store boot-time client log
 events, and return them through `sloginfo`.
 
+## Rust-Default Release Candidate
+
+The first Rust-default release-candidate image path is:
+
+```sh
+make slogger-rc-readback-smoke
+```
+
+This target prepares an RC image whose `/sbin/slogger` defaults to
+`slogger-rs`, then runs the same `/bin/sloginfo` readback gate used by the
+opt-in smoke.
+
+The C rollback drill is:
+
+```sh
+make slogger-rc-rollback-smoke
+```
+
+This keeps the C implementation available and verifies that the RC image path
+can be rebuilt with the C `/sbin/slogger` artifact. The release-candidate note
+and rollback details live in `SLOGGER_RC.md`.
+
 ## Rust Port Acceptance
 
 Before `slogger-rs` is linked into an image:

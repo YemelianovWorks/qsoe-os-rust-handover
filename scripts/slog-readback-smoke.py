@@ -9,6 +9,7 @@ import os
 import pathlib
 import subprocess
 import sys
+from collections.abc import Callable
 
 try:
     import pexpect
@@ -44,6 +45,16 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="build and boot an opt-in LQ image with slogger-rs selected",
     )
+    parser.add_argument(
+        "--slogger-rc",
+        action="store_true",
+        help="build and boot the slogger Rust-default release-candidate image",
+    )
+    parser.add_argument(
+        "--slogger-rc-rollback",
+        action="store_true",
+        help="build and boot the slogger release-candidate C rollback image",
+    )
     return parser.parse_args()
 
 
@@ -77,9 +88,9 @@ def cleanup(child: pexpect.spawn | None) -> None:
     child.terminate(force=True)
 
 
-def run_command(argv: list[str]) -> None:
+def run_command(argv: list[str], env: dict[str, str] | None = None) -> None:
     try:
-        subprocess.run(argv, cwd=ROOT, check=True)
+        subprocess.run(argv, cwd=ROOT, check=True, env=env)
     except subprocess.CalledProcessError as exc:
         raise SystemExit(exc.returncode) from exc
 
@@ -133,14 +144,54 @@ def prepare_rust_slogger_image() -> None:
     )
 
 
+def prepare_slogger_rc_image(*, rollback: bool) -> None:
+    env = os.environ.copy()
+    env["QSOE_SLOGGER_RC_ROLLBACK"] = "1" if rollback else "0"
+    run_command(
+        [str(ROOT / "scripts" / "slogger-rc-boot-smoke.sh"), "--prepare-only"],
+        env=env,
+    )
+
+
 def main() -> int:
     args = parse_args()
     if args.timeout <= 0:
         print("slog-readback-smoke.py: timeout must be positive", file=sys.stderr)
         return 2
 
+    slogger_modes: dict[str, tuple[str, str, Callable[[], None]]] = {
+        "rust_slogger": (
+            "rust-slogger",
+            r"\[slogger-rs\] alive",
+            prepare_rust_slogger_image,
+        ),
+        "slogger_rc": (
+            "slogger-rc-rust-default",
+            r"\[slogger-rs\] alive",
+            lambda: prepare_slogger_rc_image(rollback=False),
+        ),
+        "slogger_rc_rollback": (
+            "slogger-rc-c-rollback",
+            r"\[slogger\] alive",
+            lambda: prepare_slogger_rc_image(rollback=True),
+        ),
+    }
+    selected_modes = [
+        mode for mode in slogger_modes if getattr(args, mode)
+    ]
+    if len(selected_modes) > 1:
+        print(
+            "slog-readback-smoke.py: select only one slogger mode",
+            file=sys.stderr,
+        )
+        return 2
+
     log = args.log
-    slogger_mode = "rust-slogger" if args.rust_slogger else "c-slogger"
+    default_mode = ("c-slogger", r"\[slogger\] alive", prepare_c_slogger_image)
+    slogger_mode, startup_pattern, prepare_image = (
+        slogger_modes[selected_modes[0]] if selected_modes else default_mode
+    )
+
     if log is None:
         stamp = dt.datetime.now().strftime("%Y%m%d-%H%M%S")
         log = (
@@ -151,13 +202,7 @@ def main() -> int:
     elif not log.is_absolute():
         log = ROOT / log
 
-    startup_pattern = (
-        r"\[slogger-rs\] alive" if args.rust_slogger else r"\[slogger\] alive"
-    )
-    if args.rust_slogger:
-        prepare_rust_slogger_image()
-    else:
-        prepare_c_slogger_image()
+    prepare_image()
 
     log.parent.mkdir(parents=True, exist_ok=True)
     child: pexpect.spawn | None = None

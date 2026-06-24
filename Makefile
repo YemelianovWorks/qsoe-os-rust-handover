@@ -27,7 +27,8 @@ SELECTED_PIPE_ELF ?= build/rust/selected/sbin/pipe.elf
 .PHONY: all prepare clean nvme nvme-populate virtio fsqrv-image tree \
         check-host-tools check-qrvfs-fixture check-qrvfs-rust-fixture \
         check-elf-reloc-fixture check-gpt-fixture slog-readback-smoke \
-        rust-slog-readback-smoke \
+        rust-slog-readback-smoke slogger-rc-boot-smoke \
+        slogger-rc-readback-smoke slogger-rc-rollback-smoke \
         index-c index-c-files index-c-tags index-c-cscope index-c-global \
         index-c-static index-c-compile-db tidy-c \
         elf-baseline audit-artifacts \
@@ -56,7 +57,9 @@ SELECTED_PIPE_ELF ?= build/rust/selected/sbin/pipe.elf
         container-slogger-artifact container-virtio-artifact \
         container-test-msgpass-artifact container-pipe-artifact \
         container-rust-virtio-boot-smoke \
-        container-rust-slog-readback-smoke container-rust-test-msgpass-smoke \
+        container-rust-slog-readback-smoke container-slogger-rc-boot-smoke \
+        container-slogger-rc-readback-smoke container-slogger-rc-rollback-smoke \
+        container-rust-test-msgpass-smoke \
         container-rust-virtio-file-smoke container-pipe-smoke \
         container-rust-pipe-smoke container-rust-pipe-data-smoke \
         container-procfs-smoke \
@@ -179,6 +182,15 @@ slog-readback-smoke:
 
 rust-slog-readback-smoke:
 	@scripts/slog-readback-smoke.py --rust-slogger
+
+slogger-rc-boot-smoke:
+	@scripts/slogger-rc-boot-smoke.sh
+
+slogger-rc-readback-smoke:
+	@scripts/slog-readback-smoke.py --slogger-rc
+
+slogger-rc-rollback-smoke:
+	@scripts/slog-readback-smoke.py --slogger-rc-rollback
 
 index-c: index-c-static
 
@@ -383,6 +395,15 @@ container-rust-virtio-boot-smoke:
 
 container-rust-slog-readback-smoke:
 	@scripts/container-toolchain.sh run make rust-slog-readback-smoke
+
+container-slogger-rc-boot-smoke:
+	@scripts/container-toolchain.sh run make slogger-rc-boot-smoke
+
+container-slogger-rc-readback-smoke:
+	@scripts/container-toolchain.sh run make slogger-rc-readback-smoke
+
+container-slogger-rc-rollback-smoke:
+	@scripts/container-toolchain.sh run make slogger-rc-rollback-smoke
 
 container-rust-test-msgpass-smoke:
 	@scripts/container-toolchain.sh run make rust-test-msgpass-smoke

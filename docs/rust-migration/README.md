@@ -25,33 +25,35 @@ Read in this order:
 12. `UNSAFE_REVIEW.md`: unsafe-code review checklist for Rust migration PRs.
 13. `SLOGGER.md`: current C `slogger` behavior and Rust pilot acceptance.
 14. `SLOGGER_BOOT_COMPARE.md`: C vs Rust `slogger` boot-log comparison.
-15. `VIRTIO_BLOCK.md`: current C `devb-virtio` behavior and Rust pilot
+15. `SLOGGER_RC.md`: Rust-default `slogger` release-candidate note and C
+   rollback drill.
+16. `VIRTIO_BLOCK.md`: current C `devb-virtio` behavior and Rust pilot
    acceptance contract.
-16. `SERVICE_RANKING.md`: remaining userland service scores for Phase 8
+17. `SERVICE_RANKING.md`: remaining userland service scores for Phase 8
    selection.
-17. `PIPE.md`: selected second Rust service mini-spec and C registration smoke.
-18. `TEST_HELPER.md`: selected first Rust in-guest test helper and safety
+18. `PIPE.md`: selected second Rust service mini-spec and C registration smoke.
+19. `TEST_HELPER.md`: selected first Rust in-guest test helper and safety
    constraints.
-19. `RETIREMENT.md`: C removal gate, current retirement status, and future
+20. `RETIREMENT.md`: C removal gate, current retirement status, and future
    removal checklist.
-20. `STATUS.md`: current C default, Rust opt-in, Rust default, and retired
+21. `STATUS.md`: current C default, Rust opt-in, Rust default, and retired
    status for tracked migration components.
-21. `RELEASE_NOTE_TEMPLATE.md`: release-note template for implementation
+22. `RELEASE_NOTE_TEMPLATE.md`: release-note template for implementation
    language changes, rollback flags, evidence, and known limitations.
-22. `TASK_MANAGER.md`: task-manager module inventory for Phase 9 candidate
+23. `TASK_MANAGER.md`: task-manager module inventory for Phase 9 candidate
    selection.
-23. `TASK_MANAGER_PROCFS.md`: selected non-critical task-manager pilot module
+24. `TASK_MANAGER_PROCFS.md`: selected non-critical task-manager pilot module
    and scope exclusions.
-24. `TASK_MANAGER_PROCFS_BOUNDARY.md`: C/Rust ABI, failure behavior, and
+25. `TASK_MANAGER_PROCFS_BOUNDARY.md`: C/Rust ABI, failure behavior, and
    rollback plan for the selected pilot.
-25. `KERNEL_CANDIDATES.md`: Phase 10 kernel candidate inventory, explicit
+26. `KERNEL_CANDIDATES.md`: Phase 10 kernel candidate inventory, explicit
    exclusions, and fixture-only ranking.
-26. `KERNEL_ARTIFACT_AUDIT.md`: Phase 10 kernel Rust artifact audit needs.
-27. `SPEC.md`: technical constraints, allowed boundaries, runtime/linking rules,
+27. `KERNEL_ARTIFACT_AUDIT.md`: Phase 10 kernel Rust artifact audit needs.
+28. `SPEC.md`: technical constraints, allowed boundaries, runtime/linking rules,
    and acceptance standards.
-28. `PLAN.md`: phased migration plan from baseline validation through possible
+29. `PLAN.md`: phased migration plan from baseline validation through possible
    kernel reassessment.
-29. `TASKS.md`: executable backlog with acceptance criteria.
+30. `TASKS.md`: executable backlog with acceptance criteria.
 
 The first implementation milestone should not be a subsystem rewrite. It should
 be a reproducible baseline plus artifact audit, followed by a minimal Rust
