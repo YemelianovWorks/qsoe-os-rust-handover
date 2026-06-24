@@ -68,6 +68,14 @@ jobs:
         if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
         run: make container-rust-pipe-data-smoke
 
+      - name: Run pipe Rust-default RC data smoke
+        if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+        run: make container-pipe-rc-data-smoke
+
+      - name: Run pipe C rollback data smoke
+        if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+        run: make container-pipe-rc-rollback-smoke
+
       - name: Run tm_procfs Rust opt-in evidence
         if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
         run: make container-tm-procfs-evidence
@@ -83,6 +91,7 @@ jobs:
             build/slogger-rc/*.log
             build/rust-test-msgpass/*.log
             build/rust-pipe-data/*.log
+            build/pipe-rc/*.log
             build/tm-procfs-evidence/**/*.log
             build/tm-procfs-evidence/**/*.txt
           if-no-files-found: ignore

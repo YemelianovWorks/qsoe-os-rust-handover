@@ -1,6 +1,6 @@
 # QSOE Rust Migration Development Log
 
-Last updated: 2026-06-24 15:38 CEST.
+Last updated: 2026-06-24 16:04 CEST.
 
 This log tracks the development process for the Rust migration and reproducible
 toolchain work. It records what changed, what was observed, what failed, and
@@ -23,6 +23,43 @@ Result:
 Follow-up:
 - ...
 ```
+
+## 2026-06-24 16:04 CEST - Pipe Rust-Default RC Path
+
+Scope:
+
+- Added `scripts/pipe-rc-data-smoke.sh`, which selects Rust `/sbin/pipe` by
+  default and selects C rollback with `QSOE_PIPE_RC_ROLLBACK=1`.
+- Generalized `scripts/rust-pipe-data-smoke.sh` so the same pipe(2)
+  data-path smoke validates either Rust or C selected artifacts.
+- Added `make pipe-rc-data-smoke`, `make pipe-rc-rollback-smoke`, and
+  container equivalents.
+- Added trusted CI steps for the Rust-default RC data smoke and C rollback
+  data smoke.
+- Added `PIPE_RC.md` and updated README, STATUS, HANDOVER, and PIPE docs.
+
+Commands:
+
+- `bash -n scripts/rust-pipe-data-smoke.sh scripts/pipe-rc-data-smoke.sh`
+- `make -n pipe-rc-data-smoke pipe-rc-rollback-smoke container-pipe-rc-data-smoke container-pipe-rc-rollback-smoke`
+- `git diff --check`
+- `make rust-quality`
+- `make pipe-rc-data-smoke`
+- `make pipe-rc-rollback-smoke`
+
+Result:
+
+- `pipe-rs` has a Rust-default release-candidate path with a one-command C
+  rollback drill.
+- The Rust-default smoke passed and wrote
+  `build/pipe-rc/boot-smoke-lq-rust-pipe-data.log`.
+- The C rollback smoke passed and wrote
+  `build/pipe-rc/boot-smoke-lq-c-pipe-data.log`.
+- No C implementation is removed or disabled.
+
+Follow-up:
+
+- Validate both RC targets through trusted CI before any #26 retirement work.
 
 ## 2026-06-24 15:38 CEST - Trusted CI Evidence Accepted
 

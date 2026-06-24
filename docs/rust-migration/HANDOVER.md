@@ -71,9 +71,10 @@ PR #94 added the Rust pipe data-path smoke to CI, PR #99 added the Rust
 `test_msgpass` smoke to CI, PR #100 added both `slogger-rs` RC readback smokes
 to CI, PR #101 added host-model coverage for `tm_procfs`, PR #104 added the
 Rust `tm_procfs` opt-in provider, PR #105 added the `tm_procfs` evidence gate,
-PR #107 applied tracked component overrides for CI, and PR #108 fixed
-line-split serial marker checks in the Rust smokes. The current `main` tip is
-`1d7b706403b54e8a798d3b1f560f5473d33e020b`.
+PR #107 applied tracked component overrides for CI, PR #108 fixed line-split
+serial marker checks in the Rust smokes, and PR #109 recorded trusted CI
+evidence for #96, #97, and #103. The current `main` tip is
+`cdebf687e870d417c32a166de18b23bc43421d17`.
 
 Current open follow-ups:
 
@@ -276,12 +277,13 @@ The strict ELF audit showed:
   targeted `[msgpass]` markers plus boot-to-login evidence. The wider suite
   still reports the known unrelated QSOE/L sync failure, so the smoke gates
   only the targeted `[msgpass]` markers and boot-to-login.
-- `pipe` has an opt-in Rust service, registration boot smoke, and data-path
-  smoke. CI includes `container-rust-pipe-data-smoke` on the configured
-  `[self-hosted, X64]` runner for trusted PRs and pushes. Trusted `main` run
-  `28102250069` passed the hosted-runner data-path smoke and uploaded the
-  required pipe registration, round-trip, EOF, and helper-exit markers. C
-  remains rollback.
+- `pipe` has an opt-in Rust service, registration boot smoke, data-path smoke,
+  and a Rust-default RC path with C rollback. CI includes
+  `container-rust-pipe-data-smoke`, `container-pipe-rc-data-smoke`, and
+  `container-pipe-rc-rollback-smoke` on the configured `[self-hosted, X64]`
+  runner for trusted PRs and pushes. Trusted `main` run `28102250069` passed
+  the hosted-runner opt-in data-path smoke and uploaded the required pipe
+  registration, round-trip, EOF, and helper-exit markers. C remains rollback.
 - `tm_procfs` now has a Rust opt-in provider behind `QSOE_RUST_TM_PROCFS=1`.
   The selector removes C `tm_procfs.o` from `libtaskman.a`, links the
   soft-float `qsoe-tm-procfs` archive into NQ/LQ taskman. `make
@@ -306,8 +308,8 @@ The active decision log is `DECISIONS.md`. Most relevant recent decisions:
 
 1. Keep C `slogger` retirement blocked until #26's retirement checklist is
    satisfied and a separate removal PR is reviewed.
-2. If desired, open a separate Rust-default pipe release-candidate PR with C
-   rollback. #96's hosted-runner evidence is complete.
+2. Keep the new pipe Rust-default RC path and C rollback data-path smoke green
+   before considering any #26 retirement work.
 3. If desired, open a separate Rust-default `test_msgpass` test-image decision
    PR with C rollback. #97's hosted-runner evidence is complete.
 4. If desired, open a separate Rust-default `tm_procfs` selection design/PR
