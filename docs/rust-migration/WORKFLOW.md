@@ -133,6 +133,7 @@ For current pilot work, the order is:
   script falls back to `cargo test`.
 - `cargo miri test` is used when Miri is installed.
 - `cargo deny check -c rust/deny.toml` is used when cargo-deny is installed.
+- `scripts/rust-fuzz-smoke.sh` is used when nightly cargo-fuzz is available.
 
 Set this when missing optional tools should fail the run:
 
@@ -143,6 +144,17 @@ QSOE_RUST_DEEP_REQUIRE=1 make rust-deep
 Miri and fuzzing are deep gates for parser and unsafe-boundary work, not default
 edit-loop tools. Fuzz targets should be added for qrvfs, GPT, ELF, CPIO, and
 message parsers as they move from planning into implementation.
+
+Run the bounded parser fuzz smoke directly with:
+
+```sh
+make rust-fuzz-smoke
+```
+
+The current fuzz package covers `qrvfs`, `cpio`, `elf`, `syscfg`, and `sysmap`.
+The wrapper prefers `cargo +nightly fuzz` because cargo-fuzz needs sanitizer
+flags that are not available on the pinned stable toolchain. Add GPT to the
+same `rust/fuzz` package when a Rust GPT parser crate exists.
 
 ## CI Shape
 

@@ -299,7 +299,7 @@ small reviewable change unless it explicitly says otherwise.
   - Acceptance: cargo-deny or cargo-vet configuration records allowed licenses,
     advisory handling, source policy, and review/audit expectations.
 
-- [ ] Add Rust parser fuzz targets.
+- [x] Add Rust parser fuzz targets.
   - Acceptance: qrvfs and future GPT/ELF/CPIO parsers have cargo-fuzz targets
     and a bounded smoke command suitable for a deep local gate.
 

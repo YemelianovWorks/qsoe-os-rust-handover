@@ -174,6 +174,24 @@ fragment runs after `/usr` is mounted and prints
 `rust-virtio-file-smoke: read /usr/conf/passwd ok` only after `/bin/cat` can
 read the file through the Rust-backed `/dev/vblk0` mount.
 
+## Parser Fuzzing
+
+Parser fuzz targets live under `rust/fuzz` and are intentionally outside the
+main workspace so default builds do not fetch fuzz-only dependencies.
+
+Run the bounded local smoke with:
+
+```sh
+make rust-fuzz-smoke
+```
+
+The smoke runs cargo-fuzz against `qrvfs`, `cpio`, `elf`, `syscfg`, and
+`sysmap`. The wrapper prefers `cargo +nightly fuzz` because cargo-fuzz needs
+sanitizer flags that are not available on the pinned stable toolchain. Install
+the optional tools with `rustup toolchain install nightly` and
+`cargo install cargo-fuzz`. GPT should be added to the same fuzz package once a
+Rust GPT parser crate exists.
+
 ## Host qrvfs Parser
 
 The first host-side Rust parser is:

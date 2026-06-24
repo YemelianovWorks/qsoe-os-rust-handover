@@ -1,6 +1,6 @@
 # QSOE Rust Migration Development Log
 
-Last updated: 2026-06-24 02:21 CEST.
+Last updated: 2026-06-24 02:25 CEST.
 
 This log tracks the development process for the Rust migration and reproducible
 toolchain work. It records what changed, what was observed, what failed, and
@@ -23,6 +23,35 @@ Result:
 Follow-up:
 - ...
 ```
+
+## 2026-06-24 02:25 CEST - Parser Fuzz Targets Added
+
+Scope:
+
+- Added a `rust/fuzz` cargo-fuzz package outside the main workspace.
+- Added bounded parser fuzz targets for `qrvfs`, `cpio`, `elf`, `syscfg`, and
+  `sysmap`.
+- Added `scripts/rust-fuzz-smoke.sh`, `make rust-fuzz-smoke`, and
+  `make container-rust-fuzz-smoke`.
+- Wired the fuzz smoke into `make rust-deep` when cargo-fuzz is installed.
+- Documented that GPT should join the same fuzz package once a Rust GPT parser
+  crate exists.
+- Marked the cross-cutting parser-fuzz task complete.
+
+Commands:
+
+- `gh issue view 36 --json number,title,body,state,url,labels`
+- `rg -n "pub struct|pub enum|pub fn|impl<'a>|impl Archive|fn parse|fn new|fn iter|entries|relocations|sections|Sys|View|Image" rust/crates/qsoe-cpio/src/lib.rs rust/crates/qsoe-elf/src/lib.rs rust/crates/qsoe-sysview/src/lib.rs rust/crates/qsoe-qrvfs/src/lib.rs`
+- `cargo fuzz --help`
+
+Result:
+
+- Parser fuzzing is available as an optional deep/local gate without changing
+  the default Rust workspace or normal CI dependencies.
+
+Follow-up:
+
+- Add a GPT fuzz target when the migration has a Rust GPT parser crate.
 
 ## 2026-06-24 02:21 CEST - Installed Artifact Audit Target Added
 
