@@ -254,7 +254,7 @@ small reviewable change unless it explicitly says otherwise.
   - Acceptance: decision uses evidence from completed userland migrations and
     explicitly accepts or rejects near-term kernel Rust work.
 
-- [ ] Identify safe kernel candidates.
+- [x] Identify safe kernel candidates.
   - Acceptance: candidates exclude traps, context switching, scheduler core,
     boot assembly, and seL4 capability assumptions.
 

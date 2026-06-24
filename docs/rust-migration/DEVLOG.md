@@ -1,6 +1,6 @@
 # QSOE Rust Migration Development Log
 
-Last updated: 2026-06-24 02:09 CEST.
+Last updated: 2026-06-24 02:13 CEST.
 
 This log tracks the development process for the Rust migration and reproducible
 toolchain work. It records what changed, what was observed, what failed, and
@@ -23,6 +23,37 @@ Result:
 Follow-up:
 - ...
 ```
+
+## 2026-06-24 02:13 CEST - Kernel Candidates Inventoried
+
+Scope:
+
+- Added `KERNEL_CANDIDATES.md` for Phase 10.
+- Listed explicit exclusions for traps, context switching, scheduler core,
+  boot assembly, interrupt routing, syscall/user-copy paths, and QSOE/L seL4
+  capability assumptions.
+- Ranked only fixture or helper-prototype candidates: trace-ring formatting,
+  queue invariant modeling, sysmap TLV encoding, sysinfo record formatting, and
+  read-only FDT walking.
+- Kept `D-021` intact: no Rust crate or build flag is approved for `nq`.
+- Marked the Phase 10 kernel-candidate task complete.
+
+Commands:
+
+- `gh issue view 32 --json number,title,body,state,url`
+- `find nq/kernel nq/include/skimmer -path '*/build/*' -prune -o -type f \\( -name '*.c' -o -name '*.h' -o -name '*.S' \\) -print | sort`
+- `rg -n "trace_ring|TRACE_FN|trace_ring_dump|ln_put|sysmap_emit|sysmap_init|sysinfo|TM_PRIV_SYSINFO|copy_to_user|fdt_|TAILQ|SLIST|STAILQ" nq/kernel nq/include/skimmer -g '*.c' -g '*.h' -g '*.S'`
+
+Result:
+
+- Kernel work remains documentation-only. The safest future prototype is
+  trace-ring formatting because it can be host-tested without entering traps,
+  switching, scheduling, boot assembly, or live platform setup.
+
+Follow-up:
+
+- Define the kernel artifact audit needs before any later implementation
+  reconsideration.
 
 ## 2026-06-24 02:09 CEST - Kernel Rust Decision Recorded
 
