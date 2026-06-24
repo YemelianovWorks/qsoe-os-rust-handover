@@ -118,6 +118,7 @@ case "$cmd" in
         ;;
     source-build)
         run_container bash -c '
+            set -eu
             missing=0
             for d in lq nq libc quser; do
                 [ -d "$d" ] || missing=1

@@ -78,7 +78,7 @@ prepare:
 	./scripts/apply-component-overrides.sh
 
 component-overrides:
-	@scripts/apply-component-overrides.sh
+	./scripts/apply-component-overrides.sh
 
 # Whole-tree clean: every component owns its clean; we just descend into
 # each, then drop the umbrella's own build/ (disk images + host tools).

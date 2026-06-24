@@ -33,7 +33,7 @@ index 83fdf3c..9461d11 100644
 +	    EXTRA_CFLAGS="-fno-builtin" \
 +	    QSOE_RUST_TM_PROCFS=$(QSOE_RUST_TM_PROCFS)
 +
-+$(RUST_TM_PROCFS_A):
++$(RUST_TM_PROCFS_A): FORCE
 +	@$(REPO_ROOT)/scripts/build-rust-tm-procfs-provider.sh $@
  
  FORCE:

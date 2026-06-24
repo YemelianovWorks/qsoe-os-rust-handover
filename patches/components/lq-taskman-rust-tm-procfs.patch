@@ -25,12 +25,14 @@ index 70d2b7f..bab21b9 100644
  
  TM_CFLAGS := $(ARCH_CFLAGS) \
      -std=c11 -ffreestanding -nostdlib -nostdinc \
-@@ -230,12 +239,15 @@ TASKMAN_OBJS := \
+@@ -230,12 +239,17 @@ TASKMAN_OBJS := \
  # symbols are referenced get pulled in, so LQ-side overrides (e.g.
  # sys/syscfg.o, kept while the API still differs) suppress libtaskman's
  # matching module cleanly.
 -$(TASKMAN_ELF): $(TASKMAN_OBJS) $(LIBTASKMAN_A)
-+$(RUST_TM_PROCFS_A):
++FORCE:
++
++$(RUST_TM_PROCFS_A): FORCE
 +	@$(REPO_ROOT)/scripts/build-rust-tm-procfs-provider.sh $@
 +
 +$(TASKMAN_ELF): $(TASKMAN_OBJS) $(LIBTASKMAN_A) $(TASKMAN_RUST_LIBS)
