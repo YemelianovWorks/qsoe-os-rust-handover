@@ -307,7 +307,7 @@ small reviewable change unless it explicitly says otherwise.
   - Acceptance: host crates can produce coverage for parser and ABI tests,
     preferably with generated output under ignored build directories.
 
-- [ ] Add unsafe-code review checklist.
+- [x] Add unsafe-code review checklist.
   - Acceptance: checklist is referenced by Rust migration PRs.
 
 - [ ] Add migration status table.

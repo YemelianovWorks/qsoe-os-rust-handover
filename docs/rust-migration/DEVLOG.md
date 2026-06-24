@@ -1,6 +1,6 @@
 # QSOE Rust Migration Development Log
 
-Last updated: 2026-06-24 02:32 CEST.
+Last updated: 2026-06-24 02:34 CEST.
 
 This log tracks the development process for the Rust migration and reproducible
 toolchain work. It records what changed, what was observed, what failed, and
@@ -23,6 +23,33 @@ Result:
 Follow-up:
 - ...
 ```
+
+## 2026-06-24 02:34 CEST - Unsafe Review Checklist Added
+
+Scope:
+
+- Added `UNSAFE_REVIEW.md` for Rust migration PRs.
+- Required PRs to state either "no new unsafe code" or summarize the unsafe
+  review checklist.
+- Linked the checklist from the migration index, workflow, and unsafe-code
+  policy in `SPEC.md`.
+- Marked the cross-cutting unsafe-review checklist task complete.
+
+Commands:
+
+- `gh issue view 38 --json number,title,body,state,url,labels`
+- `rg -n "unsafe|checklist|review|SAFETY|unsafe block|Unsafe" docs rust -g '!build/**' -g '!rust/target/**' -g '!rust/fuzz/target/**'`
+- `rg -n "unsafe" rust -g '*.rs' -g '!target/**' -g '!fuzz/target/**'`
+
+Result:
+
+- Future Rust migration PRs have a documented unsafe review reference and a
+  concrete checklist for invariants, evidence, and residual risk.
+
+Follow-up:
+
+- Use the checklist in PR bodies whenever unsafe Rust, FFI, MMIO, DMA, or
+  global mutable state changes.
 
 ## 2026-06-24 02:32 CEST - Rust Coverage Reporting Added
 

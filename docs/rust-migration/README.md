@@ -22,31 +22,32 @@ Read in this order:
 9. `RUST_SPIKE.md`: Rust toolchain scaffold and minimal link-smoke contract.
 10. `BINDINGS.md`: current Rust ABI, FFI, and resource-server binding scope.
 11. `WORKFLOW.md`: Rust edit-loop, quality, ABI, and deep-check workflow.
-12. `SLOGGER.md`: current C `slogger` behavior and Rust pilot acceptance.
-13. `SLOGGER_BOOT_COMPARE.md`: C vs Rust `slogger` boot-log comparison.
-14. `VIRTIO_BLOCK.md`: current C `devb-virtio` behavior and Rust pilot
+12. `UNSAFE_REVIEW.md`: unsafe-code review checklist for Rust migration PRs.
+13. `SLOGGER.md`: current C `slogger` behavior and Rust pilot acceptance.
+14. `SLOGGER_BOOT_COMPARE.md`: C vs Rust `slogger` boot-log comparison.
+15. `VIRTIO_BLOCK.md`: current C `devb-virtio` behavior and Rust pilot
    acceptance contract.
-15. `SERVICE_RANKING.md`: remaining userland service scores for Phase 8
+16. `SERVICE_RANKING.md`: remaining userland service scores for Phase 8
    selection.
-16. `PIPE.md`: selected second Rust service mini-spec and C registration smoke.
-17. `TEST_HELPER.md`: selected first Rust in-guest test helper and safety
+17. `PIPE.md`: selected second Rust service mini-spec and C registration smoke.
+18. `TEST_HELPER.md`: selected first Rust in-guest test helper and safety
    constraints.
-18. `RETIREMENT.md`: C removal gate, current retirement status, and future
+19. `RETIREMENT.md`: C removal gate, current retirement status, and future
    removal checklist.
-19. `TASK_MANAGER.md`: task-manager module inventory for Phase 9 candidate
+20. `TASK_MANAGER.md`: task-manager module inventory for Phase 9 candidate
    selection.
-20. `TASK_MANAGER_PROCFS.md`: selected non-critical task-manager pilot module
+21. `TASK_MANAGER_PROCFS.md`: selected non-critical task-manager pilot module
    and scope exclusions.
-21. `TASK_MANAGER_PROCFS_BOUNDARY.md`: C/Rust ABI, failure behavior, and
+22. `TASK_MANAGER_PROCFS_BOUNDARY.md`: C/Rust ABI, failure behavior, and
    rollback plan for the selected pilot.
-22. `KERNEL_CANDIDATES.md`: Phase 10 kernel candidate inventory, explicit
+23. `KERNEL_CANDIDATES.md`: Phase 10 kernel candidate inventory, explicit
    exclusions, and fixture-only ranking.
-23. `KERNEL_ARTIFACT_AUDIT.md`: Phase 10 kernel Rust artifact audit needs.
-24. `SPEC.md`: technical constraints, allowed boundaries, runtime/linking rules,
+24. `KERNEL_ARTIFACT_AUDIT.md`: Phase 10 kernel Rust artifact audit needs.
+25. `SPEC.md`: technical constraints, allowed boundaries, runtime/linking rules,
    and acceptance standards.
-25. `PLAN.md`: phased migration plan from baseline validation through possible
+26. `PLAN.md`: phased migration plan from baseline validation through possible
    kernel reassessment.
-26. `TASKS.md`: executable backlog with acceptance criteria.
+27. `TASKS.md`: executable backlog with acceptance criteria.
 
 The first implementation milestone should not be a subsystem rewrite. It should
 be a reproducible baseline plus artifact audit, followed by a minimal Rust
