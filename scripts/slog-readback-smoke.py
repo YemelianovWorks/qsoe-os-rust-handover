@@ -5,7 +5,9 @@ from __future__ import annotations
 
 import argparse
 import datetime as dt
+import os
 import pathlib
+import subprocess
 import sys
 
 try:
@@ -17,6 +19,7 @@ except ImportError as exc:  # pragma: no cover - depends on host setup.
 
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
+MAKE = os.environ.get("MAKE", "make")
 
 
 def parse_args() -> argparse.Namespace:
@@ -36,6 +39,11 @@ def parse_args() -> argparse.Namespace:
         type=pathlib.Path,
         help="log path, default: build/slog-readback-smoke-lq-<timestamp>.log",
     )
+    parser.add_argument(
+        "--rust-slogger",
+        action="store_true",
+        help="build and boot an opt-in LQ image with slogger-rs selected",
+    )
     return parser.parse_args()
 
 
@@ -46,7 +54,13 @@ def tail(path: pathlib.Path, lines: int = 80) -> str:
         return "(log unavailable)"
 
 
-def expect(child: pexpect.spawn, pattern: str, label: str, log: pathlib.Path, timeout: int) -> None:
+def expect(
+    child: pexpect.spawn,
+    pattern: str,
+    label: str,
+    log: pathlib.Path,
+    timeout: int,
+) -> None:
     try:
         child.expect(pattern, timeout=timeout)
     except (pexpect.TIMEOUT, pexpect.EOF) as exc:
@@ -63,6 +77,62 @@ def cleanup(child: pexpect.spawn | None) -> None:
     child.terminate(force=True)
 
 
+def run_command(argv: list[str]) -> None:
+    try:
+        subprocess.run(argv, cwd=ROOT, check=True)
+    except subprocess.CalledProcessError as exc:
+        raise SystemExit(exc.returncode) from exc
+
+
+def prepare_c_slogger_image() -> None:
+    workdir = ROOT / "build" / "slog-readback"
+    c_cpio = workdir / "modpkg-lq-c-slogger.cpio"
+    lq_libc = ROOT / "lq" / "build" / "libc" / "libc.so"
+    lq_rtld = ROOT / "lq" / "build" / "rtld" / "ld-qsoe.so.1"
+
+    workdir.mkdir(parents=True, exist_ok=True)
+    run_command(
+        [
+            MAKE,
+            "-C",
+            str(ROOT / "lq"),
+            "libc",
+            "rtld",
+            "libtaskman",
+            "--no-print-directory",
+        ]
+    )
+    run_command(
+        [
+            MAKE,
+            "-C",
+            str(ROOT / "quser"),
+            "cpio",
+            "--no-print-directory",
+            f"MODPKG_CPIO={c_cpio}",
+            f"LIBC_SO={lq_libc}",
+            f"RTLD_SO={lq_rtld}",
+            f"DYNLIBC_SO={lq_libc}",
+        ]
+    )
+    c_cpio.touch()
+    run_command(
+        [
+            MAKE,
+            "-C",
+            str(ROOT / "lq"),
+            f"MODPKG_CPIO={c_cpio}",
+            "--no-print-directory",
+        ]
+    )
+
+
+def prepare_rust_slogger_image() -> None:
+    run_command(
+        [str(ROOT / "scripts" / "rust-slogger-boot-smoke.sh"), "--prepare-only"]
+    )
+
+
 def main() -> int:
     args = parse_args()
     if args.timeout <= 0:
@@ -70,16 +140,32 @@ def main() -> int:
         return 2
 
     log = args.log
+    slogger_mode = "rust-slogger" if args.rust_slogger else "c-slogger"
     if log is None:
         stamp = dt.datetime.now().strftime("%Y%m%d-%H%M%S")
-        log = ROOT / "build" / f"slog-readback-smoke-lq-{stamp}.log"
+        log = (
+            ROOT
+            / "build"
+            / f"slog-readback-smoke-lq-{slogger_mode}-{stamp}.log"
+        )
     elif not log.is_absolute():
         log = ROOT / log
+
+    startup_pattern = (
+        r"\[slogger-rs\] alive" if args.rust_slogger else r"\[slogger\] alive"
+    )
+    if args.rust_slogger:
+        prepare_rust_slogger_image()
+    else:
+        prepare_c_slogger_image()
 
     log.parent.mkdir(parents=True, exist_ok=True)
     child: pexpect.spawn | None = None
 
-    print(f"slog-readback-smoke.py: variant=lq timeout={args.timeout}s log={log}")
+    print(
+        f"slog-readback-smoke.py: variant=lq slogger={slogger_mode} "
+        f"timeout={args.timeout}s log={log}"
+    )
     with log.open("w", encoding="utf-8", errors="replace") as log_file:
         try:
             child = pexpect.spawn(
@@ -91,9 +177,17 @@ def main() -> int:
             )
             child.logfile = log_file
 
-            expect(child, r"\[slogger\] alive", "slogger startup", log, args.timeout)
-            expect(child, r"\[pci-server\] alive", "pci-server startup", log, args.timeout)
-            expect(child, r"root filesystem unavailable", "rescue shell handoff", log, args.timeout)
+            expect(child, startup_pattern, "slogger startup", log, args.timeout)
+            expect(
+                child, r"\[pci-server\] alive", "pci-server startup", log, args.timeout
+            )
+            expect(
+                child,
+                r"root filesystem unavailable",
+                "rescue shell handoff",
+                log,
+                args.timeout,
+            )
             expect(child, r"\[[^\r\n]*\]# ", "qsh prompt", log, args.timeout)
 
             child.sendline("/bin/sloginfo")
@@ -102,7 +196,10 @@ def main() -> int:
         finally:
             cleanup(child)
 
-    print("slog-readback-smoke.py: observed pci-server slog entry via /bin/sloginfo")
+    print(
+        "slog-readback-smoke.py: observed pci-server slog entry via "
+        f"/bin/sloginfo with {slogger_mode}"
+    )
     return 0
 
 
