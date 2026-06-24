@@ -125,6 +125,7 @@ case "$cmd" in
             if [ "$missing" -eq 1 ]; then
                 make prepare
             fi
+            scripts/apply-component-overrides.sh
             make
         '
         ;;
