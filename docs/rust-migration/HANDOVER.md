@@ -1,6 +1,6 @@
 # QSOE Migration Handover
 
-Last updated: 2026-06-24 07:25 CEST.
+Last updated: 2026-06-24 08:36 CEST.
 
 This handover captures the current QSOE Rust migration and workflow work so it
 can move from the macOS/container setup to a native Linux development machine.
@@ -22,8 +22,7 @@ origin git@github.com:dmytro-yemelianov/qsoe-os-rust-handover.git
 Current stack tip:
 
 ```text
-codex/slog-readback-smoke-stacked
-4d09b2b Update slog readback status
+PR #89: codex/rust-pipe-opt-in
 ```
 
 The local tree adds:
@@ -88,11 +87,23 @@ The active handover stack is a linear draft PR chain:
 #78  -> codex/migration-status-table
 #79  -> codex/release-note-template
 #80  -> codex/slog-readback-smoke-stacked
+#81  -> codex/handover-stack-status
+#86  -> codex/rust-slog-readback-smoke
+#88  -> codex/test-msgpass-rs-helper
+#89  -> codex/rust-pipe-opt-in
 ```
 
 PR #43 was closed as superseded by #80 because it was a side branch from
 `main`; #80 carries the same `/dev/slog` readback smoke on top of the active
 stack.
+
+PR #88 adds the opt-in Rust `test_msgpass` helper and a root migration progress
+`README.md`. It closes #87 and remains stacked on #86.
+
+PR #89 adds the opt-in Rust `pipe` state machine and `/dev/pipe` service
+wrapper, selector, link smoke, registration boot smoke, and docs updates. It
+remains stacked on #88. The next pipe gate is the data-path smoke tracked by
+#90.
 
 Current external blockers:
 
@@ -242,6 +253,11 @@ make procfs-smoke
 make pipe-smoke
 make rust-virtio-file-smoke
 scripts/slog-readback-smoke.py -t 120 -o build/slog-readback-smoke-stacked.log
+scripts/slog-readback-smoke.py --rust-slogger -t 180 -o build/slog-readback-smoke-lq-rust-slogger-final.log
+scripts/rust-test-msgpass-smoke.sh -t 240 -o build/rust-test-msgpass/boot-smoke-lq-rust-test-msgpass-env-override.log
+make rust-pipe-link-smoke
+QSOE_RUST_PIPE=1 make pipe-artifact
+scripts/rust-pipe-smoke.sh -t 180 -o build/rust-pipe/boot-smoke-lq-rust-pipe.log
 ```
 
 `make container-index-c-static` generated static C indexes for 816 QSOE-owned
@@ -272,9 +288,15 @@ The strict ELF audit showed:
   unwind, and out of the default image.
 - C implementations remain the rollback path until a Rust service has host
   tests, fixture parity, ELF audit, boot evidence, and documented differences.
-- `slogger` has a C-path `/dev/slog` readback baseline. A Rust-selected
-  readback parity smoke is still required before any Rust-default release
-  candidate.
+- `slogger` has C-selected and Rust-selected `/dev/slog` readback baselines.
+  A Rust-default release candidate with C rollback is still required before any
+  C retirement decision.
+- `test_msgpass` has an opt-in Rust helper and Rust-selected suite `[msgpass]`
+  smoke. The wider suite still reports the known unrelated QSOE/L sync failure,
+  so the smoke gates targeted `[msgpass]` markers and boot-to-login.
+- `pipe` has an opt-in Rust service and registration boot smoke. It is not a
+  Rust-default candidate until a data-path smoke proves real pipe creation and
+  round-trip I/O through libc/taskman; see #90.
 
 ## Current Decisions
 
@@ -291,11 +313,13 @@ The active decision log is `DECISIONS.md`. Most relevant recent decisions:
 1. Restore runner availability for #42 or rerun the queued workflow once the
    `[self-hosted, X64]` runner is available; see #82.
 2. Decide whether to mark the draft stack ready for review and merge it
-   bottom-up from #42 through #81; see #84.
+   bottom-up from #42 through #89; see #84.
 3. Resolve the #60 CodeRabbit usage-credit status or record it as an external
    billing blocker when merging; see #83.
-4. After the stack lands, extend `/dev/slog` readback coverage to the
-   Rust-selected `slogger-rs` boot path; see #85.
-5. Continue implementation with an opt-in Rust `pipe`, Rust `test_msgpass`, or
-   Rust `tm_procfs` provider. Do not start C retirement until the
-   release-candidate gate in `RETIREMENT.md` is satisfied; see #26.
+4. Use the #86 Rust-selected readback evidence if planning a Rust-default
+   `slogger` release candidate, use #88 if planning a Rust-default
+   `test_msgpass` test-image decision, and use #89 only after the #90 pipe
+   data-path smoke exists; keep C rollback paths available.
+5. Continue with the #90 pipe data-path smoke or a Rust `tm_procfs` provider.
+   Do not start C retirement until the release-candidate gate in
+   `RETIREMENT.md` is satisfied; see #26.
