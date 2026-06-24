@@ -7,9 +7,10 @@ use core::ptr;
 use core::slice;
 
 pub use qsoe_abi::{
-    GidT, ModeT, OffT, QsoeMsgInfo, QsoeTimeT, SizeT, SsizeT, TmStat, UidT, ENOSYS, EOK, IO_CLOSE,
-    IO_CONNECT, IO_DUP, IO_FSTAT, IO_READ, IO_READDIR, IO_WRITE, QSOE_MI_PULSE, TM_IO_MAX,
-    TM_REQ_CLOSE, TM_REQ_FSTAT, TM_REQ_IO_READ, TM_REQ_IO_WRITE, TM_S_IFCHR, TM_WIRE_BASE_BYTES,
+    GidT, ModeT, OffT, QsoeMsgInfo, QsoeTimeT, SizeT, SsizeT, TmStat, UidT, EBUSY, EINVAL, EIO,
+    ENODEV, ENOSYS, EOK, IO_CLOSE, IO_CONNECT, IO_DUP, IO_FSTAT, IO_READ, IO_READDIR, IO_WRITE,
+    QSOE_MI_PULSE, TM_IO_MAX, TM_REQ_CLOSE, TM_REQ_FSTAT, TM_REQ_IO_READ, TM_REQ_IO_WRITE,
+    TM_S_IFBLK, TM_S_IFCHR, TM_WIRE_BASE_BYTES,
 };
 
 pub const QSOE_ATTR_MODE: c_uint = 0x01;
@@ -485,14 +486,23 @@ impl<H> DirectServer<H> {
 }
 
 impl<H: DirectRequestHandler> DirectServer<H> {
+    fn dispatch_received_to(handler: &mut H, receive: DirectResult<Receive>, request: &IoRequest) {
+        match receive {
+            Ok(Receive::Message(message)) => handler.handle_message(message, request),
+            Ok(Receive::Pulse(info)) => handler.handle_pulse(info),
+            Err(error) => handler.handle_receive_error(error),
+        }
+    }
+
+    pub fn dispatch_received(&mut self, receive: DirectResult<Receive>, request: &IoRequest) {
+        Self::dispatch_received_to(&mut self.handler, receive, request);
+    }
+
     pub fn run(&mut self) -> ! {
         loop {
             let mut req = IoRequest::zeroed();
-            match self.service.receive_request(&mut req) {
-                Ok(Receive::Message(message)) => self.handler.handle_message(message, &req),
-                Ok(Receive::Pulse(info)) => self.handler.handle_pulse(info),
-                Err(error) => self.handler.handle_receive_error(error),
-            }
+            let receive = self.service.receive_request(&mut req);
+            self.dispatch_received(receive, &req);
         }
     }
 }
@@ -677,6 +687,43 @@ extern crate std;
 mod tests {
     use super::*;
     use core::mem::{align_of, size_of};
+    use std::vec::Vec;
+
+    #[derive(Debug, Eq, PartialEq)]
+    enum HandlerEvent {
+        Message {
+            rcvid: c_int,
+            opcode: u64,
+            count: u64,
+        },
+        Pulse {
+            flags: c_int,
+        },
+        Error(DirectError),
+    }
+
+    #[derive(Default)]
+    struct RecordingHandler {
+        events: Vec<HandlerEvent>,
+    }
+
+    impl DirectRequestHandler for RecordingHandler {
+        fn handle_message(&mut self, message: ReceivedMessage, request: &IoRequest) {
+            self.events.push(HandlerEvent::Message {
+                rcvid: message.rcvid(),
+                opcode: request.opcode(),
+                count: request.requested_count(),
+            });
+        }
+
+        fn handle_pulse(&mut self, info: QsoeMsgInfo) {
+            self.events.push(HandlerEvent::Pulse { flags: info.flags });
+        }
+
+        fn handle_receive_error(&mut self, error: DirectError) {
+            self.events.push(HandlerEvent::Error(error));
+        }
+    }
 
     #[test]
     fn resource_server_layouts_match_rv64_c_abi() {
@@ -759,5 +806,46 @@ mod tests {
         assert!(!deferred.is_error());
         assert_eq!(deferred.errno(), None);
         assert_eq!(ReplyStatus::from_method_status(deferred), None);
+    }
+
+    #[test]
+    fn direct_server_dispatches_decoded_receive_states() {
+        let mut handler = RecordingHandler::default();
+
+        let mut request = IoRequest::zeroed();
+        request.type_ = TM_REQ_IO_WRITE;
+        request.count = 12;
+        let mut info = QsoeMsgInfo::zeroed();
+        info.flags = QSOE_MI_PULSE as c_int;
+
+        DirectServer::dispatch_received_to(
+            &mut handler,
+            Ok(Receive::Message(ReceivedMessage {
+                rcvid: 7,
+                info: QsoeMsgInfo::zeroed(),
+            })),
+            &request,
+        );
+        DirectServer::dispatch_received_to(&mut handler, Ok(Receive::Pulse(info)), &request);
+        DirectServer::dispatch_received_to(
+            &mut handler,
+            Err(DirectError::ReceiveFailed(-2)),
+            &request,
+        );
+
+        assert_eq!(
+            handler.events,
+            [
+                HandlerEvent::Message {
+                    rcvid: 7,
+                    opcode: TM_REQ_IO_WRITE,
+                    count: 12,
+                },
+                HandlerEvent::Pulse {
+                    flags: QSOE_MI_PULSE as c_int,
+                },
+                HandlerEvent::Error(DirectError::ReceiveFailed(-2)),
+            ]
+        );
     }
 }
