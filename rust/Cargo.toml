@@ -2,6 +2,7 @@
 resolver = "2"
 members = [
     "crates/qsoe-abi",
+    "crates/qsoe-cpio",
     "crates/qsoe-ffi",
     "crates/qsoe-qrvfs",
     "crates/qsoe-ressrv",
