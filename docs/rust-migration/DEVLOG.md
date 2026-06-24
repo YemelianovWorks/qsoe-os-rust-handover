@@ -48,6 +48,8 @@ Result:
   side PR #43. This prevents later stacked docs from reopening the completed
   `/dev/slog` smoke task.
 - The stacked smoke run observed a `pci-server:` entry through `/bin/sloginfo`.
+- Follow-up docs now distinguish the C readback baseline from the later
+  Rust-selected readback parity gate.
 
 Follow-up:
 

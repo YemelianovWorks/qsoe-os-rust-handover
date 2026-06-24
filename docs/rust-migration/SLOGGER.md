@@ -273,7 +273,7 @@ Before `slogger-rs` is linked into an image:
 
 ## Open Follow-Ups
 
-- Add an automated `/dev/slog` readback smoke that writes known messages and
-  verifies `sloginfo` can observe them.
+- Extend the `/dev/slog` readback smoke to run against the Rust-selected
+  `slogger-rs` boot path before any Rust-default release candidate.
 - Correct the stale `libc/include/sys/slog.h` comments in the component source
   repository.
