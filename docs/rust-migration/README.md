@@ -33,11 +33,13 @@ Read in this order:
    constraints.
 18. `RETIREMENT.md`: C removal gate, current retirement status, and future
    removal checklist.
-19. `SPEC.md`: technical constraints, allowed boundaries, runtime/linking rules,
+19. `TASK_MANAGER.md`: task-manager module inventory for Phase 9 candidate
+   selection.
+20. `SPEC.md`: technical constraints, allowed boundaries, runtime/linking rules,
    and acceptance standards.
-20. `PLAN.md`: phased migration plan from baseline validation through possible
+21. `PLAN.md`: phased migration plan from baseline validation through possible
    kernel reassessment.
-21. `TASKS.md`: executable backlog with acceptance criteria.
+22. `TASKS.md`: executable backlog with acceptance criteria.
 
 The first implementation milestone should not be a subsystem rewrite. It should
 be a reproducible baseline plus artifact audit, followed by a minimal Rust

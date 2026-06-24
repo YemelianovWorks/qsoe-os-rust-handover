@@ -1,6 +1,6 @@
 # QSOE Rust Migration Development Log
 
-Last updated: 2026-06-24 01:56 CEST.
+Last updated: 2026-06-24 02:00 CEST.
 
 This log tracks the development process for the Rust migration and reproducible
 toolchain work. It records what changed, what was observed, what failed, and
@@ -23,6 +23,37 @@ Result:
 Follow-up:
 - ...
 ```
+
+## 2026-06-24 02:00 CEST - Task Manager Modules Inventoried
+
+Scope:
+
+- Added `TASK_MANAGER.md` for the Phase 9 task-manager readiness inventory.
+- Split taskman code into portable `libtaskman`, LQ rootserver, and embedded
+  archive boundaries.
+- Separated pure logic and diagnostic candidates from spawn-critical,
+  capability-critical, relocation-critical, and loader-critical paths.
+- Identified portable `/proc` model code as the best next candidate because it
+  is read-only diagnostic logic with no direct effect on initial process
+  creation.
+- Linked the inventory from the migration docs index.
+- Marked the Phase 9 inventory task complete.
+
+Commands:
+
+- `find libtaskman lq/taskman -path '*/build/*' -prune -o -path '*/.git/*' -prune -o -type f \\( -name '*.c' -o -name '*.h' -o -name '*.S' -o -name 'Makefile' \\) -print | sort`
+- `wc -l $(find libtaskman lq/taskman -path '*/build/*' -prune -o -path '*/.git/*' -prune -o -type f \\( -name '*.c' -o -name '*.h' -o -name '*.S' \\) -print | sort)`
+- `rg -n "tm_cred|tm_procfs|tm_sysfs|tm_pathmgr|tm_cpio|tm_script|tm_syscfg|tm_elf|tm_reloc" libtaskman lq/taskman -g '*.c' -g '*.h'`
+
+Result:
+
+- The inventory documents that Phase 9 should avoid spawn, capability,
+  relocation, and loader code until a later design review. `tm_procfs` is the
+  leading non-critical internal module for selection.
+
+Follow-up:
+
+- Select one non-critical internal module for the first task-manager pilot.
 
 ## 2026-06-24 01:56 CEST - C Retirement Gate Documented
 

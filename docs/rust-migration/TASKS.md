@@ -235,7 +235,7 @@ small reviewable change unless it explicitly says otherwise.
 
 ## Phase 9: Task Manager Readiness
 
-- [ ] Inventory task-manager modules.
+- [x] Inventory task-manager modules.
   - Acceptance: docs separate pure logic from spawn, cap, relocation, and loader
     critical paths.
 
