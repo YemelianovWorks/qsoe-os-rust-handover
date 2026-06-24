@@ -1,6 +1,6 @@
 # QSOE Rust Migration Development Log
 
-Last updated: 2026-06-24 02:17 CEST.
+Last updated: 2026-06-24 02:21 CEST.
 
 This log tracks the development process for the Rust migration and reproducible
 toolchain work. It records what changed, what was observed, what failed, and
@@ -23,6 +23,35 @@ Result:
 Follow-up:
 - ...
 ```
+
+## 2026-06-24 02:21 CEST - Installed Artifact Audit Target Added
+
+Scope:
+
+- Added `scripts/audit-artifacts.sh` to discover ELF files installed into the
+  boot CPIO staging root and qrvfs `/usr` staging root.
+- Added `make audit-artifacts` and `make container-audit-artifacts`.
+- Added the installed-artifact audit to GitHub Actions after the source build.
+- Documented the CI step in `WORKFLOW.md`.
+- Marked the cross-cutting artifact-audit target task complete.
+
+Commands:
+
+- `gh issue view 35 --json number,title,body,state,url,labels`
+- `find quser/build/modpkg-root -type f`
+- `find build/fsqrv-root -type f`
+- `sed -n '1,260p' quser/Makefile`
+- `sed -n '1,220p' scripts/capture-elf-baseline.sh`
+
+Result:
+
+- One command now audits the ELF artifacts that are actually staged for
+  userland images, instead of only the representative baseline sample.
+
+Follow-up:
+
+- Keep strict Rust artifact gates separate from the current C userland audit,
+  because existing C binaries intentionally contain unwind metadata.
 
 ## 2026-06-24 02:17 CEST - Kernel Artifact Audit Needs Defined
 

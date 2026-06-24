@@ -288,7 +288,7 @@ small reviewable change unless it explicitly says otherwise.
   - Acceptance: workflow scripts set `CARGO_TARGET_DIR` by default so macOS and
     Linux/container checks do not churn the same cache.
 
-- [ ] Add `make audit-artifacts`.
+- [x] Add `make audit-artifacts`.
   - Acceptance: audit can be run on all installed userland binaries.
 
 - [x] Add bounded clang-tidy wrapper.
