@@ -1,6 +1,6 @@
 # QSOE Rust Migration Development Log
 
-Last updated: 2026-06-24 02:02 CEST.
+Last updated: 2026-06-24 02:03 CEST.
 
 This log tracks the development process for the Rust migration and reproducible
 toolchain work. It records what changed, what was observed, what failed, and
@@ -23,6 +23,33 @@ Result:
 Follow-up:
 - ...
 ```
+
+## 2026-06-24 02:03 CEST - Procfs Boundary Designed
+
+Scope:
+
+- Added `TASK_MANAGER_PROCFS_BOUNDARY.md` for the selected task-manager pilot.
+- Kept `tm_procfs.h` as the authoritative C ABI.
+- Documented data ownership for callbacks, C strings, and caller-owned output
+  buffers.
+- Recorded failure behavior for path resolution, info formatting, and readdir.
+- Defined the opt-in rollback flag shape `QSOE_RUST_TM_PROCFS`.
+- Linked the boundary from the migration docs index and procfs selection doc.
+- Marked the Phase 9 boundary-design task complete.
+
+Commands:
+
+- `gh issue view 29 --repo dmytro-yemelianov/qsoe-os-rust-handover --json number,title,body,state,labels,url`
+- `sed -n '1,220p' libtaskman/include/tm_procfs.h`
+
+Result:
+
+- The boundary review preserves C as the default and keeps spawn, capability,
+  relocation, loader, and LQ dispatch code outside the first Rust pilot.
+
+Follow-up:
+
+- Add targeted boot and `/proc` coverage before implementation.
 
 ## 2026-06-24 02:02 CEST - Task Manager Procfs Pilot Selected
 

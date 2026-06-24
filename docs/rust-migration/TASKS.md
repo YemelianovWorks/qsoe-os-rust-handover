@@ -242,7 +242,7 @@ small reviewable change unless it explicitly says otherwise.
 - [x] Select one non-critical internal module.
   - Acceptance: module has no direct effect on initial process creation.
 
-- [ ] Design C/Rust boundary for task-manager pilot.
+- [x] Design C/Rust boundary for task-manager pilot.
   - Acceptance: boundary review includes failure behavior and rollback plan.
 
 - [ ] Add targeted boot coverage.

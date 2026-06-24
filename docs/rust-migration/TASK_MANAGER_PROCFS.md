@@ -14,6 +14,9 @@ The first Rust pilot should target only that portable model. It should not
 replace LQ's process table, connection context handling, open/read dispatch, or
 any seL4 invocation code.
 
+The C/Rust boundary, failure behavior, and rollback plan are specified in
+`TASK_MANAGER_PROCFS_BOUNDARY.md`.
+
 ## Why This Module
 
 `tm_procfs` owns a small read-only diagnostic model:

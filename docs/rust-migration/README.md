@@ -37,11 +37,13 @@ Read in this order:
    selection.
 20. `TASK_MANAGER_PROCFS.md`: selected non-critical task-manager pilot module
    and scope exclusions.
-21. `SPEC.md`: technical constraints, allowed boundaries, runtime/linking rules,
+21. `TASK_MANAGER_PROCFS_BOUNDARY.md`: C/Rust ABI, failure behavior, and
+   rollback plan for the selected pilot.
+22. `SPEC.md`: technical constraints, allowed boundaries, runtime/linking rules,
    and acceptance standards.
-22. `PLAN.md`: phased migration plan from baseline validation through possible
+23. `PLAN.md`: phased migration plan from baseline validation through possible
    kernel reassessment.
-23. `TASKS.md`: executable backlog with acceptance criteria.
+24. `TASKS.md`: executable backlog with acceptance criteria.
 
 The first implementation milestone should not be a subsystem rewrite. It should
 be a reproducible baseline plus artifact audit, followed by a minimal Rust
