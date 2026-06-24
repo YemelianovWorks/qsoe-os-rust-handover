@@ -99,6 +99,21 @@ stages `/usr/bin/test_pipe_data` into a temporary qrvfs image. That helper calls
 normal libc `pipe(2)`, writes to the write end, reads the same payload from the
 read end, closes the writer, and verifies EOF on the read end.
 
+## Rust-Default RC
+
+`pipe-rs` now has a Rust-default release-candidate path:
+
+```sh
+make pipe-rc-data-smoke
+make pipe-rc-rollback-smoke
+```
+
+The default RC target selects Rust `/sbin/pipe` without requiring
+`QSOE_RUST_PIPE=1` from the caller. The rollback target sets
+`QSOE_PIPE_RC_ROLLBACK=1`, selects the C `/sbin/pipe`, and runs the same
+pipe(2) data-path smoke. See `PIPE_RC.md` for the rollback window and review
+notes.
+
 ## C Baseline Smoke
 
 Run the C registration smoke:
@@ -130,5 +145,5 @@ Before selecting Rust `pipe` by default:
   login
 - keep `make rust-pipe-data-smoke` passing on the hosted runner; trusted
   `main` CI run `28102250069` accepted the #96 data-path evidence
-- require Rust-default release-candidate evidence with C rollback available
-  before any default-selection decision
+- keep `make pipe-rc-data-smoke` and `make pipe-rc-rollback-smoke` passing
+  before any C retirement decision

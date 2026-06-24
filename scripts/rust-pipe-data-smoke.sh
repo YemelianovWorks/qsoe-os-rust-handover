@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Boot QSOE/L with an opt-in Rust /sbin/pipe and verify pipe(2) data flow.
+# Boot QSOE/L with a selected /sbin/pipe and verify pipe(2) data flow.
 
 set -eu
 
@@ -8,13 +8,16 @@ usage() {
     cat <<'EOF'
 usage: scripts/rust-pipe-data-smoke.sh [-t seconds] [-o log] [--keep-running] [-- <emu args>]
 
-Builds a temporary Rust-pipe LQ modpkg.cpio under build/rust-pipe-data/,
-stages a focused /usr/bin/test_pipe_data helper into a temporary qrvfs image,
-starts /sbin/pipe from sysinit, and verifies a libc/taskman pipe(2)
-write/read round trip through the Rust pipe service.
+Builds a temporary LQ modpkg.cpio under build/rust-pipe-data/, stages a focused
+/usr/bin/test_pipe_data helper into a temporary qrvfs image, starts /sbin/pipe
+from sysinit, and verifies a libc/taskman pipe(2) write/read round trip through
+the selected pipe service. Rust is selected by default; set QSOE_RUST_PIPE=0
+for the C rollback path.
 
 Environment:
-  RUST_PIPE_DATA_MODPKG_CPIO  output archive, default build/rust-pipe-data/modpkg-lq-rust-pipe.cpio
+  QSOE_RUST_PIPE             selected artifact mode, default 1 (Rust)
+                              set 0 to prepare the C rollback image
+  RUST_PIPE_DATA_MODPKG_CPIO  output archive, default is mode-specific under build/rust-pipe-data/
   RUST_PIPE_DATA_BASE_CPIO    intermediate C archive, default build/rust-pipe-data/modpkg-lq-c.cpio
   RUST_PIPE_DATA_WORKDIR      output directory, default build/rust-pipe-data
 EOF
@@ -74,9 +77,31 @@ if [ "$timeout_s" -le 0 ]; then
     exit 2
 fi
 
+QSOE_RUST_PIPE=${QSOE_RUST_PIPE:-1}
+case "$QSOE_RUST_PIPE" in
+    0|false|FALSE|no|NO)
+        pipe_mode=c
+        registration="[pipe] registered at /dev/pipe"
+        ;;
+    1|true|TRUE|yes|YES)
+        pipe_mode=rust
+        registration="[pipe-rs] /dev/pipe registered"
+        ;;
+    *)
+        echo "rust-pipe-data-smoke.sh: QSOE_RUST_PIPE must be 0 or 1" >&2
+        exit 2
+        ;;
+esac
+
 workdir=${RUST_PIPE_DATA_WORKDIR:-"$ROOT/build/rust-pipe-data"}
 base_cpio=${RUST_PIPE_DATA_BASE_CPIO:-"$workdir/modpkg-lq-c.cpio"}
-rust_cpio=${RUST_PIPE_DATA_MODPKG_CPIO:-"$workdir/modpkg-lq-rust-pipe.cpio"}
+if [ -n "${RUST_PIPE_DATA_MODPKG_CPIO:-}" ]; then
+    selected_cpio=$RUST_PIPE_DATA_MODPKG_CPIO
+elif [ "$pipe_mode" = rust ]; then
+    selected_cpio="$workdir/modpkg-lq-rust-pipe.cpio"
+else
+    selected_cpio="$workdir/modpkg-lq-c-rollback-pipe.cpio"
+fi
 selected_pipe="$ROOT/build/rust/selected/sbin/pipe.elf"
 lq_libc="$ROOT/lq/build/libc/libc.so"
 lq_rtld="$ROOT/lq/build/rtld/ld-qsoe.so.1"
@@ -88,12 +113,15 @@ source_sysinit="$source_conf/sysinit"
 fragment=
 fragment_tmp=
 exit_marker="rust-pipe-data-smoke: helper exited 0"
-registration="[pipe-rs] /dev/pipe registered"
 round_trip="[test_pipe_data] pipe round-trip ok"
 eof_marker="[test_pipe_data] pipe eof ok"
 
 if [ -z "$log" ]; then
-    log="$workdir/boot-smoke-lq-rust-pipe-data.log"
+    if [ "$pipe_mode" = rust ]; then
+        log="$workdir/boot-smoke-lq-rust-pipe-data.log"
+    else
+        log="$workdir/boot-smoke-lq-c-pipe-data.log"
+    fi
 elif [ "${log#/}" = "$log" ]; then
     log="$ROOT/$log"
 fi
@@ -151,13 +179,13 @@ chmod 0644 "$fragment"
 echo "rust-pipe-data-smoke.sh: building LQ runtime prerequisites"
 "$MAKE" -C "$ROOT/lq" libc rtld libtaskman --no-print-directory
 
-echo "rust-pipe-data-smoke.sh: selecting Rust pipe artifact"
-QSOE_RUST_PIPE=1 \
+echo "rust-pipe-data-smoke.sh: selecting $pipe_mode pipe artifact"
+QSOE_RUST_PIPE="$QSOE_RUST_PIPE" \
     LIBC_SO="$lq_libc" \
     "$MAKE" -C "$ROOT" pipe-artifact --no-print-directory
 
 if [ ! -f "$selected_pipe" ]; then
-    echo "rust-pipe-data-smoke.sh: missing selected Rust pipe at $selected_pipe" >&2
+    echo "rust-pipe-data-smoke.sh: missing selected pipe at $selected_pipe" >&2
     exit 1
 fi
 
@@ -294,10 +322,10 @@ install -m 0755 "$selected_pipe" "$rootdir/sbin/pipe"
     cd "$rootdir"
     cpio --quiet --create -H newc \
         --owner=+0:+0 --reproducible \
-        --file="$rust_cpio" < "$list"
+        --file="$selected_cpio" < "$list"
 )
-touch "$rust_cpio"
-echo "rust-pipe-data-smoke.sh: wrote $rust_cpio"
+touch "$selected_cpio"
+echo "rust-pipe-data-smoke.sh: wrote $selected_cpio"
 
 fsqrv_bins="$ROOT/quser/build/test/suite/suite.elf:suite"
 fsqrv_bins="$fsqrv_bins $ROOT/quser/build/test/msgpass/test_msgpass.elf:test_msgpass"
@@ -315,8 +343,8 @@ if ! strings -a "$ROOT/build/fsqrv-root/bin/test_pipe_data" | \
     exit 1
 fi
 
-echo "rust-pipe-data-smoke.sh: rebuilding LQ QEMU image with Rust pipe cpio"
-"$MAKE" -C "$ROOT/lq" MODPKG_CPIO="$rust_cpio" --no-print-directory
+echo "rust-pipe-data-smoke.sh: rebuilding LQ QEMU image with $pipe_mode pipe cpio"
+"$MAKE" -C "$ROOT/lq" MODPKG_CPIO="$selected_cpio" --no-print-directory
 
 boot_args=(-k lq -t "$timeout_s" -o "$log")
 if [ "$keep_running" -eq 1 ]; then
@@ -326,7 +354,7 @@ if [ "${#emu_args[@]}" -gt 0 ]; then
     boot_args+=(-- "${emu_args[@]}")
 fi
 
-echo "rust-pipe-data-smoke.sh: booting Rust pipe data smoke"
+echo "rust-pipe-data-smoke.sh: booting $pipe_mode pipe data smoke"
 FSQRV_BINS="$fsqrv_bins" \
     QSOE_BOOT_VIRTIO_PATTERN="/dev/vblk0 ready" \
     "$ROOT/scripts/boot-smoke.sh" "${boot_args[@]}"
@@ -342,4 +370,4 @@ for expected in \
     fi
 done
 
-echo "rust-pipe-data-smoke.sh: Rust pipe data-path smoke passed"
+echo "rust-pipe-data-smoke.sh: $pipe_mode pipe data-path smoke passed"
