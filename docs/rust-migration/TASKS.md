@@ -258,7 +258,7 @@ small reviewable change unless it explicitly says otherwise.
   - Acceptance: candidates exclude traps, context switching, scheduler core,
     boot assembly, and seL4 capability assumptions.
 
-- [ ] Define kernel artifact audit needs.
+- [x] Define kernel artifact audit needs.
   - Acceptance: audit covers codegen assumptions, sections, linker script
     compatibility, panic behavior, and forbidden runtime references.
 

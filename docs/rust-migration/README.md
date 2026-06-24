@@ -41,11 +41,12 @@ Read in this order:
    rollback plan for the selected pilot.
 22. `KERNEL_CANDIDATES.md`: Phase 10 kernel candidate inventory, explicit
    exclusions, and fixture-only ranking.
-23. `SPEC.md`: technical constraints, allowed boundaries, runtime/linking rules,
+23. `KERNEL_ARTIFACT_AUDIT.md`: Phase 10 kernel Rust artifact audit needs.
+24. `SPEC.md`: technical constraints, allowed boundaries, runtime/linking rules,
    and acceptance standards.
-24. `PLAN.md`: phased migration plan from baseline validation through possible
+25. `PLAN.md`: phased migration plan from baseline validation through possible
    kernel reassessment.
-25. `TASKS.md`: executable backlog with acceptance criteria.
+26. `TASKS.md`: executable backlog with acceptance criteria.
 
 The first implementation milestone should not be a subsystem rewrite. It should
 be a reproducible baseline plus artifact audit, followed by a minimal Rust

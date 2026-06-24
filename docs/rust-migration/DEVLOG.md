@@ -1,6 +1,6 @@
 # QSOE Rust Migration Development Log
 
-Last updated: 2026-06-24 02:13 CEST.
+Last updated: 2026-06-24 02:17 CEST.
 
 This log tracks the development process for the Rust migration and reproducible
 toolchain work. It records what changed, what was observed, what failed, and
@@ -23,6 +23,36 @@ Result:
 Follow-up:
 - ...
 ```
+
+## 2026-06-24 02:17 CEST - Kernel Artifact Audit Needs Defined
+
+Scope:
+
+- Added `KERNEL_ARTIFACT_AUDIT.md` for Phase 10.
+- Recorded the current NQ kernel compile/link posture from `nq/Makefile` and
+  `kernel/arch/riscv/kernel.ld`.
+- Defined future audit requirements for Rust codegen assumptions, live
+  sections, linker-script compatibility, panic behavior, and forbidden runtime
+  references.
+- Marked the Phase 10 kernel artifact-audit task complete.
+
+Commands:
+
+- `gh issue view 33 --json number,title,body,state,url`
+- `sed -n '1,240p' nq/Makefile`
+- `sed -n '1,140p' nq/kernel/arch/riscv/kernel.ld`
+- `sed -n '1,130p' rust/targets/riscv64-qsoe-user.json`
+- `rg -n 'no_std|panic_handler|eh_personality|compiler_builtins|memcpy|memset|extern "C"|panic' rust -g '*.rs' -g '*.toml'`
+
+Result:
+
+- The kernel audit requirement is documented without adding Rust objects,
+  kernel build flags, or `nq` wiring. Future kernel work must inspect both
+  Rust input objects and the final linked kernel ELF.
+
+Follow-up:
+
+- Keep Phase 10 blocked on documentation until `D-021` is superseded.
 
 ## 2026-06-24 02:13 CEST - Kernel Candidates Inventoried
 
