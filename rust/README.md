@@ -132,6 +132,19 @@ The readback smoke uses the same Rust-selected image path, boots without the
 virtio disk so QSOE/L enters the rescue shell, runs `/bin/sloginfo`, and
 verifies that boot-time `pci-server` messages are readable through `/dev/slog`.
 
+The release-candidate path makes Rust the default for the RC image while
+keeping an explicit C rollback drill:
+
+```sh
+make slogger-rc-readback-smoke
+make slogger-rc-rollback-smoke
+```
+
+`make slogger-rc-readback-smoke` prepares an image with `slogger-rs` selected
+by default. `make slogger-rc-rollback-smoke` sets
+`QSOE_SLOGGER_RC_ROLLBACK=1` and verifies the same readback behavior with the C
+artifact restored.
+
 ## Virtio Driver Selection
 
 The opt-in Rust virtio block driver can be linked and audited without changing

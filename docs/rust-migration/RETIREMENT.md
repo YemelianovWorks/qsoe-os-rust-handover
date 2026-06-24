@@ -1,6 +1,6 @@
 # C Implementation Retirement Gate
 
-Captured: 2026-06-24 01:56 CEST.
+Captured: 2026-06-24 12:21 CEST.
 
 This document turns the Phase 8 retirement rule into an explicit gate. No C
 implementation is approved for removal yet. The current Rust pilots remain
@@ -46,7 +46,8 @@ it must include evidence for all of these items:
 
 The live status matrix is `STATUS.md`. It records C default, Rust opt-in, Rust
 default, and retired status for every tracked migration component. At this
-capture, no component has reached `Rust default` or `Retired`.
+capture, `slogger` has a Rust-default release-candidate path with C rollback,
+but no component has reached `Retired`.
 
 ## Removal PR Checklist
 

@@ -18,6 +18,9 @@ before starting QEMU. This is intended for narrower smokes that need to
 interact with the guest directly.
 
 Environment:
+  QSOE_RUST_SLOGGER          selected artifact mode, default 1 (Rust)
+                              set 0 to prepare the C rollback image
+  RUST_SLOGGER_WORKDIR        output directory, default build/rust-slogger
   RUST_SLOGGER_MODPKG_CPIO   output archive, default build/rust-slogger/modpkg-lq-rust-slogger.cpio
   RUST_SLOGGER_BASE_CPIO     intermediate C archive, default build/rust-slogger/modpkg-lq-c.cpio
 EOF
@@ -82,9 +85,31 @@ if [ "$timeout_s" -le 0 ]; then
     exit 2
 fi
 
-workdir="$ROOT/build/rust-slogger"
+QSOE_RUST_SLOGGER=${QSOE_RUST_SLOGGER:-1}
+case "$QSOE_RUST_SLOGGER" in
+    0|false|FALSE|no|NO)
+        slogger_mode=c
+        slogger_pattern="[slogger] alive"
+        ;;
+    1|true|TRUE|yes|YES)
+        slogger_mode=rust
+        slogger_pattern="[slogger-rs] alive"
+        ;;
+    *)
+        echo "rust-slogger-boot-smoke.sh: QSOE_RUST_SLOGGER must be 0 or 1" >&2
+        exit 2
+        ;;
+esac
+
+workdir=${RUST_SLOGGER_WORKDIR:-"$ROOT/build/rust-slogger"}
 base_cpio=${RUST_SLOGGER_BASE_CPIO:-"$workdir/modpkg-lq-c.cpio"}
-rust_cpio=${RUST_SLOGGER_MODPKG_CPIO:-"$workdir/modpkg-lq-rust-slogger.cpio"}
+if [ -n "${RUST_SLOGGER_MODPKG_CPIO:-}" ]; then
+    rust_cpio=$RUST_SLOGGER_MODPKG_CPIO
+elif [ "$slogger_mode" = rust ]; then
+    rust_cpio="$workdir/modpkg-lq-rust-slogger.cpio"
+else
+    rust_cpio="$workdir/modpkg-lq-c-rollback-slogger.cpio"
+fi
 selected_slogger="$ROOT/build/rust/selected/sbin/slogger.elf"
 lq_libc="$ROOT/lq/build/libc/libc.so"
 lq_rtld="$ROOT/lq/build/rtld/ld-qsoe.so.1"
@@ -94,10 +119,15 @@ mkdir -p "$workdir"
 echo "rust-slogger-boot-smoke.sh: building LQ runtime prerequisites"
 "$MAKE" -C "$ROOT/lq" libc rtld libtaskman --no-print-directory
 
-echo "rust-slogger-boot-smoke.sh: selecting Rust slogger artifact"
-QSOE_RUST_SLOGGER=1 \
+echo "rust-slogger-boot-smoke.sh: selecting $slogger_mode slogger artifact"
+QSOE_RUST_SLOGGER="$QSOE_RUST_SLOGGER" \
     LIBC_SO="$lq_libc" \
     "$MAKE" -C "$ROOT" slogger-artifact --no-print-directory
+
+if [ ! -f "$selected_slogger" ]; then
+    echo "rust-slogger-boot-smoke.sh: missing selected slogger at $selected_slogger" >&2
+    exit 1
+fi
 
 echo "rust-slogger-boot-smoke.sh: building base LQ modpkg.cpio"
 "$MAKE" -C "$ROOT/quser" cpio --no-print-directory \
@@ -138,11 +168,11 @@ install -m 0755 "$selected_slogger" "$rootdir/sbin/slogger"
 touch "$rust_cpio"
 echo "rust-slogger-boot-smoke.sh: wrote $rust_cpio"
 
-echo "rust-slogger-boot-smoke.sh: rebuilding LQ QEMU image with Rust slogger cpio"
+echo "rust-slogger-boot-smoke.sh: rebuilding LQ QEMU image with $slogger_mode slogger cpio"
 "$MAKE" -C "$ROOT/lq" MODPKG_CPIO="$rust_cpio" --no-print-directory
 
 if [ "$prepare_only" -eq 1 ]; then
-    echo "rust-slogger-boot-smoke.sh: prepared Rust slogger LQ image"
+    echo "rust-slogger-boot-smoke.sh: prepared $slogger_mode slogger LQ image"
     exit 0
 fi
 
@@ -157,5 +187,5 @@ if [ "${#emu_args[@]}" -gt 0 ]; then
     boot_args+=(-- "${emu_args[@]}")
 fi
 
-QSOE_BOOT_SLOGGER_PATTERN="[slogger-rs] alive" \
+QSOE_BOOT_SLOGGER_PATTERN="$slogger_pattern" \
     "$ROOT/scripts/boot-smoke.sh" "${boot_args[@]}"

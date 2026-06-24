@@ -1,6 +1,6 @@
 # QSOE Migration Handover
 
-Last updated: 2026-06-24 11:46 CEST.
+Last updated: 2026-06-24 12:21 CEST.
 
 This handover captures the current QSOE Rust migration and workflow work so it
 can move from the macOS/container setup to a native Linux development machine.
@@ -22,7 +22,7 @@ origin git@github.com:dmytro-yemelianov/qsoe-os-rust-handover.git
 Current main tip:
 
 ```text
-a3e75dbc47d1fadc99360f4476147a526f521d9b
+47421b760c02dd30aec226f2a0978653368e5e24
 ```
 
 The local tree adds:
@@ -204,6 +204,8 @@ make pipe-smoke
 make rust-virtio-file-smoke
 scripts/slog-readback-smoke.py -t 120 -o build/slog-readback-smoke-stacked.log
 scripts/slog-readback-smoke.py --rust-slogger -t 180 -o build/slog-readback-smoke-lq-rust-slogger-final.log
+scripts/slog-readback-smoke.py --slogger-rc -t 180 -o build/slogger-rc/slog-readback-rust-default.log
+scripts/slog-readback-smoke.py --slogger-rc-rollback -t 180 -o build/slogger-rc/slog-readback-c-rollback.log
 scripts/rust-test-msgpass-smoke.sh -t 240 -o build/rust-test-msgpass/boot-smoke-lq-rust-test-msgpass-env-override.log
 make rust-pipe-link-smoke
 QSOE_RUST_PIPE=1 make pipe-artifact
@@ -240,8 +242,9 @@ The strict ELF audit showed:
 - C implementations remain the rollback path until a Rust service has host
   tests, fixture parity, ELF audit, boot evidence, and documented differences.
 - `slogger` has C-selected and Rust-selected `/dev/slog` readback baselines.
-  A Rust-default release candidate with C rollback is still required before any
-  C retirement decision.
+  It also has a Rust-default RC path with `make slogger-rc-readback-smoke` and
+  a C rollback drill with `make slogger-rc-rollback-smoke`. C retirement is
+  still blocked until the RC evidence window is accepted.
 - `test_msgpass` has an opt-in Rust helper and Rust-selected suite `[msgpass]`
   smoke. The wider suite still reports the known unrelated QSOE/L sync failure,
   so the smoke gates targeted `[msgpass]` markers and boot-to-login.
@@ -261,15 +264,15 @@ The active decision log is `DECISIONS.md`. Most relevant recent decisions:
 
 ## Next Recommended Work
 
-1. Repeat `make rust-pipe-data-smoke` on the hosted runner before considering
+1. Run and accept the `slogger-rs` RC window from `SLOGGER_RC.md`; do not retire
+   the C `slogger` until #26's retirement checklist is satisfied.
+2. Repeat `make rust-pipe-data-smoke` on the hosted runner before considering
    Rust pipe for a default-selection release candidate.
-2. Use the Rust-selected readback evidence if planning a Rust-default
-   `slogger` release candidate, and use the `test_msgpass-rs` smoke evidence
-   if planning a Rust-default test-image decision; keep C rollback paths
-   available.
-3. Continue with a Rust `tm_procfs` provider only after adding host tests for
+3. Use the `test_msgpass-rs` smoke evidence if planning a Rust-default
+   test-image decision; keep C rollback paths available.
+4. Continue with a Rust `tm_procfs` provider only after adding host tests for
    the portable procfs model.
-4. Keep the hosted runner and CodeRabbit account healthy for new PRs, but the
+5. Keep the hosted runner and CodeRabbit account healthy for new PRs, but the
    old #42/#60 external states no longer block `main`.
-5. Do not start C retirement until the release-candidate gate in
+6. Do not start C retirement until the release-candidate gate in
    `RETIREMENT.md` is satisfied; see #26.

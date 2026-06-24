@@ -44,6 +44,16 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="build and boot an opt-in LQ image with slogger-rs selected",
     )
+    parser.add_argument(
+        "--slogger-rc",
+        action="store_true",
+        help="build and boot the slogger Rust-default release-candidate image",
+    )
+    parser.add_argument(
+        "--slogger-rc-rollback",
+        action="store_true",
+        help="build and boot the slogger release-candidate C rollback image",
+    )
     return parser.parse_args()
 
 
@@ -77,9 +87,9 @@ def cleanup(child: pexpect.spawn | None) -> None:
     child.terminate(force=True)
 
 
-def run_command(argv: list[str]) -> None:
+def run_command(argv: list[str], env: dict[str, str] | None = None) -> None:
     try:
-        subprocess.run(argv, cwd=ROOT, check=True)
+        subprocess.run(argv, cwd=ROOT, check=True, env=env)
     except subprocess.CalledProcessError as exc:
         raise SystemExit(exc.returncode) from exc
 
@@ -133,14 +143,47 @@ def prepare_rust_slogger_image() -> None:
     )
 
 
+def prepare_slogger_rc_image(rollback: bool) -> None:
+    env = os.environ.copy()
+    env["QSOE_SLOGGER_RC_ROLLBACK"] = "1" if rollback else "0"
+    run_command(
+        [str(ROOT / "scripts" / "slogger-rc-boot-smoke.sh"), "--prepare-only"],
+        env=env,
+    )
+
+
 def main() -> int:
     args = parse_args()
     if args.timeout <= 0:
         print("slog-readback-smoke.py: timeout must be positive", file=sys.stderr)
         return 2
 
+    selected_modes = [
+        args.rust_slogger,
+        args.slogger_rc,
+        args.slogger_rc_rollback,
+    ]
+    if sum(1 for selected in selected_modes if selected) > 1:
+        print(
+            "slog-readback-smoke.py: select only one slogger mode",
+            file=sys.stderr,
+        )
+        return 2
+
     log = args.log
-    slogger_mode = "rust-slogger" if args.rust_slogger else "c-slogger"
+    if args.slogger_rc:
+        slogger_mode = "slogger-rc-rust-default"
+        startup_pattern = r"\[slogger-rs\] alive"
+    elif args.slogger_rc_rollback:
+        slogger_mode = "slogger-rc-c-rollback"
+        startup_pattern = r"\[slogger\] alive"
+    elif args.rust_slogger:
+        slogger_mode = "rust-slogger"
+        startup_pattern = r"\[slogger-rs\] alive"
+    else:
+        slogger_mode = "c-slogger"
+        startup_pattern = r"\[slogger\] alive"
+
     if log is None:
         stamp = dt.datetime.now().strftime("%Y%m%d-%H%M%S")
         log = (
@@ -151,10 +194,11 @@ def main() -> int:
     elif not log.is_absolute():
         log = ROOT / log
 
-    startup_pattern = (
-        r"\[slogger-rs\] alive" if args.rust_slogger else r"\[slogger\] alive"
-    )
-    if args.rust_slogger:
+    if args.slogger_rc:
+        prepare_slogger_rc_image(rollback=False)
+    elif args.slogger_rc_rollback:
+        prepare_slogger_rc_image(rollback=True)
+    elif args.rust_slogger:
         prepare_rust_slogger_image()
     else:
         prepare_c_slogger_image()

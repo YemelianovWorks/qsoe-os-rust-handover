@@ -1,6 +1,6 @@
 # QSOE Rust Migration Development Log
 
-Last updated: 2026-06-24 11:46 CEST.
+Last updated: 2026-06-24 12:21 CEST.
 
 This log tracks the development process for the Rust migration and reproducible
 toolchain work. It records what changed, what was observed, what failed, and
@@ -23,6 +23,49 @@ Result:
 Follow-up:
 - ...
 ```
+
+## 2026-06-24 12:21 CEST - Slogger Rust-Default RC Path
+
+Scope:
+
+- Added `scripts/slogger-rc-boot-smoke.sh`, a release-candidate wrapper that
+  selects `slogger-rs` by default and selects the C rollback artifact with
+  `QSOE_SLOGGER_RC_ROLLBACK=1`.
+- Made `scripts/rust-slogger-boot-smoke.sh` mode-aware so the same image
+  preparation code can build either the Rust RC image or the C rollback image.
+- Added `--slogger-rc` and `--slogger-rc-rollback` modes to
+  `scripts/slog-readback-smoke.py`.
+- Added `make slogger-rc-boot-smoke`, `make slogger-rc-readback-smoke`,
+  `make slogger-rc-rollback-smoke`, and container wrappers.
+- Added `SLOGGER_RC.md` and updated migration status, handover, and READMEs.
+
+Commands:
+
+- `bash -n scripts/rust-slogger-boot-smoke.sh scripts/slogger-rc-boot-smoke.sh`
+- `python3 -m py_compile scripts/slog-readback-smoke.py`
+- `make -n slogger-rc-boot-smoke slogger-rc-readback-smoke slogger-rc-rollback-smoke container-slogger-rc-boot-smoke container-slogger-rc-readback-smoke container-slogger-rc-rollback-smoke`
+- `make slogger-rc-readback-smoke`
+- `make slogger-rc-rollback-smoke`
+- `QSOE_SLOGGER_RC_ROLLBACK=1 scripts/slog-readback-smoke.py --slogger-rc -t 180 -o build/slogger-rc/slog-readback-env-forced-rust.log`
+- `make rust-slogger-link-smoke`
+- `make rust-quality`
+
+Result:
+
+- The Rust-default RC readback smoke passed and observed `pci-server:` through
+  `/bin/sloginfo` with `[slogger-rs] alive`.
+- The C rollback readback smoke passed and observed `pci-server:` through
+  `/bin/sloginfo` with `[slogger] alive`.
+- `--slogger-rc` forces the Rust-default path even if
+  `QSOE_SLOGGER_RC_ROLLBACK=1` is present in the caller environment.
+- `slogger-rs` remains the only component in a Rust-default RC state.
+- No C implementation was retired; #26 remains open until the RC evidence
+  window is accepted and the retirement checklist is satisfied.
+
+Follow-up:
+
+- Let the `slogger-rs` RC evidence window run before any C removal PR.
+- Keep the C rollback command in release notes until #26 is satisfied.
 
 ## 2026-06-24 11:46 CEST - Rust Pipe Data-Path Smoke
 
