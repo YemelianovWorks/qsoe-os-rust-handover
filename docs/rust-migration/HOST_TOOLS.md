@@ -137,18 +137,22 @@ It provides:
 - Parser-backed Rust unit tests.
 - A fixture gate that inspects the Rust-written image with the C `treeqrvfs`
   oracle.
+- A production-root comparison that rebuilds the normal staged qrvfs root,
+  writes a Rust image from that root, and inspects both images with the C
+  `treeqrvfs` oracle.
 
 Run:
 
 ```sh
 make check-qrvfs-rust-writer-fixture
+make check-qrvfs-rust-writer-production-root
 ```
 
 This is not a production writer replacement. The C `mkfs-qrv` remains the
 default image writer for `fsqrv-image`, NVMe population, virtio image
 generation, and rollback. The Rust writer fixture deliberately starts with
-regular files only; block-device initialization, triple-indirect stress
-coverage, and production image comparison remain future work.
+regular files only; block-device initialization and triple-indirect stress
+coverage remain future work.
 
 ## Rust qrvfs Inspection Baseline
 
