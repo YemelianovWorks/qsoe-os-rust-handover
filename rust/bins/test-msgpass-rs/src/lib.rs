@@ -1,7 +1,7 @@
 #![cfg_attr(not(any(test, feature = "host-tests")), no_std)]
 
 #[cfg(not(any(test, feature = "host-tests")))]
-use core::ffi::{c_char, c_void, CStr};
+use core::ffi::{c_char, c_int, c_void, CStr};
 #[cfg(not(any(test, feature = "host-tests")))]
 use core::mem;
 #[cfg(not(any(test, feature = "host-tests")))]
@@ -62,6 +62,8 @@ impl Drop for MessageBuffer {
 unsafe extern "C" {
     fn malloc(size: usize) -> *mut c_void;
     fn free(ptr: *mut c_void);
+    fn _exit(status: c_int) -> !;
+    fn ProcessTerminate(pid: c_int, status: c_int) -> c_int;
 }
 
 #[cfg(not(any(test, feature = "host-tests")))]
@@ -98,8 +100,12 @@ pub extern "C" fn main(argc: isize, argv: *const *const u8, _envp: *const *const
     debug_write(b"[test_msgpass-rs] /dev/msgpass registered\n");
 
     let buf = buffer.as_mut_slice();
+    debug_write(b"[test_msgpass-rs] calling receive_bytes\n");
     let message = match service.receive_bytes(buf) {
-        Ok(Receive::Message(message)) => message,
+        Ok(Receive::Message(message)) => {
+            debug_write(b"[test_msgpass-rs] receive_bytes succeeded\n");
+            message
+        }
         Ok(Receive::Pulse(_)) => {
             debug_write(b"[test_msgpass-rs] unexpected pulse\n");
             return 1;
@@ -111,8 +117,23 @@ pub extern "C" fn main(argc: isize, argv: *const *const u8, _envp: *const *const
     };
 
     if has_no_reply_arg(argc, argv) {
-        mem::forget(service);
-        return 0;
+        debug_write(b"[test_msgpass-rs] exiting due to --no-reply\n");
+        match service.shutdown() {
+            Ok(()) => debug_write(b"[test_msgpass-rs] shutdown ok\n"),
+            Err(e) => {
+                debug_write(b"[test_msgpass-rs] shutdown err\n");
+            }
+        }
+        debug_write(b"[test_msgpass-rs] calling ProcessTerminate\n");
+        let rc = unsafe { ProcessTerminate(0, 0) };
+        if rc != 0 {
+            debug_write(b"[test_msgpass-rs] ProcessTerminate failed\n");
+        } else {
+            // Under normal circumstances, self ProcessTerminate doesn't return, so this shouldn't execute
+            debug_write(b"[test_msgpass-rs] ProcessTerminate returned 0?\n");
+        }
+        debug_write(b"[test_msgpass-rs] calling _exit\n");
+        unsafe { _exit(0) };
     }
 
     let n = match received_len(message.info().msglen, buf.len()) {
