@@ -12,3 +12,7 @@ path = "src/lib.rs"
 [[bin]]
 name = "qrvfs-tree"
 path = "src/bin/qrvfs-tree.rs"
+
+[[bin]]
+name = "mkfs-qrv-rs"
+path = "src/bin/mkfs-qrv-rs.rs"

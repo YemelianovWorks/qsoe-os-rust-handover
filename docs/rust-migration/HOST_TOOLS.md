@@ -120,6 +120,36 @@ Run:
 scripts/check-qrvfs-fixture.sh
 ```
 
+## Rust qrvfs Writer Fixture
+
+The initial Rust writer is opt-in and fixture-scoped:
+
+```text
+rust/crates/qsoe-qrvfs
+```
+
+It provides:
+
+- A `mkfs-qrv-rs` host binary.
+- A regular-file image builder for small qrvfs fixtures.
+- Directory and regular-file population from a host root.
+- Direct and single-indirect file data allocation.
+- Parser-backed Rust unit tests.
+- A fixture gate that inspects the Rust-written image with the C `treeqrvfs`
+  oracle.
+
+Run:
+
+```sh
+make check-qrvfs-rust-writer-fixture
+```
+
+This is not a production writer replacement. The C `mkfs-qrv` remains the
+default image writer for `fsqrv-image`, NVMe population, virtio image
+generation, and rollback. The Rust writer fixture deliberately starts with
+regular files only; block-device initialization and the full multi-indirect
+large-file path remain future work.
+
 ## Rust qrvfs Inspection Baseline
 
 The initial Rust host-tool port is read-only qrvfs inspection:
