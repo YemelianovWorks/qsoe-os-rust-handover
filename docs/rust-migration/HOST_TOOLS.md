@@ -155,6 +155,10 @@ make check-qrvfs-rust-writer-production-root
 make rust-mkfs-qrv-live-smoke
 ```
 
+The live smoke succeeds when the boot log contains the guest marker
+`rust-virtio-file-smoke: read /usr/conf/passwd ok` and the wrapper prints
+`rust-virtio-file-smoke.sh: /usr file read smoke passed`.
+
 This is not a production writer replacement. The C `mkfs-qrv` remains the
 default image writer for `fsqrv-image`, NVMe population, virtio image
 generation, and rollback. Set `QSOE_RUST_MKFS_QRV=1` to select Rust
