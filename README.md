@@ -20,7 +20,7 @@ Detailed planning lives under `docs/rust-migration/`. Start with:
 | --- | --- | --- |
 | Baseline and tooling | Complete | Linux/container workflows, boot smokes, artifact audit, C indexing, clangd, clang-tidy wrapper, pinned Rust toolchain, cargo-deny, fuzz smoke, and coverage targets are in place. |
 | Rust ABI/FFI foundation | Complete | `qsoe-abi`, `qsoe-ffi`, and `qsoe-ressrv` compile for the QSOE target with layout tests and reviewed unsafe boundaries. |
-| Host qrvfs parser | Rust default RC | Rust fixture checks compare against the existing C host tool; `make tree` selects Rust `qrvfs-tree` by default, and `make treeqrvfs-rc-rollback-smoke` preserves C rollback. `mkfs-qrv` remains C. |
+| Host qrvfs tools | Rust default RC for inspector; writer fixture opt-in | Rust fixture checks compare against the existing C host tool; `make tree` selects Rust `qrvfs-tree` by default, and `make treeqrvfs-rc-rollback-smoke` preserves C rollback. `make check-qrvfs-rust-writer-fixture` builds a small image with Rust `mkfs-qrv-rs` and inspects it with the C oracle. Production `mkfs-qrv` remains C. |
 | `slogger` service | Rust default RC | `slogger-rs` links, boots, registers `/dev/slog`, has C-selected plus Rust-selected `/dev/slog` readback smokes, and has accepted #95 local-equivalent RC evidence for `slogger-rc-*` targets with C rollback. Next gate: #26 retirement checklist and a separate removal PR before any C retirement decision. |
 | `devb-virtio` block driver | Rust default RC | Rust MMIO/virtqueue model, host queue tests, opt-in boot/file-read smokes, and `make virtio-rc-file-smoke` plus `make virtio-rc-rollback-smoke` cover the Rust-default file-read RC path with C rollback. Next gate: #26 retirement checklist and a separate removal PR before any C retirement decision. |
 | Shared parsers | Complete for current scope | CPIO, syscfg/sysmap, and ELF inspection crates exist with host tests and host/guest reuse coverage. |
@@ -39,6 +39,9 @@ Detailed planning lives under `docs/rust-migration/`. Start with:
   read-only `make tree` inspector with explicit C rollback. `mkfs-qrv` remains
   C, and C retirement stays blocked until #26's checklist and a separate
   removal PR.
+- `mkfs-qrv-rs` now has an opt-in fixture writer gate. Keep production
+  `fsqrv-image`, NVMe, and virtio image generation on C `mkfs-qrv` until the
+  Rust writer covers block-device initialization and larger file allocation.
 - `pipe-rs` now has a Rust-default release-candidate path with explicit C
   rollback. Keep C retirement blocked until #26's checklist and a separate
   removal PR.
@@ -63,6 +66,7 @@ make rust-quality
 make rust-abi
 make treeqrvfs-rc-smoke
 make treeqrvfs-rc-rollback-smoke
+make check-qrvfs-rust-writer-fixture
 make slog-readback-smoke
 make rust-slog-readback-smoke
 make slogger-rc-readback-smoke

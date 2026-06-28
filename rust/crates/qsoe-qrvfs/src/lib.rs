@@ -6,15 +6,20 @@ pub const QRVFS_VERSION: u32 = 2;
 pub const QRVFS_BSIZE: usize = 4096;
 pub const QRVFS_ROOTINO: u32 = 1;
 pub const QRVFS_T_DIR: u16 = 1;
+pub const QRVFS_T_FILE: u16 = 2;
 pub const QRVFS_T_SLINK: u16 = 3;
 pub const QRVFS_T_DEV: u16 = 4;
 pub const QRVFS_NDIRECT: usize = 7;
 pub const QRVFS_NINDIRECT: usize = QRVFS_BSIZE / 8;
 pub const QRVFS_SINGLE_IDX: usize = QRVFS_NDIRECT;
+pub const QRVFS_DOUBLE_IDX: usize = QRVFS_NDIRECT + 1;
 pub const QRVFS_NADDRS: usize = QRVFS_NDIRECT + 3;
 pub const QRVFS_NAMESIZ: usize = 252;
 pub const QRVFS_IPB: u64 = (QRVFS_BSIZE / 128) as u64;
 pub const QRVFS_DPB: usize = QRVFS_BSIZE / 256;
+pub const QRVFS_BPB: u64 = (QRVFS_BSIZE * 8) as u64;
+
+pub mod writer;
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub enum Error {

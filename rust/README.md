@@ -380,8 +380,19 @@ make treeqrvfs-rc-rollback-smoke
 
 `make tree` builds `build/treeqrvfs` from Rust `qrvfs-tree` by default. Set
 `QSOE_RUST_TREEQRVFS=0` to select the C `host_tools/treeqrvfs.c` rollback
-artifact instead. This crate is read-only; the C `mkfs-qrv` tool remains the
-writer and source of truth for image construction.
+artifact instead. The inspector path is read-only; the C `mkfs-qrv` tool
+remains the default writer and source of truth for production image
+construction.
+
+The first opt-in Rust writer fixture is:
+
+```sh
+make check-qrvfs-rust-writer-fixture
+```
+
+It builds a small image with `mkfs-qrv-rs`, then inspects that image with the C
+`treeqrvfs` oracle. This is a fixture writer only; production image generation
+still uses C `mkfs-qrv`.
 
 ## Host CPIO Parser
 

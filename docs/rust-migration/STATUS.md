@@ -1,6 +1,6 @@
 # Rust Migration Status
 
-Captured: 2026-06-28 21:17 CEST.
+Captured: 2026-06-28 21:39 CEST.
 
 This table tracks components whose current C implementation may be replaced by
 Rust. Link-smoke binaries, examples, and reusable parser crates are not listed
@@ -16,7 +16,7 @@ State meanings:
 
 | Component | C default | Rust opt-in | Rust default | Retired | Evidence / selector | Next gate |
 | --- | --- | --- | --- | --- | --- | --- |
-| Host `treeqrvfs` inspector | Yes: `host_tools/treeqrvfs.c` remains the fixture oracle and rollback implementation. | Yes: Rust `qrvfs-tree` runs through `make check-qrvfs-rust-fixture`. | RC: `make tree` selects Rust `qrvfs-tree` by default through `build/treeqrvfs`; `make treeqrvfs-rc-rollback-smoke` restores C. | No | qrvfs behavior spec, Rust parser tests, C/Rust fixture comparison, selected artifact smoke, and `TREEQRVFS_RC.md`. | Keep C rollback until #26's retirement checklist and a separate removal PR are satisfied. |
+| Host qrvfs tools | Yes: `host_tools/treeqrvfs.c` remains the fixture oracle and rollback inspector; `host_tools/mkfs-qrv.c` remains the production image writer. | Yes: Rust `qrvfs-tree` runs through `make check-qrvfs-rust-fixture`; Rust `mkfs-qrv-rs` runs through `make check-qrvfs-rust-writer-fixture`. | RC: `make tree` selects Rust `qrvfs-tree` by default through `build/treeqrvfs`; `make treeqrvfs-rc-rollback-smoke` restores C. Rust writer is not default. | No | qrvfs behavior spec, Rust parser tests, C/Rust fixture comparison, selected artifact smoke, Rust writer fixture, and `TREEQRVFS_RC.md`. | Keep C writer until Rust covers block-device initialization and larger file allocation; keep C rollback until #26's retirement checklist and a separate removal PR are satisfied. |
 | `slogger` | Yes: `/sbin/slogger` still uses C in non-RC normal builds and remains rollback. | Yes: `QSOE_RUST_SLOGGER=1 make slogger-artifact`; `make rust-slogger-boot-smoke`; `make rust-slog-readback-smoke`. | RC: `make slogger-rc-readback-smoke` selects `slogger-rs` by default; `make slogger-rc-rollback-smoke` restores C. | No | Behavior spec, C and Rust-selected `/dev/slog` readback smokes, Rust ring tests, link smoke, ELF audit, boot-log comparison, `SLOGGER_RC.md`, and accepted #95 local-equivalent RC evidence. | Keep C rollback until #26's retirement checklist and a separate removal PR are satisfied. |
 | `devb-virtio` | Yes: `/sbin/devb-virtio` still uses C in non-RC normal builds and remains rollback. | Yes: `QSOE_RUST_VIRTIO=1 make virtio-artifact`; `make rust-virtio-boot-smoke`; `make rust-virtio-file-smoke`. | RC: `make virtio-rc-file-smoke` selects `devb-virtio-rs` by default; `make virtio-rc-rollback-smoke` restores C. | No | Behavior spec, MMIO and queue tests, link smoke, ELF audit, Rust-selected boot and file-read smokes, and `VIRTIO_RC.md`. | Keep C rollback until #26's retirement checklist and a separate removal PR are satisfied. |
 | `pipe` | Yes: `/sbin/pipe` still uses C in non-RC normal builds and remains rollback. | Yes: `QSOE_RUST_PIPE=1 make pipe-artifact`; `make rust-pipe-link-smoke`; `make rust-pipe-smoke`; `make rust-pipe-data-smoke`. | RC: `make pipe-rc-data-smoke` selects `pipe-rs` by default; `make pipe-rc-rollback-smoke` restores C. | No | C mini-spec, C smoke, `qsoe-pipe` host tests, selector, link smoke, ELF audit, Rust-selected registration boot smoke, Rust-selected pipe(2) data-path smoke, trusted `main` CI run `28102250069` for #96, and `PIPE_RC.md`. | Keep C rollback until #26's retirement checklist and a separate removal PR are satisfied. |
@@ -24,6 +24,6 @@ State meanings:
 | `tm_procfs` | Yes: `libtaskman/src/tm_procfs.c` remains selected by default in non-RC normal builds and remains rollback. | Yes: `QSOE_RUST_TM_PROCFS=1` excludes C `tm_procfs.o`, links `qsoe-tm-procfs`, and passes `make procfs-smoke`. | RC: `make tm-procfs-rc-smoke` selects `qsoe-tm-procfs` by default; `make tm-procfs-rc-rollback-smoke` restores C. | No | Task-manager inventory, C/Rust boundary review, C host model tests, Rust host tests, selected NQ/LQ taskman links, soft-float Rust archive audit, C-default/Rust-selected procfs smokes, `make tm-procfs-evidence`, `TASK_MANAGER_PROCFS_RC.md`, and trusted `main` CI run `28102250069` for #103. | Keep C rollback until #26's retirement checklist and a separate removal PR are satisfied. |
 
 Only host `treeqrvfs`, `slogger`, `devb-virtio`, `pipe`, `test_msgpass`, and
-`tm_procfs` have Rust-default release-candidate paths. No tracked component has
-reached `Retired` status. C remains the rollback path for every current
-migration candidate.
+`tm_procfs` have Rust-default release-candidate paths. Host `mkfs-qrv-rs` is
+still opt-in fixture work. No tracked component has reached `Retired` status. C
+remains the rollback path for every current migration candidate.

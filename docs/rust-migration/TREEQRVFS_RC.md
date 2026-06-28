@@ -65,7 +65,8 @@ output against the C oracle log.
 
 ## Known Limitations
 
-- This is not a qrvfs writer migration. `mkfs-qrv` remains C.
+- This RC does not make a qrvfs writer default. `mkfs-qrv` remains the C
+  production writer; any Rust writer fixture remains separate opt-in work.
 - The C inspector remains the fixture oracle during the RC window.
 - This does not retire `host_tools/treeqrvfs.c`; removal still requires the
   retirement checklist and a separate C-removal PR.
