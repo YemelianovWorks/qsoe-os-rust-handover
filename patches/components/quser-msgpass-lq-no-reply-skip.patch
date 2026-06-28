@@ -1,8 +1,8 @@
 diff --git a/test/suite/msgpass_test.c b/test/suite/msgpass_test.c
-index 224056b..43655ef 100644
+index 224056b..e4d2fbc 100644
 --- a/test/suite/msgpass_test.c
 +++ b/test/suite/msgpass_test.c
-@@ -202,28 +202,32 @@ reap:
+@@ -202,28 +202,31 @@ reap:
                           * waitpid here would park forever.  Leak it
                           * and let the FAIL line tell the story. */
 
@@ -27,12 +27,9 @@ index 224056b..43655ef 100644
              printf("  SKIP  msgpass: no-reply exit -> ESRVRFAULT "
                     "(QSOE/L teardown does not yet fault REPLY-blocked clients)\n");
              ConnectDetach(coid);
--            int st = 0;
--            (void) waitpid(nr_pid, &st, 0);
-+            if (ProcessTerminate(nr_pid, 0) == 0) {
-+                int st = 0;
-+                (void) waitpid(nr_pid, &st, 0);
-+            }
++            (void) ProcessTerminate(nr_pid, 0);
+             int st = 0;
+             (void) waitpid(nr_pid, &st, 0);
              return;
          }
 +

@@ -51,7 +51,7 @@ make test-msgpass-rc-smoke
 Rollback window: still open until the C retirement gate in `RETIREMENT.md` is
 satisfied and a separate removal PR is reviewed.
 
-Rollback limitations: none known for the QSOE/L targeted `[msgpass]` smoke
+Rollback limitations: none known for the QSOE/L-targeted `[msgpass]` smoke
 path. The rollback image stages the same C `/usr/bin/test_msgpass` artifact as
 the pre-RC path.
 
@@ -70,7 +70,7 @@ halfword-swapped payload, clean server exit, and the QSOE/L no-reply skip.
 ## Known Limitations
 
 - No C source is removed by this RC.
-- The RC covers the QSOE/L targeted suite `[msgpass]` path, not the full
+- The RC covers the QSOE/L-targeted suite `[msgpass]` path, not the full
   hardware matrix.
 - The no-reply ESRVRFAULT subcase remains a documented QSOE/L limitation and is
   skipped before entering a blocking `MsgSend`.

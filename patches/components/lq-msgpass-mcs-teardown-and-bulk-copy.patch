@@ -11,21 +11,6 @@ index 1aa7c10..8e4356d 100644
          unsigned long c_sbuf   = (unsigned long)mr0;
          unsigned long c_sbytes = (unsigned long)mr1;
          unsigned long c_rbuf   = (unsigned long)mr2;
-diff --git a/libc/qsoe/sync.c b/libc/qsoe/sync.c
-index a1390d2..b60946a 100644
---- a/libc/qsoe/sync.c
-+++ b/libc/qsoe/sync.c
-@@ -453,6 +453,10 @@ int SyncMutexUnlock(sync_t *s)
-     unsigned long my_tid = (unsigned long)qsoe_curthr()->tid;
-     unsigned long val = __atomic_load_n(&s->owner, __ATOMIC_RELAXED);
-
-+    if ((val & QSOE_SYNC_TID_MASK) == 0) {
-+        return 0;
-+    }
-+
-     if ((val & QSOE_SYNC_TID_MASK) != my_tid) {
-         qsoe_errno = EPERM;
-         return -1;
 diff --git a/taskman/proc/proc.h b/taskman/proc/proc.h
 index a44cb48..d7c9d66 100644
 --- a/taskman/proc/proc.h
@@ -60,7 +45,7 @@ index a44cb48..d7c9d66 100644
  /* Read up to 4 KiB from `args_va` in `proc`'s VSpace into out_buf.
   * Looks up the Mega_Page frame backing args_va via tm_process_find_frame,
 diff --git a/taskman/proc/process.c b/taskman/proc/process.c
-index b88a2a9..91dc66f 100644
+index b88a2a9..19a4bc9 100644
 --- a/taskman/proc/process.c
 +++ b/taskman/proc/process.c
 @@ -15,6 +15,7 @@
@@ -176,9 +161,9 @@ index b88a2a9..91dc66f 100644
 +    if (p->cnode) {
 +        seL4_Uint8 ddepth = cnode_depth_for(target);
 +        for (seL4_CPtr slot = 1; slot < (seL4_CPtr)p->next_slot; ++slot) {
-+            /* Skip slot 9 (QSOE_CAP_CNODE_SELF) and slot 1 (QSOE_CAP_TASKMAN_EP)
-+             * to avoid self-revocation problems while we are clearing the CSpace. */
-+            if (slot == 1 || slot == 9) continue;
++            /* Skip slot 9 (QSOE_CAP_CNODE_SELF) to avoid self-revocation
++             * problems while we are clearing the CSpace. */
++            if (slot == 9) continue;
 +            (void) qsoe_cnode_revoke(p->cnode, slot, ddepth);
 +            (void) qsoe_cnode_delete(p->cnode, slot, ddepth);
 +        }
