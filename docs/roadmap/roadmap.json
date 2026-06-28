@@ -20,10 +20,10 @@
     "docs/rust-migration/DEVLOG.md"
   ],
   "statusSummary": {
-    "trackedComponentAreas": 6,
-    "rustDefaultRcAreas": 6,
-    "rustOptInOnlyAreas": 1,
-    "retiredAreas": 0,
+    "trackedComponents": 6,
+    "rustDefaultRcComponents": 6,
+    "rustOptInOnlyImplementations": 1,
+    "retiredCComponents": 0,
     "currentFocus": "Host qrvfs writer evidence before a Rust-default writer release candidate.",
     "nextConcreteGate": "Add triple-indirect stress coverage for mkfs-qrv-rs, then create a default-writer RC with explicit C rollback.",
     "fullRewriteInventory": "Incomplete. The current roadmap tracks active migration candidates and task-manager risk classes; a full OS-wide C inventory is still a future documentation task."

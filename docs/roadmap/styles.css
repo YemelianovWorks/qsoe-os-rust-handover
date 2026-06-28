@@ -159,7 +159,7 @@ main {
   background: var(--surface);
 }
 
-label span {
+.control-field label {
   display: block;
   margin-bottom: 6px;
   color: var(--muted);
@@ -250,7 +250,8 @@ select:focus {
 }
 
 .risk-low,
-.risk-low-medium {
+.risk-low-medium,
+.risk-planning {
   color: var(--green);
 }
 
@@ -278,7 +279,7 @@ select:focus {
   border-left: 3px solid var(--line);
   padding-left: 8px;
   color: var(--muted);
-  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-family: SFMono-Regular, Consolas, "Liberation Mono", monospace;
   font-size: 0.8rem;
   overflow-wrap: anywhere;
 }
@@ -358,7 +359,7 @@ td {
 
 .file-list {
   color: var(--muted);
-  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-family: SFMono-Regular, Consolas, "Liberation Mono", monospace;
   font-size: 0.78rem;
   overflow-wrap: anywhere;
 }

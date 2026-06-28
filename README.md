@@ -32,9 +32,10 @@ removed just because a Rust version exists.
 
 Detailed planning lives under `docs/rust-migration/`. Start with:
 
-- `docs/roadmap/roadmap.json` for a machine-readable roadmap.
-- `docs/roadmap/index.html` for the static roadmap dashboard published through
-  GitHub Pages.
+- [docs/roadmap/roadmap.json](docs/roadmap/roadmap.json) for a
+  machine-readable roadmap.
+- [Rust migration roadmap dashboard](https://dmytro-yemelianov.github.io/qsoe-os-rust-handover/)
+  for the static dashboard published through GitHub Pages.
 - `docs/rust-migration/HANDOVER.md` for the current repository state and next
   work.
 - `docs/rust-migration/STATUS.md` for component-by-component migration state.

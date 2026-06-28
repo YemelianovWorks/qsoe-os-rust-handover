@@ -76,10 +76,10 @@ function render() {
 function renderMetrics() {
   const summary = state.data.statusSummary;
   const metrics = [
-    ["Tracked areas", summary.trackedComponentAreas],
-    ["Rust-default RC", summary.rustDefaultRcAreas],
-    ["Opt-in only", summary.rustOptInOnlyAreas],
-    ["Retired C areas", summary.retiredAreas]
+    ["Tracked components", summary.trackedComponents],
+    ["Rust-default RC components", summary.rustDefaultRcComponents],
+    ["Opt-in implementations", summary.rustOptInOnlyImplementations],
+    ["Retired C components", summary.retiredCComponents]
   ];
 
   els.metrics.replaceChildren(
