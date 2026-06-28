@@ -1,0 +1,45 @@
+diff --git a/test/suite/msgpass_test.c b/test/suite/msgpass_test.c
+index 224056b..e4d2fbc 100644
+--- a/test/suite/msgpass_test.c
++++ b/test/suite/msgpass_test.c
+@@ -202,28 +202,31 @@ reap:
+                          * waitpid here would park forever.  Leak it
+                          * and let the FAIL line tell the story. */
+ 
+-        unsigned long ping  = 0xfeedfacecafef00dUL;
+-        unsigned long pong  = 0;
+-        int sent = MsgSend(coid, &ping, sizeof ping, &pong, sizeof pong);
+-        /* Capture errno NOW, before any further syscall (incl. the kernel
+-         * probe below) can overwrite it -- the ESRVRFAULT check needs the
+-         * value MsgSend left. */
+-        int send_errno = qsoe_errno;
+         if (suite_kernel_is_lq()) {
+             /* QSOE/L exclusion: a client REPLY-blocked on a server that
+              * exits without replying is not yet completed with ESRVRFAULT
+              * -- seL4 cancels the Call with a zero label, indistinguishable
+              * from a real status-0 reply.  Delivering ESRVRFAULT needs LQ's
+              * process-teardown to fault clients parked on the dying server's
+-             * endpoint; tracked as a focused follow-up.  We sent above so the
+-             * helper received our message and has exited -- reap it and skip. */
++             * endpoint; tracked as a focused follow-up.  Under LQ, the client
++             * would hang forever in MsgSend.  So skip the send, terminate the
++             * server, reap it and skip. */
+             printf("  SKIP  msgpass: no-reply exit -> ESRVRFAULT "
+                    "(QSOE/L teardown does not yet fault REPLY-blocked clients)\n");
+             ConnectDetach(coid);
++            (void) ProcessTerminate(nr_pid, 0);
+             int st = 0;
+             (void) waitpid(nr_pid, &st, 0);
+             return;
+         }
++
++        unsigned long ping  = 0xfeedfacecafef00dUL;
++        unsigned long pong  = 0;
++        int sent = MsgSend(coid, &ping, sizeof ping, &pong, sizeof pong);
++        /* Capture errno NOW, before any further syscall (incl. the kernel
++         * probe below) can overwrite it -- the ESRVRFAULT check needs the
++         * value MsgSend left. */
++        int send_errno = qsoe_errno;
+         check(sent == -1 && send_errno == ESRVRFAULT,
+               "msgpass: no-reply exit -> ESRVRFAULT",
+               "MsgSend did not fail with ESRVRFAULT");

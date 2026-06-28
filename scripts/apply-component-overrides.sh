@@ -67,6 +67,7 @@ require_line() {
 # first so required full patches can be recognized as already applied.
 require_component nq
 require_component lq
+require_component quser
 
 apply_optional_patch nq nq-taskman-rust-tm-procfs-root-path.patch
 apply_optional_patch lq lq-taskman-rust-tm-procfs-root-path.patch
@@ -76,6 +77,8 @@ apply_optional_patch lq lq-taskman-rust-tm-procfs-force-rule.patch
 apply_patch_if_possible nq nq-taskman-rust-tm-procfs.patch
 apply_patch_if_possible lq lq-makefile-rust-tm-procfs.patch
 apply_patch_if_possible lq lq-taskman-rust-tm-procfs.patch
+apply_patch_if_possible lq lq-msgpass-mcs-teardown-and-bulk-copy.patch
+apply_patch_if_possible quser quser-msgpass-lq-no-reply-skip.patch
 
 require_line "$ROOT/nq/taskman/Makefile" 'QSOE_RUST_TM_PROCFS ?= 0'
 require_line "$ROOT/nq/taskman/Makefile" 'RUST_TM_PROCFS_A := $(REPO_ROOT)/build/rust/tm-procfs/libqsoe_tm_procfs.a'
@@ -92,5 +95,9 @@ require_line "$ROOT/lq/taskman/Makefile" 'RUST_TM_PROCFS_A := $(REPO_ROOT)/build
 require_line "$ROOT/lq/taskman/Makefile" '$(RUST_TM_PROCFS_A): FORCE'
 require_line "$ROOT/lq/taskman/Makefile" 'FORCE:'
 require_line "$ROOT/lq/taskman/Makefile" '$(TASKMAN_ELF): $(TASKMAN_OBJS) $(LIBTASKMAN_A) $(TASKMAN_RUST_LIBS)'
+require_line "$ROOT/lq/libc/qsoe/msg.c" 'if (label == QSOE_MSG_BULK_LABEL) {'
+require_line "$ROOT/lq/taskman/proc/process.c" 'tm_pathmgr_unregister_pid(target);'
+require_line "$ROOT/lq/taskman/proc/spawn.c" 'tm_process_resolve_frame(src_proc, sva'
+require_line "$ROOT/quser/test/suite/msgpass_test.c" 'Under LQ, the client'
 
 echo "apply-component-overrides.sh: component overrides ready"
