@@ -84,7 +84,7 @@ case "$cmd" in
         run_container "$@"
         ;;
     check)
-        run_container bash -c 'make check-host-tools && make rust-quality && make check-qrvfs-rust-fixture && make check-qrvfs-rust-writer-fixture && make check-elf-reloc-fixture'
+        run_container bash -c 'make check-host-tools && make rust-quality && make check-qrvfs-rust-fixture && make check-qrvfs-rust-writer-fixture && make check-qrvfs-rust-writer-production-root && make check-elf-reloc-fixture'
         ;;
     index-c-static)
         run_container make index-c-static

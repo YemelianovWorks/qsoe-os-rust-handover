@@ -30,6 +30,7 @@ SELECTED_PIPE_ELF ?= build/rust/selected/sbin/pipe.elf
         treeqrvfs-artifact treeqrvfs-rc-smoke treeqrvfs-rc-rollback-smoke \
         check-host-tools check-qrvfs-fixture check-qrvfs-rust-fixture \
         check-qrvfs-rust-writer-fixture \
+        check-qrvfs-rust-writer-production-root \
         check-elf-reloc-fixture check-gpt-fixture check-tm-procfs-model \
         slog-readback-smoke \
         rust-slog-readback-smoke slogger-rc-boot-smoke \
@@ -75,6 +76,7 @@ SELECTED_PIPE_ELF ?= build/rust/selected/sbin/pipe.elf
         container-rust-pipe-smoke container-rust-pipe-data-smoke \
         container-pipe-rc-data-smoke container-pipe-rc-rollback-smoke \
         container-check-qrvfs-rust-writer-fixture \
+        container-check-qrvfs-rust-writer-production-root \
         container-procfs-smoke container-tm-procfs-rc-smoke \
         container-tm-procfs-rc-rollback-smoke \
         container-treeqrvfs-rc-smoke \
@@ -200,6 +202,9 @@ check-qrvfs-rust-fixture:
 
 check-qrvfs-rust-writer-fixture:
 	@scripts/check-qrvfs-rust-writer-fixture.sh
+
+check-qrvfs-rust-writer-production-root:
+	@scripts/check-qrvfs-rust-writer-production-root.sh
 
 check-elf-reloc-fixture:
 	@scripts/check-elf-reloc-fixture.sh
@@ -461,6 +466,9 @@ container-tm-procfs-evidence:
 
 container-check-qrvfs-rust-writer-fixture:
 	@scripts/container-toolchain.sh run make check-qrvfs-rust-writer-fixture
+
+container-check-qrvfs-rust-writer-production-root:
+	@scripts/container-toolchain.sh run make check-qrvfs-rust-writer-production-root
 
 container-rust-virtio-boot-smoke:
 	@scripts/container-toolchain.sh run make rust-virtio-boot-smoke
