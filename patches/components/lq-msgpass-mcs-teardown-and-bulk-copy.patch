@@ -1,0 +1,282 @@
+diff --git a/libc/qsoe/msg.c b/libc/qsoe/msg.c
+index 1aa7c10..8e4356d 100644
+--- a/libc/qsoe/msg.c
++++ b/libc/qsoe/msg.c
+@@ -514,7 +514,7 @@ int MsgReceive(int chid, void *msg, int bytes, struct _msg_info *info)
+      * and stash the client's reply buffer for the matching MsgReply.  The
+      * descriptor MRs are {client send buf, sbytes, client reply buf,
+      * rbytes}; the badge is the client pid. */
+-    if (label & QSOE_MSG_BULK_LABEL) {
++    if (label == QSOE_MSG_BULK_LABEL) {
+         unsigned long c_sbuf   = (unsigned long)mr0;
+         unsigned long c_sbytes = (unsigned long)mr1;
+         unsigned long c_rbuf   = (unsigned long)mr2;
+diff --git a/libc/qsoe/sync.c b/libc/qsoe/sync.c
+index a1390d2..b60946a 100644
+--- a/libc/qsoe/sync.c
++++ b/libc/qsoe/sync.c
+@@ -453,6 +453,10 @@ int SyncMutexUnlock(sync_t *s)
+     unsigned long my_tid = (unsigned long)qsoe_curthr()->tid;
+     unsigned long val = __atomic_load_n(&s->owner, __ATOMIC_RELAXED);
+ 
++    if ((val & QSOE_SYNC_TID_MASK) == 0) {
++        return 0;
++    }
++
+     if ((val & QSOE_SYNC_TID_MASK) != my_tid) {
+         qsoe_errno = EPERM;
+         return -1;
+diff --git a/taskman/proc/proc.h b/taskman/proc/proc.h
+index a44cb48..a66f49b 100644
+--- a/taskman/proc/proc.h
++++ b/taskman/proc/proc.h
+@@ -305,6 +305,7 @@ typedef struct {
+      * root-CNode slot is freed back to the slot free-list. */
+     seL4_CPtr objcnode;
+     int       objcnode_next;
++    unsigned long objcnode_va[1 << TM_OBJCNODE_RADIX];
+ 
+     /* v0.10 fault handler: the badged Send+GrantReply cap to taskman's
+      * primary EP installed as the main thread's fault endpoint.  Stays
+@@ -510,6 +511,12 @@ int           tm_process_waitpid(pid_t waiter, pid_t child,
+  * args back.  Match is by (va & ~(QSOE_MEGA_PAGE - 1)). */
+ seL4_CPtr     tm_process_find_frame(const tm_process_t *proc,
+                                      unsigned long va);
++int           tm_process_resolve_frame(const tm_process_t *proc,
++                                       unsigned long va,
++                                       seL4_CPtr *out_cnode,
++                                       seL4_CPtr *out_slot,
++                                       seL4_Uint8 *out_depth,
++                                       int *out_is_mega);
+ 
+ /* Read up to 4 KiB from `args_va` in `proc`'s VSpace into out_buf.
+  * Looks up the Mega_Page frame backing args_va via tm_process_find_frame,
+diff --git a/taskman/proc/process.c b/taskman/proc/process.c
+index b88a2a9..533c1f6 100644
+--- a/taskman/proc/process.c
++++ b/taskman/proc/process.c
+@@ -15,6 +15,7 @@
+ #include "../qsoe_invoke.h"
+ #include "../path/cpiofs.h"  /* tm_cpio_lookup */
+ #include <tm_log.h>
++#include <tm_pathmgr.h>
+ #include <tm_cred.h>          /* tm_cred_change_permitted */
+ #include <qsoe/slots.h>
+ #include <cpio.h>
+@@ -250,6 +251,9 @@ void tm_init(seL4_CPtr ut, seL4_CPtr cnode_root, seL4_CPtr first_free)
+     g_processes[0].pput_count = 0;
+     g_processes[0].objcnode = 0;
+     g_processes[0].objcnode_next = 0;
++    for (int j = 0; j < (1 << TM_OBJCNODE_RADIX); ++j) {
++        g_processes[0].objcnode_va[j] = 0;
++    }
+     g_processes[0].fault_ep = 0;
+ }
+ 
+@@ -305,6 +309,9 @@ int tm_process_register(pid_t pid, seL4_CPtr cnode,
+         g_processes[i].pput_count = 0;
+         g_processes[i].objcnode = 0;
+         g_processes[i].objcnode_next = 0;
++        for (int j = 0; j < (1 << TM_OBJCNODE_RADIX); ++j) {
++            g_processes[i].objcnode_va[j] = 0;
++        }
+         g_processes[i].fault_ep = 0;
+         return 0;
+     }
+@@ -339,6 +346,63 @@ seL4_CPtr tm_process_find_frame(const tm_process_t *proc, unsigned long va)
+     return 0;
+ }
+ 
++int tm_process_resolve_frame(const tm_process_t *proc, unsigned long va,
++                             seL4_CPtr *out_cnode, seL4_CPtr *out_slot,
++                             seL4_Uint8 *out_depth, int *out_is_mega)
++{
++    if (!proc) return -EINVAL;
++
++    /* 1. Check anonymous mmap region (Mega_Pages) */
++    unsigned long key_mega = va & ~(QSOE_MEGA_PAGE - 1);
++    for (int i = 0; i < proc->mmap_count; ++i) {
++        if (proc->mmap[i].va_page == key_mega) {
++            *out_cnode = s_cnode_root;
++            *out_slot  = proc->mmap[i].frame;
++            *out_depth = TM_DEPTH_TASKMAN;
++            *out_is_mega = 1;
++            return 0;
++        }
++    }
++
++    /* 2. Check RELRO region (4 KiB pages) */
++    unsigned long key_4k = va & ~0xFFFUL;
++    for (int i = 0; i < proc->mprot_count; ++i) {
++        if (proc->mprot[i].va_page == key_4k) {
++            *out_cnode = s_cnode_root;
++            *out_slot  = proc->mprot[i].frame;
++            *out_depth = TM_DEPTH_TASKMAN;
++            *out_is_mega = 0;
++            return 0;
++        }
++    }
++
++    /* 3. Check object CNode (image/stack 4 KiB pages) */
++    if (proc->objcnode) {
++        for (int i = 0; i < proc->objcnode_next; ++i) {
++            if (proc->objcnode_va[i] == key_4k) {
++                *out_cnode = proc->objcnode;
++                *out_slot  = (seL4_CPtr)i;
++                *out_depth = TM_OBJCNODE_RADIX;
++                *out_is_mega = 0;
++                return 0;
++            }
++        }
++    }
++
++    /* 4. Check device frames (MAP_PHYS) */
++    for (int i = 0; i < proc->devframe_count; ++i) {
++        if (proc->devframe_va[i] == key_4k) {
++            *out_cnode = s_cnode_root;
++            *out_slot  = proc->devframes[i];
++            *out_depth = TM_DEPTH_TASKMAN;
++            *out_is_mega = 0;
++            return 0;
++        }
++    }
++
++    return -EFAULT;
++}
++
+ seL4_CPtr tm_process_alloc_slot(pid_t pid)
+ {
+     tm_process_t *p = tm_process_lookup(pid);
+@@ -870,6 +934,8 @@ int tm_process_terminate(pid_t target, int status)
+      * never run the teardown again -- just succeed. */
+     if (p->exit_state != 0) return 0;
+ 
++    tm_pathmgr_unregister_pid(target);
++
+     p->exit_state  = TM_EXIT_ZOMBIE;
+     p->exit_status = status;
+     int delivered = 0;
+@@ -966,6 +1032,21 @@ int tm_process_terminate(pid_t target, int status)
+     qsoe_cnode_delete(s_cnode_root, p->vspace, TM_DEPTH_TASKMAN);
+     taskman_free_slot(p->vspace);
+ 
++    /* Clear all capabilities inside the child's CSpace to avoid leaks and unblock clients.
++     * Running this after the TCB is destroyed (Step 4) guarantees that the kernel has already
++     * cancelled and unblocked any reply-blocked client threads before we delete the
++     * Reply Object capability in slot 10. */
++    if (p->cnode) {
++        seL4_Uint8 ddepth = cnode_depth_for(target);
++        for (seL4_CPtr slot = 1; slot < (seL4_CPtr)p->next_slot; ++slot) {
++            /* Skip slot 9 (QSOE_CAP_CNODE_SELF) and slot 1 (QSOE_CAP_TASKMAN_EP)
++             * to avoid self-revocation problems while we are clearing the CSpace. */
++            if (slot == 1 || slot == 9) continue;
++            (void) qsoe_cnode_revoke(p->cnode, slot, ddepth);
++            (void) qsoe_cnode_delete(p->cnode, slot, ddepth);
++        }
++    }
++
+     /* 6. CNode. */
+     qsoe_cnode_revoke(s_cnode_root, p->cnode, TM_DEPTH_TASKMAN);
+     qsoe_cnode_delete(s_cnode_root, p->cnode, TM_DEPTH_TASKMAN);
+diff --git a/taskman/proc/spawn.c b/taskman/proc/spawn.c
+index d11d416..a725df6 100644
+--- a/taskman/proc/spawn.c
++++ b/taskman/proc/spawn.c
+@@ -793,41 +793,53 @@ long tm_bulk_copy(tm_process_t *src_proc, unsigned long src_va,
+     while (done < len) {
+         unsigned long sva = src_va + done;
+         unsigned long dva = dst_va + done;
+-        seL4_CPtr fs = tm_process_find_frame(src_proc, sva);
+-        seL4_CPtr fd = tm_process_find_frame(dst_proc, dva);
+-        if (!fs || !fd) {
++        seL4_CPtr src_cnode, src_slot;
++        seL4_Uint8 src_depth;
++        int src_is_mega;
++        seL4_CPtr dst_cnode, dst_slot;
++        seL4_Uint8 dst_depth;
++        int dst_is_mega;
++
++        if (tm_process_resolve_frame(src_proc, sva, &src_cnode, &src_slot, &src_depth, &src_is_mega) != 0 ||
++            tm_process_resolve_frame(dst_proc, dva, &dst_cnode, &dst_slot, &dst_depth, &dst_is_mega) != 0) {
+             tm_err("tm_bulk_copy: unmapped VA (src pid %ld va=%08lx -> %lu, "
+                    "dst pid %ld va=%08lx -> %lu)",
+-                   (long)src_proc->pid, sva, (unsigned long)fs,
+-                   (long)dst_proc->pid, dva, (unsigned long)fd);
++                   (long)src_proc->pid, sva, 0UL,
++                   (long)dst_proc->pid, dva, 0UL);
+             return -EFAULT;
+         }
+-        /* Chunk = bytes left in whichever megaframe (src or dst) ends
+-         * first -- the two buffers may carry independent in-page offsets. */
+-        unsigned long so   = sva & (QSOE_MEGA_PAGE - 1);
+-        unsigned long dof  = dva & (QSOE_MEGA_PAGE - 1);
++
++        unsigned long src_page_size = src_is_mega ? QSOE_MEGA_PAGE : QSOE_PAGE_4K;
++        unsigned long dst_page_size = dst_is_mega ? QSOE_MEGA_PAGE : QSOE_PAGE_4K;
++
++        unsigned long so  = sva & (src_page_size - 1);
++        unsigned long dof = dva & (dst_page_size - 1);
++
+         unsigned long chunk = len - done;
+-        if (chunk > QSOE_MEGA_PAGE - so)  chunk = QSOE_MEGA_PAGE - so;
+-        if (chunk > QSOE_MEGA_PAGE - dof) chunk = QSOE_MEGA_PAGE - dof;
++        if (chunk > src_page_size - so)  chunk = src_page_size - so;
++        if (chunk > dst_page_size - dof) chunk = dst_page_size - dof;
+ 
+         seL4_Word err = qsoe_cnode_copy(s_cnode_root, s_bulk_slot_src,
+-                                         TM_BULK_CNODE_DEPTH, s_cnode_root, fs,
+-                                         TM_BULK_CNODE_DEPTH, QSOE_RIGHTS_ALL);
++                                         TM_BULK_CNODE_DEPTH, src_cnode, src_slot,
++                                         src_depth, QSOE_RIGHTS_ALL);
+         if (err) return -ENOMEM;
+         err = qsoe_cnode_copy(s_cnode_root, s_bulk_slot_dst,
+-                              TM_BULK_CNODE_DEPTH, s_cnode_root, fd,
+-                              TM_BULK_CNODE_DEPTH, QSOE_RIGHTS_ALL);
++                              TM_BULK_CNODE_DEPTH, dst_cnode, dst_slot,
++                              dst_depth, QSOE_RIGHTS_ALL);
+         if (err) {
+             qsoe_cnode_delete(s_cnode_root, s_bulk_slot_src, TM_BULK_CNODE_DEPTH);
+             return -ENOMEM;
+         }
+ 
++        unsigned long src_scratch_va = src_is_mega ? TM_SCRATCH_MEGA_VADDR : TM_SCRATCH_VADDR;
++        unsigned long dst_scratch_va = dst_is_mega ? TM_SCRATCH_MEGA_VADDR_B : (TM_SCRATCH_VADDR + 0x1000UL);
++
+         err = qsoe_riscv_page_map(s_bulk_slot_src, seL4_CapInitThreadVSpace,
+-                                  TM_SCRATCH_MEGA_VADDR, QSOE_RIGHTS_ALL,
++                                  src_scratch_va, QSOE_RIGHTS_ALL,
+                                   QSOE_VM_ATTR_DEFAULT);
+         if (!err)
+             err = qsoe_riscv_page_map(s_bulk_slot_dst, seL4_CapInitThreadVSpace,
+-                                      TM_SCRATCH_MEGA_VADDR_B, QSOE_RIGHTS_ALL,
++                                      dst_scratch_va, QSOE_RIGHTS_ALL,
+                                       QSOE_VM_ATTR_DEFAULT);
+         if (err) {
+             qsoe_riscv_page_unmap(s_bulk_slot_src);
+@@ -836,8 +848,8 @@ long tm_bulk_copy(tm_process_t *src_proc, unsigned long src_va,
+             return -ENOMEM;
+         }
+ 
+-        qmemcpy((void *)(TM_SCRATCH_MEGA_VADDR_B + dof),
+-                (const void *)(TM_SCRATCH_MEGA_VADDR + so), chunk);
++        qmemcpy((void *)(dst_scratch_va + dof),
++                (const void *)(src_scratch_va + so), chunk);
+         __asm__ volatile ("fence rw, rw" ::: "memory");
+ 
+         qsoe_riscv_page_unmap(s_bulk_slot_src);
+@@ -1731,6 +1743,7 @@ int tm_spawn(const void *elf_blob, unsigned long elf_len,
+                            (unsigned long)merr);
+                     return -ENOMEM;
+                 }
++                op->objcnode_va[op->objcnode_next] = s_frames[i].va_page;
+                 op->objcnode_next++;
+                 taskman_free_slot(src);
+             }
+@@ -1749,6 +1762,7 @@ int tm_spawn(const void *elf_blob, unsigned long elf_len,
+                            (unsigned long)merr);
+                     return -ENOMEM;
+                 }
++                op->objcnode_va[op->objcnode_next] = 0;
+                 op->objcnode_next++;
+                 taskman_free_slot(src);
+             }

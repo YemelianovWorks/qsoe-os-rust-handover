@@ -55,8 +55,9 @@ while read -r comp ver _rest; do
         exit 1
     fi
     if [ -d "$comp" ]; then
-        echo "==> $comp: present, pulling latest changes"
-        git -C $comp pull
+        echo "==> $comp: present, fetching latest changes and checking out v$ver"
+        git -C "$comp" fetch origin
+        git -C "$comp" checkout "v$ver"
     else
         echo "==> $comp: cloning + switching to v$ver"
         git clone "$REMOTE_BASE/$comp.git"
