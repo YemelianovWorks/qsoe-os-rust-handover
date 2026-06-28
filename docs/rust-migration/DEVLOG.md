@@ -24,6 +24,49 @@ Follow-up:
 - ...
 ```
 
+## 2026-06-28 22:32 CEST - Rust mkfs-qrv Live Image Smoke
+
+Scope:
+
+- Added `QSOE_RUST_MKFS_QRV=1` as an opt-in selector for the top-level qrvfs
+  image writer while keeping C `mkfs-qrv` as the default.
+- Added `scripts/mkfs-qrv-rs-artifact.sh` to build the Rust host writer at
+  `build/mkfs-qrv-rs`.
+- Added `scripts/rust-mkfs-qrv-live-smoke.sh`, `make rust-mkfs-qrv-live-smoke`,
+  and the container wrapper target.
+- Updated README, `HOST_TOOLS.md`, `STATUS.md`, and `rust/README.md` to record
+  Rust-written live-image evidence and the remaining writer gate.
+
+Commands:
+
+- `bash -n scripts/mkfs-qrv-rs-artifact.sh scripts/rust-mkfs-qrv-live-smoke.sh`
+- `make -n rust-mkfs-qrv-artifact rust-mkfs-qrv-live-smoke container-rust-mkfs-qrv-live-smoke`
+- `make rust-mkfs-qrv-artifact`
+- `QSOE_RUST_MKFS_QRV=1 make fsqrv-image`
+- `make rust-mkfs-qrv-live-smoke`
+- `make rust-quality`
+- `make check-qrvfs-rust-writer-production-root`
+- `make check-qrvfs-rust-writer-fixture`
+- `make check-qrvfs-rust-fixture`
+- `git diff --check`
+
+Result:
+
+- `mkfs-qrv-rs-artifact.sh` built `build/mkfs-qrv-rs`.
+- `QSOE_RUST_MKFS_QRV=1 make fsqrv-image` wrote `build/fsqrv.img` from
+  `build/fsqrv-root` using Rust `mkfs-qrv-rs`.
+- `make rust-mkfs-qrv-live-smoke` booted QSOE/L with C `devb-virtio`, mounted
+  the Rust-written virtio qrvfs image at `/usr`, reached the login prompt, and
+  printed `rust-virtio-file-smoke.sh: /usr file read smoke passed`.
+- The boot log includes the guest marker
+  `rust-virtio-file-smoke: read /usr/conf/passwd ok`.
+- Rust quality and qrvfs fixture/production-root checks passed.
+
+Follow-up:
+
+- Keep C `mkfs-qrv` as the default writer until triple-indirect stress coverage
+  and a default-writer release-candidate path with C rollback are in place.
+
 ## 2026-06-24 16:04 CEST - Pipe Rust-Default RC Path
 
 Scope:
