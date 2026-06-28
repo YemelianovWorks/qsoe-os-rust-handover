@@ -122,7 +122,7 @@ function renderComponentCard(component) {
 
   const tags = el("div", "tag-row");
   tags.append(
-    el("span", "tag", component.cDefault ? "C rollback" : "No C default"),
+    el("span", "tag", component.cDefault ? "C default" : "C not default"),
     el("span", "tag", component.rustDefault ? "Rust default RC" : "Rust opt-in"),
     el("span", `tag risk-${slug(component.risk)}`, `Risk: ${component.risk}`)
   );

@@ -361,6 +361,7 @@ td {
   color: var(--muted);
   font-family: SFMono-Regular, Consolas, "Liberation Mono", monospace;
   font-size: 0.78rem;
+  white-space: pre-line;
   overflow-wrap: anywhere;
 }
 
