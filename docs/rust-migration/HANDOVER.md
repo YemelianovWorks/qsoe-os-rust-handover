@@ -348,8 +348,10 @@ The strict ELF audit showed:
   default and rollback until a separate RC decision accepts that boundary.
 - `tm_sysmap` has a Rust opt-in provider behind `QSOE_RUST_TM_SYSMAP=1`. The
   selector removes LQ C `sys/sysmap.o` and links through the shared taskman
-  Rust provider archive. C remains default and rollback until mapped `PSYS`
-  page runtime coverage and a separate RC decision exist.
+  Rust provider archive. `make tm-sysmap-runtime-smoke` boots LQ with Rust
+  `tm_sysmap` selected and checks spawned-child `sysinfo` output for nonzero
+  timebase, PLIC, and PCI data from the mapped `PSYS` page. C remains default
+  and rollback until a separate RC decision exists.
 - `tm_pathmgr` has a Rust opt-in provider behind `QSOE_RUST_TM_PATHMGR=1`. The
   selector removes C `pathmgr.o` from `libtaskman.a` and links through the
   shared taskman Rust provider archive. C remains default and rollback until

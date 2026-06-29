@@ -24,6 +24,38 @@ Follow-up:
 - ...
 ```
 
+## 2026-06-29 23:58 CEST - tm_sysmap Runtime Smoke
+
+Scope:
+
+- Added `make tm-sysmap-runtime-smoke` and container CI wiring.
+- The smoke rebuilds QSOE/L with `QSOE_RUST_TM_SYSMAP=1` and mandatory
+  `QSOE_RUST_TM_PROCFS=1`.
+- It captures the Rust-selected LQ taskman dry-run plan, rejects any remaining
+  `sys/sysmap.o` link, verifies the selected Rust provider archive exports
+  `tm_sysmap_build` and `tm_sysmap_get`, waits for taskman's syscfg/sysmap boot
+  markers, waits for pci-server scan completion, then runs `/usr/bin/sysinfo`
+  from sysinit and checks its QEMU timebase, PLIC, and PCI output.
+- Updated `tm_sysmap` status docs so the next gate is a separate Rust-default
+  RC decision rather than missing basic spawned-child `PSYS` page coverage.
+
+Commands:
+
+- `bash -n scripts/tm-sysmap-runtime-smoke.sh scripts/tm-sysmap-evidence.sh scripts/boot-smoke.sh`
+- `make -n tm-sysmap-runtime-smoke container-tm-sysmap-runtime-smoke`
+- `make tm-sysmap-runtime-smoke`
+
+Result:
+
+- The local `make tm-sysmap-runtime-smoke` run passed.
+- The smoke proves the Rust-selected sysmap builder is exercised through a
+  booted child process consuming the mapped `PSYS` page.
+
+Follow-up:
+
+- Keep `tm_sysmap` Rust opt-in while deciding whether to open a separate
+  Rust-default RC window.
+
 ## 2026-06-29 23:45 CEST - tm_fdt Runtime Smoke
 
 Scope:
@@ -611,8 +643,9 @@ Result:
 
 Follow-up:
 
-- Keep `tm_sysmap` Rust opt-in only until boot/runtime coverage proves the
-  mapped `PSYS` page consumed by children before any Rust-default RC decision.
+- Later `make tm-sysmap-runtime-smoke` added focused spawned-child `PSYS` page
+  coverage through `sysinfo` timebase, PLIC, and PCI output. Keep `tm_sysmap`
+  Rust opt-in pending a separate RC decision.
 
 ## 2026-06-29 15:39 CEST - tm_fdt Rust Opt-In Provider
 

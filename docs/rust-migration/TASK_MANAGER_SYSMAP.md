@@ -51,6 +51,7 @@ The top-level evidence target is:
 
 ```sh
 make tm-sysmap-evidence
+make tm-sysmap-runtime-smoke
 ```
 
 Multiple taskman Rust providers may be selected together. The shared
@@ -68,9 +69,10 @@ cargo test --manifest-path rust/Cargo.toml -p qsoe-tm-sysmap --features host-tes
 cargo clippy --manifest-path rust/Cargo.toml -p qsoe-tm-sysmap --features host-tests -- -D warnings
 bash -n scripts/check-tm-sysmap-model.sh scripts/build-rust-tm-sysmap-provider.sh scripts/tm-sysmap-evidence.sh scripts/apply-component-overrides.sh scripts/rust-check.sh scripts/rust-workflow.sh
 ./scripts/apply-component-overrides.sh
-make -n check-tm-sysmap-model rust-tm-sysmap-provider tm-sysmap-evidence container-rust-tm-sysmap-provider container-tm-sysmap-evidence
+make -n check-tm-sysmap-model rust-tm-sysmap-provider tm-sysmap-evidence tm-sysmap-runtime-smoke container-rust-tm-sysmap-provider container-tm-sysmap-evidence container-tm-sysmap-runtime-smoke
 make rust-tm-sysmap-provider
 make tm-sysmap-evidence
+make tm-sysmap-runtime-smoke
 ```
 
 `make tm-sysmap-evidence` verified:
@@ -87,8 +89,33 @@ make tm-sysmap-evidence
 - linked taskman ELFs pass the evidence script's ELF flag and section audit.
 
 This evidence proves ABI compatibility, archive selection, rollback, and linked
-artifact shape. It does not yet prove full boot/runtime behavior for the mapped
-child `PSYS` page under the Rust provider.
+artifact shape.
+
+`make tm-sysmap-runtime-smoke` verified the Rust-selected builder in a booted
+LQ image. The smoke:
+
+- captures a Rust-selected LQ taskman dry-run plan and rejects any remaining
+  `sys/sysmap.o` link;
+- verifies the selected Rust provider archive exports `tm_sysmap_build` and
+  `tm_sysmap_get`;
+- boots with `QSOE_RUST_TM_SYSMAP=1` and mandatory `QSOE_RUST_TM_PROCFS=1`;
+- waits for taskman's `syscfg built from FDT` and `sysmap page built` markers;
+- waits for pci-server's scan-complete marker, proving its `hwi_init` path
+  could derive ECAM data from the mapped sysmap page;
+- runs `/usr/bin/sysinfo` from sysinit and checks the QEMU timebase, PLIC, and
+  PCI output from the spawned child's `QSOE_SYSMAP_VA` page.
+
+Expected runtime markers:
+
+```text
+syscfg built from FDT
+sysmap page built
+[pci-server] scan complete
+tm-sysmap-runtime-smoke: /usr/bin/sysinfo completed
+timebase 10000000 Hz
+interrupts: PLIC at
+PCI:       buses 0..
+```
 
 ## C Rollback
 
@@ -98,6 +125,6 @@ C remains the default and rollback path:
 - `QSOE_RUST_TM_SYSMAP=1` excludes `sys/sysmap.o` from LQ taskman and links
   the shared taskman Rust provider archive.
 
-Do not promote this provider to a Rust-default RC until runtime boot coverage
-proves the sysmap page consumed by user processes, and do not retire C until
-#26 is satisfied in a separate removal PR.
+Do not promote this provider to a Rust-default RC until a separate RC decision
+accepts the remaining risk with C rollback, and do not retire C until #26 is
+satisfied in a separate removal PR.

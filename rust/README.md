@@ -452,6 +452,7 @@ without changing the normal taskman default:
 make check-tm-sysmap-model
 make rust-tm-sysmap-provider
 make tm-sysmap-evidence
+make tm-sysmap-runtime-smoke
 ```
 
 With the default `QSOE_RUST_TM_SYSMAP=0`, LQ taskman links the existing C
@@ -460,6 +461,11 @@ omits C `sys/sysmap.o`, builds `qsoe-tm-sysmap` for
 `riscv64imac-unknown-none-elf`, and links `libqsoe_tm_sysmap.a` into taskman.
 FDT parsing, syscfg construction, process-table ownership, child VSpace
 mapping, and seL4 invocation code remain C.
+
+`make tm-sysmap-runtime-smoke` boots QSOE/L with Rust `tm_sysmap` selected,
+verifies the Rust-selected LQ taskman link plan omits C `sys/sysmap.o`, and
+checks a spawned `/usr/bin/sysinfo` child for the QEMU timebase, PLIC, and PCI
+output emitted from the mapped `PSYS` page.
 
 ## Task Manager Credential Selection
 
