@@ -84,14 +84,15 @@ opt-in status display, PR #166 added the Rust opt-in `tm_cpio` provider, PR
 added the Rust opt-in `tm_pathmgr` provider, PR #175 retired the C
 `test_msgpass` helper, and PR #176 styled retired roadmap state in the
 dashboard. PR #177 retired the C `slogger` service, PR #178 retired the C
-`pipe` service, and PR #180 retired the C `devb-virtio` block driver. The
-current `main` tip is `2e6d5f5cd705097efe8b30ed8ad53321b53e4555`.
+`pipe` service, PR #180 retired the C `devb-virtio` block driver, PR #181
+added the shared taskman Rust provider archive, and PR #182 retired the C
+`tm_procfs` task-manager provider. The current `main` tip is
+`343642de2d0dbd95d56441a8b4b172f18d2b5b44`.
 
 Current open follow-ups:
 
-- #141: retire the C `tm_procfs` task-manager provider. The current branch
-  removes `libtaskman/src/tm_procfs.c`, makes `QSOE_RUST_TM_PROCFS=1`
-  mandatory, and keeps the public `tm_procfs.h` ABI for taskman C glue.
+- #142: keep `tm_cpio` Rust opt-in while using `make tm-cpio-runtime-smoke`
+  evidence to decide whether a separate Rust-default RC window is justified.
 
 The #96 Rust pipe data-path gate, #97 Rust `test_msgpass` gate, and #103
 `tm_procfs` opt-in gate are satisfied by trusted `main` CI run `28102250069` at
@@ -99,8 +100,8 @@ The #96 Rust pipe data-path gate, #97 Rust `test_msgpass` gate, and #103
 
 The #98 host-test gate for the portable `tm_procfs` model is now satisfied by
 Rust host tests through `make check-tm-procfs-model`. The #102 Rust provider
-gate is satisfied by mandatory `QSOE_RUST_TM_PROCFS=1`; the current branch
-closes the C rollback window for this provider.
+gate is satisfied by mandatory `QSOE_RUST_TM_PROCFS=1`; PR #182 closes the C
+rollback window for this provider.
 
 The shared taskman Rust provider archive landed in #179 / PR #181. NQ/LQ
 taskman now link `tm_procfs` through `qsoe-tm-providers` by default, and any
@@ -331,9 +332,9 @@ The strict ELF audit showed:
   smoke and separate RC decision exist.
 - `tm_cpio` has a Rust opt-in provider behind `QSOE_RUST_TM_CPIO=1`. The
   selector removes C `cpio.o` from `libtaskman.a` and links through the shared
-  taskman Rust provider archive. C remains default and rollback until
-  CPIO-backed spawn/file-access runtime coverage and a separate RC decision
-  exist.
+  taskman Rust provider archive. `make tm-cpio-runtime-smoke` covers the
+  CPIO-backed symlink, file-read, and spawn paths. C remains default and
+  rollback until a separate RC decision exists.
 - `tm_script` has a Rust opt-in provider behind `QSOE_RUST_TM_SCRIPT=1`. The
   selector removes C `script.o` from `libtaskman.a` and links through the
   shared taskman Rust provider archive. C remains default and rollback until
