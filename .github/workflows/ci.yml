@@ -88,6 +88,10 @@ jobs:
         if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
         run: make container-tm-procfs-evidence
 
+      - name: Run tm_pseudodev Rust opt-in evidence
+        if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+        run: make container-tm-pseudodev-evidence
+
       - name: Upload boot smoke logs
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
@@ -103,4 +107,6 @@ jobs:
             build/pipe-rc/*.log
             build/tm-procfs-evidence/**/*.log
             build/tm-procfs-evidence/**/*.txt
+            build/tm-pseudodev-evidence/**/*.log
+            build/tm-pseudodev-evidence/**/*.txt
           if-no-files-found: ignore

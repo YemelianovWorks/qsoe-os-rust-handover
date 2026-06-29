@@ -21,11 +21,13 @@ QSOE_RUST_TEST_MSGPASS ?= 0
 QSOE_RUST_PIPE ?= 0
 QSOE_RUST_TM_CRED ?= 0
 QSOE_RUST_TM_PROCFS ?= 0
+QSOE_RUST_TM_PSEUDODEV ?= 0
 QSOE_RUST_TREEQRVFS ?= 1
 QSOE_RUST_MKFS_QRV ?= 0
 
-ifeq ($(QSOE_RUST_TM_CRED)$(QSOE_RUST_TM_PROCFS),11)
-$(error QSOE_RUST_TM_CRED and QSOE_RUST_TM_PROCFS cannot both be 1 until taskman Rust providers share one staticlib)
+TM_RUST_PROVIDER_COUNT := $(words $(filter 1,$(QSOE_RUST_TM_CRED) $(QSOE_RUST_TM_PROCFS) $(QSOE_RUST_TM_PSEUDODEV)))
+ifneq ($(filter 2 3,$(TM_RUST_PROVIDER_COUNT)),)
+$(error select at most one taskman Rust provider until they share one staticlib)
 endif
 
 SELECTED_SLOGGER_ELF ?= build/rust/selected/sbin/slogger.elf
@@ -55,7 +57,8 @@ SELECTED_PIPE_ELF ?= build/rust/selected/sbin/pipe.elf
         rust-test-msgpass-link-smoke rust-pipe-link-smoke \
         slogger-artifact virtio-artifact test-msgpass-artifact pipe-artifact \
         rust-tm-cred-provider rust-tm-procfs-provider \
-        tm-cred-evidence tm-procfs-evidence \
+        rust-tm-pseudodev-provider \
+        tm-cred-evidence tm-procfs-evidence tm-pseudodev-evidence \
         rust-slogger-boot-smoke \
         rust-virtio-boot-smoke rust-virtio-file-smoke \
         virtio-rc-file-smoke virtio-rc-rollback-smoke \
@@ -77,7 +80,9 @@ SELECTED_PIPE_ELF ?= build/rust/selected/sbin/pipe.elf
         container-slogger-artifact container-virtio-artifact \
         container-test-msgpass-artifact container-pipe-artifact \
         container-rust-tm-cred-provider container-rust-tm-procfs-provider \
+        container-rust-tm-pseudodev-provider \
         container-tm-cred-evidence container-tm-procfs-evidence \
+        container-tm-pseudodev-evidence \
         container-rust-virtio-boot-smoke \
         container-virtio-rc-file-smoke container-virtio-rc-rollback-smoke \
         container-rust-mkfs-qrv-live-smoke \
@@ -101,7 +106,8 @@ all: component-overrides
 	$(MAKE) -C nq QSOE_RUST_TM_CRED=$(QSOE_RUST_TM_CRED) \
 	    QSOE_RUST_TM_PROCFS=$(QSOE_RUST_TM_PROCFS)
 	$(MAKE) -C lq QSOE_RUST_TM_CRED=$(QSOE_RUST_TM_CRED) \
-	    QSOE_RUST_TM_PROCFS=$(QSOE_RUST_TM_PROCFS)
+	    QSOE_RUST_TM_PROCFS=$(QSOE_RUST_TM_PROCFS) \
+	    QSOE_RUST_TM_PSEUDODEV=$(QSOE_RUST_TM_PSEUDODEV)
 
 prepare:
 	./proj_obtain.sh
@@ -359,11 +365,17 @@ rust-tm-cred-provider:
 rust-tm-procfs-provider:
 	@scripts/build-rust-tm-procfs-provider.sh
 
+rust-tm-pseudodev-provider:
+	@scripts/build-rust-tm-pseudodev-provider.sh
+
 tm-cred-evidence:
 	@scripts/tm-cred-evidence.sh
 
 tm-procfs-evidence:
 	@scripts/tm-procfs-evidence.sh
+
+tm-pseudodev-evidence:
+	@scripts/tm-pseudodev-evidence.sh
 
 rust-slogger-boot-smoke:
 	@scripts/rust-slogger-boot-smoke.sh
@@ -510,11 +522,17 @@ container-rust-tm-cred-provider:
 container-rust-tm-procfs-provider:
 	@scripts/container-toolchain.sh run make rust-tm-procfs-provider
 
+container-rust-tm-pseudodev-provider:
+	@scripts/container-toolchain.sh run make rust-tm-pseudodev-provider
+
 container-tm-cred-evidence:
 	@scripts/container-toolchain.sh run make tm-cred-evidence
 
 container-tm-procfs-evidence:
 	@scripts/container-toolchain.sh run make tm-procfs-evidence
+
+container-tm-pseudodev-evidence:
+	@scripts/container-toolchain.sh run make tm-pseudodev-evidence
 
 container-check-qrvfs-rust-writer-fixture:
 	@scripts/container-toolchain.sh run make check-qrvfs-rust-writer-fixture

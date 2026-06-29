@@ -25,6 +25,8 @@ removed just because a Rust version exists.
 - Rust-default release-candidate paths exist for `qrvfs-tree`, `mkfs-qrv-rs`,
   `slogger-rs`, `devb-virtio-rs`, `pipe-rs`, `test_msgpass-rs`, and
   `qsoe-tm-procfs`.
+- Rust opt-in task-manager providers exist for `qsoe-tm-cred` and
+  `qsoe-tm-pseudodev`; C remains the normal taskman default for both.
 - Rust `mkfs-qrv-rs` has fixture, production-root, target-initialization,
   bounded triple-indirect allocator, live virtio `/usr`, and C rollback smoke
   evidence.
@@ -60,6 +62,7 @@ Detailed planning lives under `docs/rust-migration/`. Start with:
 | `test_msgpass` helper | Rust default RC | `test_msgpass-rs` links, can be selected into the qrvfs test image, passes the existing suite `[msgpass]` section through `make rust-test-msgpass-smoke`, and has `make test-msgpass-rc-smoke` plus `make test-msgpass-rc-rollback-smoke` for the Rust-default test-image RC path. Next gate: #26 retirement checklist and a separate removal PR before any C retirement decision. |
 | `tm_procfs` task-manager pilot | Rust default RC | `qsoe-tm-procfs` exports the existing C ABI behind `QSOE_RUST_TM_PROCFS=1`; `make tm-procfs-rc-smoke` selects Rust by default for the RC image and `make tm-procfs-rc-rollback-smoke` restores C. Host model tests, Rust host tests, selected NQ/LQ taskman links, `make tm-procfs-evidence`, and `/proc` smokes cover the gate. Next gate: #26 retirement checklist and a separate removal PR before any C retirement decision. |
 | `tm_cred` task-manager provider | Rust opt-in | `qsoe-tm-cred` exports the existing `tm_cred.h` ABI behind `QSOE_RUST_TM_CRED=1`; `make tm-cred-evidence` runs C/Rust host tests, audits the soft-float staticlib, and verifies NQ/LQ taskman links with C rollback and Rust-selected archives. Next gate: add a credential-specific runtime smoke before any Rust-default RC decision. |
+| `tm_pseudodev` task-manager provider | Rust opt-in | `qsoe-tm-pseudodev` exports the existing LQ `/dev/null` and `/dev/zero` ABI behind `QSOE_RUST_TM_PSEUDODEV=1`; `make tm-pseudodev-evidence` runs Rust host tests, audits the soft-float staticlib, and verifies LQ C-default/Rust-selected taskman links. Next gate: add a focused `/dev/null` and `/dev/zero` runtime smoke before any Rust-default RC decision. |
 | Kernel Rust | Deferred | Current decision rejects near-term Rust in `nq` kernel code; only fixture/audit candidates are documented. |
 | C retirement | Blocked by policy | No C implementation is currently approved for removal; #26's checklist and a separate removal PR are still required for every component. |
 
@@ -89,6 +92,9 @@ Detailed planning lives under `docs/rust-migration/`. Start with:
 - `tm_procfs` now has a Rust-default release-candidate path with explicit C
   rollback through the `/proc` smoke. Keep C retirement blocked until #26's
   checklist and a separate removal PR.
+- `tm_cred` and `tm_pseudodev` are Rust opt-in task-manager providers only.
+  Keep them C-default until runtime smoke coverage and a separate RC decision
+  exist.
 
 ## Useful Commands
 
@@ -122,6 +128,8 @@ make tm-cred-evidence
 make check-tm-procfs-model
 make rust-tm-procfs-provider
 make tm-procfs-evidence
+make rust-tm-pseudodev-provider
+make tm-pseudodev-evidence
 make tm-procfs-rc-smoke
 make tm-procfs-rc-rollback-smoke
 QSOE_RUST_TM_PROCFS=1 make procfs-smoke

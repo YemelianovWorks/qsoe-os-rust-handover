@@ -1,0 +1,61 @@
+diff --git a/taskman/Makefile b/taskman/Makefile
+--- a/taskman/Makefile
++++ b/taskman/Makefile
+@@ -42,9 +42,11 @@
+ CC         := $(CROSS)gcc
+ QSOE_RUST_TM_PROCFS ?= 0
+ QSOE_RUST_TM_CRED ?= 0
++QSOE_RUST_TM_PSEUDODEV ?= 0
+ 
+-ifeq ($(QSOE_RUST_TM_CRED)$(QSOE_RUST_TM_PROCFS),11)
+-$(error QSOE_RUST_TM_CRED and QSOE_RUST_TM_PROCFS cannot both be 1 until taskman Rust providers share one staticlib)
++TM_RUST_PROVIDER_COUNT := $(words $(filter 1,$(QSOE_RUST_TM_CRED) $(QSOE_RUST_TM_PROCFS) $(QSOE_RUST_TM_PSEUDODEV)))
++ifneq ($(filter 2 3,$(TM_RUST_PROVIDER_COUNT)),)
++$(error select at most one taskman Rust provider until they share one staticlib)
+ endif
+ 
+ TASKMAN_DIR := $(TOP)/taskman
+@@ -88,6 +90,7 @@
+ REPO_ROOT := $(abspath $(TOP)/..)
+ RUST_TM_PROCFS_A := $(REPO_ROOT)/build/rust/tm-procfs/libqsoe_tm_procfs.a
+ RUST_TM_CRED_A := $(REPO_ROOT)/build/rust/tm-cred/libqsoe_tm_cred.a
++RUST_TM_PSEUDODEV_A := $(REPO_ROOT)/build/rust/tm-pseudodev/libqsoe_tm_pseudodev.a
+ 
+ TASKMAN_RUST_LIBS :=
+ ifeq ($(QSOE_RUST_TM_CRED),1)
+@@ -96,6 +99,15 @@
+ ifeq ($(QSOE_RUST_TM_PROCFS),1)
+ TASKMAN_RUST_LIBS += $(RUST_TM_PROCFS_A)
+ endif
++ifeq ($(QSOE_RUST_TM_PSEUDODEV),1)
++TASKMAN_RUST_LIBS += $(RUST_TM_PSEUDODEV_A)
++endif
++
++TASKMAN_PSEUDODEV_OBJS :=
++ifeq ($(QSOE_RUST_TM_PSEUDODEV),0)
++TASKMAN_PSEUDODEV_OBJS += $(OBJDIR)/sys/devnull.o
++TASKMAN_PSEUDODEV_OBJS += $(OBJDIR)/sys/devzero.o
++endif
+ 
+ TM_CFLAGS := $(ARCH_CFLAGS) \
+     -std=c11 -ffreestanding -nostdlib -nostdinc \
+@@ -223,8 +235,7 @@
+     $(OBJDIR)/path/procfs.o \
+     $(OBJDIR)/path/io.o \
+     $(OBJDIR)/sys/console.o \
+-    $(OBJDIR)/sys/devnull.o \
+-    $(OBJDIR)/sys/devzero.o \
++    $(TASKMAN_PSEUDODEV_OBJS) \
+     $(OBJDIR)/sys/fdt.o \
+     $(OBJDIR)/sys/irq.o \
+     $(OBJDIR)/sys/rsrcdb.o \
+@@ -255,6 +266,9 @@
+ $(RUST_TM_CRED_A): FORCE
+ 	@$(REPO_ROOT)/scripts/build-rust-tm-cred-provider.sh $@
+ 
++$(RUST_TM_PSEUDODEV_A): FORCE
++	@$(REPO_ROOT)/scripts/build-rust-tm-pseudodev-provider.sh $@
++
+ $(TASKMAN_ELF): $(TASKMAN_OBJS) $(LIBTASKMAN_A) $(TASKMAN_RUST_LIBS)
+ 	@mkdir -p $(@D)
+ 	$(CC) $(TM_CFLAGS) -static -nostdlib \

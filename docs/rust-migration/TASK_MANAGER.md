@@ -1,6 +1,6 @@
 # Task Manager Module Inventory
 
-Captured: 2026-06-24 02:00 CEST.
+Captured: 2026-06-29 CEST.
 
 This inventory starts Phase 9 by separating task-manager code that is plausibly
 isolated from code that is directly tied to process creation, capability setup,
@@ -35,12 +35,16 @@ no direct seL4 object manipulation, not automatically low risk.
 | Path registry | `libtaskman/src/pathmgr.c`, `libtaskman/include/tm_pathmgr.h` | Fixed-pool namespace tree, path resolve, repath, symlink expansion, and child iteration. | Medium-high: every open and device registration depends on it. |
 | Credentials policy | `libtaskman/src/cred.c`, `libtaskman/include/tm_cred.h` | Pure cwd, umask, uid/gid mutation, and permission checks. Rust opt-in provider exists behind `QSOE_RUST_TM_CRED=1`; see `TASK_MANAGER_CRED.md`. | Low-medium: process semantics, not boot spawn. |
 | Resource DB accounting | `lq/taskman/sys/rsrcdb.c`, `lq/taskman/sys/rsrcdb.h` | Fixed-pool resource-range allocation, split/merge, rollback on partial attach. | Low-medium: accounting table, but service-facing. |
-| Simple pseudo-devices | `lq/taskman/sys/devnull.c`, `lq/taskman/sys/devzero.c` | Small read/write/stat handlers. | Low-medium: simple, but served through taskman's IO path. |
+| Simple pseudo-devices | `lq/taskman/sys/devnull.c`, `lq/taskman/sys/devzero.c` | Small read/write/stat handlers. Rust opt-in provider exists behind `QSOE_RUST_TM_PSEUDODEV=1`; see `TASK_MANAGER_PSEUDODEV.md`. | Low-medium: simple, but served through taskman's IO path. |
 | Logging formatter | `libtaskman/src/log.c`, `lq/taskman/tm_log.c` | Freestanding format subset and seL4 debug-console sink. | Low: diagnostic path, but useful during failures. |
 
 The selected Phase 9 pilot candidate is the portable `/proc` model
 (`tm_procfs`). See `TASK_MANAGER_PROCFS.md` for the scope exclusions and
 evidence required before implementation.
+
+Subsequent bounded providers now exist for `tm_cred` and LQ pseudo-devices.
+They remain Rust opt-in only and do not change the rule that task-manager Rust
+work must avoid spawn, capability, relocation, and loader paths.
 
 ## Spawn-Critical Paths
 
