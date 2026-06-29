@@ -128,6 +128,10 @@ jobs:
         if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
         run: make container-tm-sysmap-evidence
 
+      - name: Run tm_sysmap Rust runtime smoke
+        if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+        run: make container-tm-sysmap-runtime-smoke
+
       - name: Run tm_procfs Rust-only evidence
         if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
         run: make container-tm-procfs-evidence
@@ -175,6 +179,8 @@ jobs:
             build/tm-syscfg-runtime-smoke/*.log
             build/tm-sysmap-evidence/**/*.log
             build/tm-sysmap-evidence/**/*.txt
+            build/tm-sysmap-runtime-smoke/*.log
+            build/tm-sysmap-runtime-smoke/*.txt
             build/tm-procfs-evidence/**/*.log
             build/tm-procfs-evidence/**/*.txt
             build/tm-pseudodev-evidence/**/*.log
