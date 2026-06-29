@@ -11,6 +11,7 @@ members = [
     "crates/qsoe-slogger",
     "crates/qsoe-sysview",
     "crates/qsoe-tm-cred",
+    "crates/qsoe-tm-pseudodev",
     "crates/qsoe-tm-procfs",
     "crates/qsoe-virtio",
     "bins/minimal-rs",

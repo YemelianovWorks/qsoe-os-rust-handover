@@ -75,10 +75,10 @@ then links `libqsoe_tm_procfs.a` into NQ and LQ taskman. The Rust archive is
 built for `riscv64imac-unknown-none-elf` so it matches taskman's soft-float
 ABI.
 
-Current taskman Rust providers are mutually exclusive. Do not set
-`QSOE_RUST_TM_PROCFS=1` and `QSOE_RUST_TM_CRED=1` in the same build until a
-shared taskman Rust archive packages multiple providers behind one panic
-handler.
+Current taskman Rust providers are mutually exclusive. Do not set more than one
+of `QSOE_RUST_TM_PROCFS=1`, `QSOE_RUST_TM_CRED=1`, and
+`QSOE_RUST_TM_PSEUDODEV=1` in the same build until a shared taskman Rust archive
+packages multiple providers behind one panic handler.
 
 ## Evidence
 

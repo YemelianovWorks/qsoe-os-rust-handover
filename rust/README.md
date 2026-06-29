@@ -342,9 +342,27 @@ C `cred.o`, builds `qsoe-tm-cred` for `riscv64imac-unknown-none-elf`, and
 links `libqsoe_tm_cred.a` into taskman. Process-table ownership, IPC decoding,
 filesystem-backed path validation, and seL4 invocation code remain C.
 
-Do not set `QSOE_RUST_TM_CRED=1` and `QSOE_RUST_TM_PROCFS=1` together yet.
-Current taskman providers are separate no-std Rust staticlibs; selecting more
-than one requires a later shared taskman Rust archive.
+## Task Manager Pseudo-device Selection
+
+The Rust LQ taskman pseudo-device provider can be built as a soft-float
+taskman staticlib without changing the normal taskman default:
+
+```sh
+make rust-tm-pseudodev-provider
+make tm-pseudodev-evidence
+```
+
+With the default `QSOE_RUST_TM_PSEUDODEV=0`, LQ taskman links the existing C
+`devnull.o` and `devzero.o`. With `QSOE_RUST_TM_PSEUDODEV=1`, the component
+Makefile selector omits those two objects, builds `qsoe-tm-pseudodev` for
+`riscv64imac-unknown-none-elf`, and links `libqsoe_tm_pseudodev.a` into
+taskman. Path dispatch, fd ownership, request decoding, process tables, and
+seL4 invocation code remain C.
+
+Do not set more than one of `QSOE_RUST_TM_CRED=1`,
+`QSOE_RUST_TM_PROCFS=1`, and `QSOE_RUST_TM_PSEUDODEV=1` together yet. Current
+taskman providers are separate no-std Rust staticlibs; selecting more than one
+requires a later shared taskman Rust archive.
 
 ## Parser Fuzzing
 

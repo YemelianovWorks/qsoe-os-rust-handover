@@ -72,9 +72,9 @@ PR #94 added the Rust pipe data-path smoke to CI, PR #99 added the Rust
 to CI, PR #101 added host-model coverage for `tm_procfs`, PR #104 added the
 Rust `tm_procfs` opt-in provider, PR #105 added the `tm_procfs` evidence gate,
 PR #107 applied tracked component overrides for CI, PR #108 fixed line-split
-serial marker checks in the Rust smokes, and PR #109 recorded trusted CI
-evidence for #96, #97, and #103. The current `main` tip is
-`cdebf687e870d417c32a166de18b23bc43421d17`.
+serial marker checks in the Rust smokes, PR #109 recorded trusted CI evidence
+for #96, #97, and #103, and PR #162 added the Rust opt-in `tm_cred` provider.
+The current `main` tip is `497c2485d675a883dcc4c701a9920ba1a732eab7`.
 
 Current open follow-ups:
 
@@ -88,6 +88,12 @@ The #96 Rust pipe data-path gate, #97 Rust `test_msgpass` gate, and #103
 The #98 host-test gate for the portable `tm_procfs` model is satisfied by
 `make check-tm-procfs-model`. The #102 Rust provider gate is satisfied by
 `QSOE_RUST_TM_PROCFS=1`; C remains default and rollback.
+
+The active `codex/tm-pseudodev-rust-provider` branch adds a Rust opt-in LQ
+pseudo-device provider behind `QSOE_RUST_TM_PSEUDODEV=1`. Local and container
+evidence passed through `make tm-pseudodev-evidence`,
+`make container-tm-pseudodev-evidence`, `make rust-check`, and
+`make container-source-build`; C remains default and rollback.
 
 ## Linux Machine Setup
 
@@ -214,6 +220,10 @@ make check-qrvfs-rust-fixture
 make check-elf-reloc-fixture
 make check-tm-procfs-model
 make rust-tm-procfs-provider
+make rust-tm-cred-provider
+make tm-cred-evidence
+make rust-tm-pseudodev-provider
+make tm-pseudodev-evidence
 QSOE_RUST_TM_PROCFS=1 make procfs-smoke
 cargo deny --manifest-path rust/Cargo.toml check -c rust/deny.toml
 make container-toolchain-build
@@ -293,6 +303,15 @@ The strict ELF audit showed:
   Trusted `main` run `28102250069` passed the evidence step and uploaded both
   C-default/Rust-selected procfs logs plus archive membership and readelf
   summaries. C remains default and rollback.
+- `tm_cred` has a Rust opt-in provider behind `QSOE_RUST_TM_CRED=1`. It is
+  merged on `main` through PR #162 with `make tm-cred-evidence` and
+  `make container-source-build` evidence. C remains default and rollback until
+  a credential-specific runtime smoke and separate RC decision exist.
+- `tm_pseudodev` is in progress on `codex/tm-pseudodev-rust-provider` behind
+  `QSOE_RUST_TM_PSEUDODEV=1`. The selector replaces only LQ
+  `sys/devnull.o` and `sys/devzero.o` with the Rust staticlib. Local and
+  container evidence pass; C remains default and rollback until a focused
+  `/dev/null` and `/dev/zero` runtime smoke and separate RC decision exist.
 
 ## Current Decisions
 

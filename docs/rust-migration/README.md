@@ -62,14 +62,16 @@ Read in this order:
    note and C rollback drill.
 33. `TASK_MANAGER_CRED.md`: Rust opt-in task-manager credential policy
    provider and evidence gate.
-34. `KERNEL_CANDIDATES.md`: Phase 10 kernel candidate inventory, explicit
+34. `TASK_MANAGER_PSEUDODEV.md`: Rust opt-in LQ task-manager `/dev/null` and
+   `/dev/zero` provider and evidence gate.
+35. `KERNEL_CANDIDATES.md`: Phase 10 kernel candidate inventory, explicit
    exclusions, and fixture-only ranking.
-35. `KERNEL_ARTIFACT_AUDIT.md`: Phase 10 kernel Rust artifact audit needs.
-36. `SPEC.md`: technical constraints, allowed boundaries, runtime/linking rules,
+36. `KERNEL_ARTIFACT_AUDIT.md`: Phase 10 kernel Rust artifact audit needs.
+37. `SPEC.md`: technical constraints, allowed boundaries, runtime/linking rules,
    and acceptance standards.
-37. `PLAN.md`: phased migration plan from baseline validation through possible
+38. `PLAN.md`: phased migration plan from baseline validation through possible
    kernel reassessment.
-38. `TASKS.md`: executable backlog with acceptance criteria.
+39. `TASKS.md`: executable backlog with acceptance criteria.
 
 The first implementation milestone should not be a subsystem rewrite. It should
 be a reproducible baseline plus artifact audit, followed by a minimal Rust

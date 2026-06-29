@@ -1,6 +1,6 @@
 # QSOE Rust Migration Development Log
 
-Last updated: 2026-06-29 09:26 CEST.
+Last updated: 2026-06-29 11:06 CEST.
 
 This log tracks the development process for the Rust migration and reproducible
 toolchain work. It records what changed, what was observed, what failed, and
@@ -23,6 +23,51 @@ Result:
 Follow-up:
 - ...
 ```
+
+## 2026-06-29 11:06 CEST - tm_pseudodev Rust Opt-In Provider
+
+Scope:
+
+- Added `qsoe-tm-pseudodev`, a no-std Rust staticlib exporting the existing LQ
+  `/dev/null` and `/dev/zero` taskman ABI.
+- Added `QSOE_RUST_TM_PSEUDODEV=1` selection for LQ taskman. The selector
+  omits C `sys/devnull.o` and `sys/devzero.o`, then links
+  `build/rust/tm-pseudodev/libqsoe_tm_pseudodev.a`.
+- Added tracked `lq` component patches, override-script checks, make targets,
+  container targets, CI evidence step, and docs.
+- Kept C as the normal default and rollback implementation.
+
+Commands:
+
+- `./scripts/apply-component-overrides.sh`
+- `cargo test --manifest-path rust/Cargo.toml -p qsoe-tm-pseudodev --features host-tests`
+- `cargo clippy --manifest-path rust/Cargo.toml -p qsoe-tm-pseudodev --features host-tests -- -D warnings`
+- `cargo check --manifest-path rust/Cargo.toml --workspace`
+- `cargo clippy --manifest-path rust/Cargo.toml --workspace -- -D warnings`
+- `make rust-tm-pseudodev-provider`
+- `make tm-pseudodev-evidence`
+- `make rust-check`
+- `make container-tm-pseudodev-evidence`
+- `make container-source-build`
+- `git diff --check -- ':!patches/components/*.patch'`
+
+Result:
+
+- The Rust provider host tests pass for ABI layout, stat records, `/dev/null`,
+  `/dev/zero`, IPC payload zero-fill, and read clamping.
+- The provider archive exports all six expected symbols and all archive members
+  report RVC soft-float ABI.
+- The LQ C-default link plan includes `sys/devnull.o` and `sys/devzero.o`.
+  The Rust-selected link plan omits both C objects and links
+  `libqsoe_tm_pseudodev.a`.
+- LQ taskman links in both C-default and Rust-selected modes.
+- The mutual-exclusion guard rejects selecting multiple taskman Rust providers
+  until a shared taskman Rust archive exists.
+
+Follow-up:
+
+- Keep `tm_pseudodev` Rust opt-in only until a focused runtime smoke covers
+  `/dev/null` and `/dev/zero` and a separate Rust-default RC decision exists.
 
 ## 2026-06-29 09:26 CEST - mkfs-qrv Rust-Default RC Path
 
