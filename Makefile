@@ -17,7 +17,7 @@
 
 QSOE_RUST_SLOGGER ?= 0
 QSOE_RUST_VIRTIO ?= 0
-QSOE_RUST_TEST_MSGPASS ?= 0
+QSOE_RUST_TEST_MSGPASS ?= 1
 QSOE_RUST_PIPE ?= 0
 QSOE_RUST_TM_CPIO ?= 0
 QSOE_RUST_TM_CRED ?= 0
@@ -74,8 +74,7 @@ SELECTED_PIPE_ELF ?= build/rust/selected/sbin/pipe.elf
         rust-slogger-boot-smoke \
         rust-virtio-boot-smoke rust-virtio-file-smoke \
         virtio-rc-file-smoke virtio-rc-rollback-smoke \
-        rust-test-msgpass-smoke test-msgpass-rc-smoke \
-        test-msgpass-rc-rollback-smoke pipe-smoke rust-pipe-smoke \
+        rust-test-msgpass-smoke test-msgpass-rc-smoke pipe-smoke rust-pipe-smoke \
         rust-pipe-data-smoke pipe-rc-data-smoke pipe-rc-rollback-smoke \
         procfs-smoke tm-procfs-rc-smoke tm-procfs-rc-rollback-smoke \
         container-toolchain-build container-shell container-check \
@@ -104,8 +103,7 @@ SELECTED_PIPE_ELF ?= build/rust/selected/sbin/pipe.elf
         container-mkfs-qrv-rc-live-smoke container-mkfs-qrv-rc-rollback-smoke \
         container-rust-slog-readback-smoke container-slogger-rc-boot-smoke \
         container-slogger-rc-readback-smoke container-slogger-rc-rollback-smoke \
-        container-rust-test-msgpass-smoke \
-        container-test-msgpass-rc-smoke container-test-msgpass-rc-rollback-smoke \
+        container-rust-test-msgpass-smoke container-test-msgpass-rc-smoke \
         container-rust-virtio-file-smoke container-pipe-smoke \
         container-rust-pipe-smoke container-rust-pipe-data-smoke \
         container-pipe-rc-data-smoke container-pipe-rc-rollback-smoke \
@@ -200,10 +198,11 @@ FSQRV_SYSINIT  := quser/sbin/sysinit
 # /usr/bin/<name> under the mount.  The test binaries live here rather than
 # in the boot cpio -- modpkg carries only what bring-up needs.
 FSQRV_BINS     ?= quser/build/test/suite/suite.elf:suite \
-                  quser/build/test/msgpass/test_msgpass.elf:test_msgpass \
+                  $(SELECTED_TEST_MSGPASS_ELF):test_msgpass \
                   quser/build/test/syncspace/test_syncspace.elf:test_syncspace \
                   quser/build/utils/time.elf:time \
                   quser/build/utils/sysinfo.elf:sysinfo
+FSQRV_HAS_QUSER_TEST_BINS := $(wildcard quser/build/test/suite/suite.elf quser/build/test/syncspace/test_syncspace.elf)
 # On-disk /usr/sbin programs: getty + login live on the root fs, not the
 # boot cpio -- they cannot do their job without /usr mounted (login reads
 # /usr/conf via the /etc symlink), so a boot that can't mount /usr has
@@ -410,8 +409,11 @@ virtio-artifact:
 
 test-msgpass-artifact:
 	@QSOE_RUST_TEST_MSGPASS=$(QSOE_RUST_TEST_MSGPASS) \
+	    LIBC_SO=$(LIBC_SO) \
 	    SELECTED_TEST_MSGPASS_ELF=$(SELECTED_TEST_MSGPASS_ELF) \
 	    scripts/select-test-msgpass-artifact.sh
+
+$(SELECTED_TEST_MSGPASS_ELF): test-msgpass-artifact
 
 pipe-artifact:
 	@QSOE_RUST_PIPE=$(QSOE_RUST_PIPE) \
@@ -520,9 +522,6 @@ rust-test-msgpass-smoke:
 test-msgpass-rc-smoke:
 	@scripts/test-msgpass-rc-smoke.sh
 
-test-msgpass-rc-rollback-smoke:
-	@QSOE_TEST_MSGPASS_RC_ROLLBACK=1 scripts/test-msgpass-rc-smoke.sh
-
 pipe-smoke:
 	@scripts/pipe-smoke.sh
 
@@ -622,6 +621,7 @@ container-virtio-artifact:
 container-test-msgpass-artifact:
 	@scripts/container-toolchain.sh run make test-msgpass-artifact \
 	    QSOE_RUST_TEST_MSGPASS=$(QSOE_RUST_TEST_MSGPASS) \
+	    LIBC_SO=$(LIBC_SO) \
 	    SELECTED_TEST_MSGPASS_ELF=$(SELECTED_TEST_MSGPASS_ELF)
 
 container-pipe-artifact:
@@ -743,9 +743,6 @@ container-rust-test-msgpass-smoke:
 container-test-msgpass-rc-smoke:
 	@scripts/container-toolchain.sh run make test-msgpass-rc-smoke
 
-container-test-msgpass-rc-rollback-smoke:
-	@scripts/container-toolchain.sh run make test-msgpass-rc-rollback-smoke
-
 container-rust-virtio-file-smoke:
 	@scripts/container-toolchain.sh run make rust-virtio-file-smoke
 
@@ -787,6 +784,10 @@ container-source-build:
 # the NVMe (GPT p8) and virtio (raw whole-disk) images reuse it.  If quser
 # hasn't been built yet there is nothing to stage and FSQRV_IMG is removed
 # so the consumers know to leave their images alone.
+ifneq ($(FSQRV_HAS_QUSER_TEST_BINS),)
+fsqrv-image: $(SELECTED_TEST_MSGPASS_ELF)
+endif
+
 fsqrv-image: $(MKFS_QRV)
 	@rm -rf $(FSQRV_ROOT); mkdir -p $(FSQRV_ROOT)/bin $(FSQRV_ROOT)/home; \
 	have=0; \
@@ -827,6 +828,7 @@ fsqrv-image: $(MKFS_QRV)
 	fi
 
 # NVMe: write the qrvfs image into the GPT image's p8.
+nvme-populate: LIBC_SO ?= $(CURDIR)/nq/build/libc/libc.so
 nvme-populate: $(NVME_IMG) fsqrv-image
 	@if [ -f $(FSQRV_IMG) ]; then \
 		host_tools/mkgpt.py --write-part $(FSQRV_PART) $(NVME_IMG) \
@@ -836,6 +838,7 @@ nvme-populate: $(NVME_IMG) fsqrv-image
 	fi
 
 # virtio: the raw qrvfs image IS the whole disk (no GPT).
+virtio: LIBC_SO ?= $(CURDIR)/lq/build/libc/libc.so
 virtio: fsqrv-image
 	@if [ -f $(FSQRV_IMG) ]; then \
 		cp $(FSQRV_IMG) $(VIRTIO_IMG); \

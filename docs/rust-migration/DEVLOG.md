@@ -24,6 +24,62 @@ Follow-up:
 - ...
 ```
 
+## 2026-06-29 18:06 CEST - Retired C test_msgpass Helper
+
+Scope:
+
+- Retired the C `quser/test/msgpass` helper after the Rust-default
+  `test_msgpass-rs` RC and rollback evidence.
+- Changed the umbrella qrvfs test-image path to stage Rust
+  `test_msgpass-rs` at `/usr/bin/test_msgpass`.
+- Removed the C rollback Make targets and made `QSOE_RUST_TEST_MSGPASS=0` plus
+  `QSOE_TEST_MSGPASS_RC_ROLLBACK=1` fail fast.
+- Added `quser-retire-test-msgpass-c.patch` so fresh `make prepare` removes the
+  C helper component source and nested Makefile.
+- Removed the retired C helper from the default C ELF baseline and qsoe-elf
+  relocation fixture list.
+- Dropped the Rust helper's self-`ProcessTerminate` dependency in the
+  no-reply branch; the suite owns QSOE/L process termination before the
+  blocking no-reply send.
+- Updated README/status/inventory/retirement docs and added
+  `TEST_MSGPASS_RETIREMENT.md`.
+
+Commands:
+
+- `bash -n scripts/apply-component-overrides.sh scripts/select-test-msgpass-artifact.sh scripts/rust-test-msgpass-smoke.sh scripts/test-msgpass-rc-smoke.sh scripts/rust-pipe-data-smoke.sh scripts/capture-elf-baseline.sh`
+- `./scripts/apply-component-overrides.sh`
+- `QSOE_RUST_TEST_MSGPASS=0 make test-msgpass-artifact`
+- `QSOE_TEST_MSGPASS_RC_ROLLBACK=1 scripts/test-msgpass-rc-smoke.sh`
+- `make rust-test-msgpass-link-smoke`
+- `make test-msgpass-artifact`
+- `make rust-test-msgpass-smoke`
+- `make test-msgpass-rc-smoke`
+- `make rust-check`
+- `make check-qrvfs-rust-writer-production-root`
+- `make rust-pipe-data-smoke`
+
+Result:
+
+- Component overrides replayed idempotently and verified `quser/test/msgpass`
+  is absent.
+- The retired C selector and rollback flags fail fast with status 2 and clear
+  retirement messages.
+- `qsoe-test-msgpass-rs` links and passes strict user ELF audit with no TLS or
+  unwind sections.
+- The Rust-only `[msgpass]` suite smoke passes, including resolve, 4 MiB minus
+  2 byte round trip, halfword swap, clean server exit, and the QSOE/L
+  no-reply skip marker.
+- The qrvfs production-root writer comparison still includes
+  `/usr/bin/test_msgpass`.
+- `rust-pipe-data-smoke` still passes with the selected Rust helper in the
+  qrvfs image.
+
+Follow-up:
+
+- Use this as the first #26 retirement checklist exercise. Keep production
+  service retirements separate and require their own RC evidence plus removal
+  PRs.
+
 ## 2026-06-29 CEST - tm_pathmgr Rust Opt-In Provider
 
 Scope:

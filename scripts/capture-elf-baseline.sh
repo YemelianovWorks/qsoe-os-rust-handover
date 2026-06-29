@@ -15,7 +15,6 @@ default_files=(
     quser/build/fs/qrv/fs-qrv.elf
     quser/build/qsh/qsh.elf
     quser/build/sbin/login/login.elf
-    quser/build/test/msgpass/test_msgpass.elf
     quser/build/test/syncspace/test_syncspace.elf
     quser/build/test/suite/suite.elf
 )
@@ -28,7 +27,7 @@ Prints a Markdown summary table for representative QSOE C userland ELF files.
 With --raw-dir, also writes full audit-elf.sh output for each artifact.
 
 If no ELF files are provided, a migration-focused default set is used:
-  slogger, devb-virtio, fs-qrv, qsh, login, msgpass, syncspace, suite.
+  slogger, devb-virtio, fs-qrv, qsh, login, syncspace, suite.
 EOF
 }
 

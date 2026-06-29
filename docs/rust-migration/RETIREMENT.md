@@ -1,12 +1,13 @@
 # C Implementation Retirement Gate
 
-Captured: 2026-06-24 12:21 CEST.
+Captured: 2026-06-29 CEST.
 
-This document turns the Phase 8 retirement rule into an explicit gate. No C
-implementation is approved for removal yet. The current Rust pilots remain
-either opt-in artifacts or selected future work, and each existing C
-implementation remains the rollback path until the release-candidate evidence
-below exists.
+This document turns the Phase 8 retirement rule into an explicit gate. The
+first removal candidate is the in-guest test helper `test_msgpass`, which had a
+Rust-default release-candidate path and C rollback drill before this retirement
+PR removed the C helper. All remaining Rust pilots stay either opt-in or
+Rust-default RC paths, and each non-retired C implementation remains the
+rollback path until the release-candidate evidence below exists.
 
 ## State Model
 
@@ -17,7 +18,7 @@ Every migrated component moves through these states:
 | C default | Normal images install and run the C artifact. | Required |
 | Rust opt-in | A build flag can replace the artifact with Rust for focused tests. | Required rollback |
 | Rust default RC | Release-candidate images default to Rust while a build flag or release artifact restores C. | Required rollback |
-| Retired | The C artifact is removed from normal source and image paths. | Not required in current tree |
+| Retired | The C artifact is removed from normal source and image paths. | Removed for that component |
 
 A component cannot enter `Retired` directly from `Rust opt-in`. It must first
 ship through at least one release candidate with Rust selected by default and a
@@ -46,8 +47,16 @@ it must include evidence for all of these items:
 
 The live status matrix is `STATUS.md`. It records C default, Rust opt-in, Rust
 default, and retired status for every tracked migration component. At this
-capture, `slogger` has a Rust-default release-candidate path with C rollback,
-but no component has reached `Retired`.
+capture, `test_msgpass` is the first tracked component in `Retired` status. It
+is intentionally a test helper, not a production service. Production services
+and task-manager providers still require their own separate removal PRs after
+RC evidence and rollback drills.
+
+## Retired Components
+
+| Component | Retirement note | Prior RC evidence | Current rollback |
+| --- | --- | --- | --- |
+| `test_msgpass` | `TEST_MSGPASS_RETIREMENT.md` | `TEST_MSGPASS_RC.md`, `make test-msgpass-rc-smoke`, previous `make test-msgpass-rc-rollback-smoke` evidence | No C rollback target remains; the retired helper is Rust-only in test images. |
 
 ## Removal PR Checklist
 

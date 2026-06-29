@@ -209,45 +209,42 @@ restored.
 
 ## Test Msgpass Selection
 
-The Rust `test_msgpass` helper can be linked and audited without changing the
-normal test-image default:
+The C `test_msgpass` helper is retired. The Rust `test_msgpass-rs` helper can
+still be linked and audited directly:
 
 ```sh
 make rust-test-msgpass-link-smoke
 ```
 
-The selected artifact target mirrors the service opt-ins:
+The selected artifact target always stages the Rust helper at the stable image
+path:
 
 ```sh
 make test-msgpass-artifact
-QSOE_RUST_TEST_MSGPASS=1 make test-msgpass-artifact
 ```
 
-With the default `QSOE_RUST_TEST_MSGPASS=0`, the target stages the existing C
-`quser/build/test/msgpass/test_msgpass.elf`. With
-`QSOE_RUST_TEST_MSGPASS=1`, it first links and audits
-`qsoe-test-msgpass-rs`. Both modes write the selected binary to
-`build/rust/selected/usr/bin/test_msgpass.elf`.
+The target links and audits `qsoe-test-msgpass-rs`, then writes the selected
+binary to `build/rust/selected/usr/bin/test_msgpass.elf`. Setting
+`QSOE_RUST_TEST_MSGPASS=0` is rejected because the C helper has been removed
+from the tracked `quser` component override.
 
-The opt-in smoke stages the Rust helper into a temporary qrvfs image and runs
-the existing suite `[msgpass]` path:
+The smoke stages the Rust helper into a temporary qrvfs image and runs the
+existing suite `[msgpass]` path:
 
 ```sh
 make rust-test-msgpass-smoke
 ```
 
-The release-candidate path makes Rust the default for the targeted test image
-while keeping an explicit C rollback drill:
+The compatibility RC target now exercises the same Rust-only path:
 
 ```sh
 make test-msgpass-rc-smoke
-make test-msgpass-rc-rollback-smoke
 ```
 
-`make test-msgpass-rc-smoke` selects `test_msgpass-rs` by default and verifies
-the suite `[msgpass]` PASS/SKIP markers. `make
-test-msgpass-rc-rollback-smoke` sets `QSOE_TEST_MSGPASS_RC_ROLLBACK=1` and
-verifies the same markers with the C helper restored.
+Both smokes verify the suite `[msgpass]` PASS/SKIP markers and the Rust helper
+startup marker. `QSOE_TEST_MSGPASS_RC_ROLLBACK=1` is rejected after retirement;
+the historical rollback drill is documented in
+`docs/rust-migration/TEST_MSGPASS_RC.md`.
 
 ## Pipe Selection
 

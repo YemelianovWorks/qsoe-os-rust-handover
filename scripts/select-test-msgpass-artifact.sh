@@ -1,55 +1,38 @@
 #!/usr/bin/env bash
 #
 # Stage the selected test_msgpass helper at a stable path for test-image
-# packaging. The default is the existing C helper; Rust is selected explicitly
-# with QSOE_RUST_TEST_MSGPASS=1.
+# packaging. The C helper is retired; this always stages test_msgpass-rs.
 
 set -eu
 
 ROOT=$(cd "$(dirname "$0")/.." && pwd)
-MAKE=${MAKE:-make}
-QSOE_RUST_TEST_MSGPASS=${QSOE_RUST_TEST_MSGPASS:-0}
 SELECTED_TEST_MSGPASS_ELF=${SELECTED_TEST_MSGPASS_ELF:-"$ROOT/build/rust/selected/usr/bin/test_msgpass.elf"}
-C_TEST_MSGPASS_ELF=${C_TEST_MSGPASS_ELF:-"$ROOT/quser/build/test/msgpass/test_msgpass.elf"}
 RUST_TEST_MSGPASS_ELF=${RUST_TEST_MSGPASS_ELF:-"$ROOT/build/rust/qsoe-test-msgpass-rs.elf"}
 
-case "$QSOE_RUST_TEST_MSGPASS" in
-    0|false|FALSE|no|NO)
-        mode=c
-        ;;
+case "${QSOE_RUST_TEST_MSGPASS:-1}" in
     1|true|TRUE|yes|YES)
-        mode=rust
+        ;;
+    0|false|FALSE|no|NO)
+        echo "select-test-msgpass-artifact.sh: C test_msgpass is retired; use Rust test_msgpass-rs" >&2
+        exit 2
         ;;
     *)
-        echo "select-test-msgpass-artifact.sh: QSOE_RUST_TEST_MSGPASS must be 0 or 1" >&2
+        echo "select-test-msgpass-artifact.sh: QSOE_RUST_TEST_MSGPASS must be 1 after C retirement" >&2
         exit 2
         ;;
 esac
 
-if [ "$mode" = rust ]; then
-    RUST_PACKAGE=qsoe-test-msgpass-rs \
-        RUST_OUT="$RUST_TEST_MSGPASS_ELF" \
-        "$ROOT/scripts/rust-qsoe-link-smoke.sh"
-    src=$RUST_TEST_MSGPASS_ELF
-else
-    src=$C_TEST_MSGPASS_ELF
-    if [ ! -f "$src" ]; then
-        if [ -d "$ROOT/quser/test/msgpass" ]; then
-            "$MAKE" -C "$ROOT/quser/test/msgpass" --no-print-directory
-        fi
-    fi
-fi
+RUST_PACKAGE=qsoe-test-msgpass-rs \
+    RUST_OUT="$RUST_TEST_MSGPASS_ELF" \
+    "$ROOT/scripts/rust-qsoe-link-smoke.sh"
 
-if [ ! -f "$src" ]; then
-    echo "select-test-msgpass-artifact.sh: missing selected test_msgpass ELF: $src" >&2
-    if [ "$mode" = c ]; then
-        echo "select-test-msgpass-artifact.sh: build quser first or set C_TEST_MSGPASS_ELF=/path/test_msgpass.elf" >&2
-    fi
+if [ ! -f "$RUST_TEST_MSGPASS_ELF" ]; then
+    echo "select-test-msgpass-artifact.sh: missing Rust test_msgpass ELF: $RUST_TEST_MSGPASS_ELF" >&2
     exit 1
 fi
 
 mkdir -p "$(dirname "$SELECTED_TEST_MSGPASS_ELF")"
-cp "$src" "$SELECTED_TEST_MSGPASS_ELF"
+cp "$RUST_TEST_MSGPASS_ELF" "$SELECTED_TEST_MSGPASS_ELF"
 chmod 0755 "$SELECTED_TEST_MSGPASS_ELF"
 
-echo "select-test-msgpass-artifact.sh: selected $mode test_msgpass -> $SELECTED_TEST_MSGPASS_ELF"
+echo "select-test-msgpass-artifact.sh: selected rust test_msgpass -> $SELECTED_TEST_MSGPASS_ELF"
