@@ -137,5 +137,9 @@ name = "qsoe-tm-sysfs"
 version = "0.0.0"
 
 [[package]]
+name = "qsoe-tm-sysmap"
+version = "0.0.0"
+
+[[package]]
 name = "qsoe-virtio"
 version = "0.0.0"

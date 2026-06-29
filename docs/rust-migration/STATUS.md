@@ -30,11 +30,12 @@ State meanings:
 | `tm_rsrcdb` | Yes: `lq/taskman/sys/rsrcdb.c` remains selected by default in normal LQ taskman builds and remains rollback. | Yes: `QSOE_RUST_TM_RSRCDB=1` excludes C `sys/rsrcdb.o`, links `qsoe-tm-rsrcdb`, and passes `make tm-rsrcdb-evidence`. | No | No | C host model tests, Rust host tests, LQ C-default/Rust-selected taskman links, soft-float Rust archive audit, exported symbol audit, and `TASK_MANAGER_RSRCDB.md`. | Add runtime coverage through `rsrcdbmgr_*` create/attach/query/detach callers before any Rust-default RC decision. |
 | `tm_script` | Yes: `libtaskman/src/script.c` remains selected by default in normal taskman builds and remains rollback. | Yes: `QSOE_RUST_TM_SCRIPT=1` excludes C `script.o`, links `qsoe-tm-script`, and passes `make tm-script-evidence`. | No | No | C host model tests, Rust host tests, selected NQ/LQ taskman links, soft-float Rust archive audit, exported symbol audit, and `TASK_MANAGER_SCRIPT.md`. | Add script-spawn runtime coverage before any Rust-default RC decision. |
 | `tm_syscfg` | Yes: `libtaskman/src/syscfg.c` remains selected by default in normal taskman builds and remains rollback. | Yes: `QSOE_RUST_TM_SYSCFG=1` excludes C `syscfg.o`, links `qsoe-tm-syscfg`, and passes `make tm-syscfg-evidence`. | No | No | C host model tests, Rust host tests, selected NQ/LQ taskman links, soft-float Rust archive audit, exported symbol audit, and `TASK_MANAGER_SYSCFG.md`. | Add boot/runtime coverage for syscfg-backed platform data before any Rust-default RC decision. |
+| `tm_sysmap` | Yes: `lq/taskman/sys/sysmap.c` remains selected by default in normal LQ taskman builds and remains rollback. | Yes: `QSOE_RUST_TM_SYSMAP=1` excludes C `sys/sysmap.o`, links `qsoe-tm-sysmap`, and passes `make tm-sysmap-evidence`. | No | No | C host model tests, Rust host tests, LQ C-default/Rust-selected taskman links, soft-float Rust archive audit, exported symbol audit, final taskman ELF audits, and `TASK_MANAGER_SYSMAP.md`. | Add boot/runtime coverage for the mapped `PSYS` page before any Rust-default RC decision. |
 | `tm_sysfs` | Yes: `libtaskman/src/tm_sysfs.c` remains selected by default in normal taskman builds and remains rollback. | Yes: `QSOE_RUST_TM_SYSFS=1` excludes C `tm_sysfs.o`, links `qsoe-tm-sysfs`, and passes `make tm-sysfs-evidence`. | No | No | C host model tests, Rust host tests, selected NQ/LQ taskman links, soft-float Rust archive audit, exported symbol audit, and `TASK_MANAGER_SYSFS.md`. | Add a focused `/sys` runtime smoke before any Rust-default RC decision. |
 
 Only host `treeqrvfs`, host `mkfs-qrv-rs`, `slogger`, `devb-virtio`, `pipe`,
 `test_msgpass`, and `tm_procfs` have Rust-default release-candidate paths.
 `tm_cpio`, `tm_cred`, `tm_elf`, `tm_fdt`, `tm_pseudodev`, `tm_rsrcdb`,
-`tm_script`, `tm_syscfg`, and `tm_sysfs` are Rust opt-in only. No tracked component has
-reached `Retired` status. C remains the rollback path for every current
-migration candidate.
+`tm_script`, `tm_syscfg`, `tm_sysmap`, and `tm_sysfs` are Rust opt-in only. No
+tracked component has reached `Retired` status. C remains the rollback path for
+every current migration candidate.

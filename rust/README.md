@@ -414,6 +414,24 @@ LQ's private FDT-backed `lq/taskman/sys/syscfg.c`, sysmap construction, boot
 platform-data policy, `/sys` serving, process tables, and seL4 invocation code
 remain C.
 
+## Task Manager Sysmap Selection
+
+The Rust LQ `tm_sysmap` provider can be built as a soft-float taskman staticlib
+without changing the normal taskman default:
+
+```sh
+make check-tm-sysmap-model
+make rust-tm-sysmap-provider
+make tm-sysmap-evidence
+```
+
+With the default `QSOE_RUST_TM_SYSMAP=0`, LQ taskman links the existing C
+`sys/sysmap.o`. With `QSOE_RUST_TM_SYSMAP=1`, the component Makefile selector
+omits C `sys/sysmap.o`, builds `qsoe-tm-sysmap` for
+`riscv64imac-unknown-none-elf`, and links `libqsoe_tm_sysmap.a` into taskman.
+FDT parsing, syscfg construction, process-table ownership, child VSpace
+mapping, and seL4 invocation code remain C.
+
 ## Task Manager Credential Selection
 
 The Rust `tm_cred` provider can be built as a soft-float taskman staticlib
