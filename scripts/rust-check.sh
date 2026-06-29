@@ -29,6 +29,7 @@ cargo test --manifest-path "$MANIFEST" \
     -p qsoe-sysview
 
 cargo test --manifest-path "$MANIFEST" -p qsoe-minimal-rs --features host-tests
+cargo test --manifest-path "$MANIFEST" -p qsoe-tm-cpio --features host-tests
 cargo test --manifest-path "$MANIFEST" -p qsoe-tm-cred --features host-tests
 cargo test --manifest-path "$MANIFEST" -p qsoe-tm-pseudodev --features host-tests
 cargo test --manifest-path "$MANIFEST" -p qsoe-tm-procfs --features host-tests

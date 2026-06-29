@@ -10,6 +10,7 @@ members = [
     "crates/qsoe-ressrv",
     "crates/qsoe-slogger",
     "crates/qsoe-sysview",
+    "crates/qsoe-tm-cpio",
     "crates/qsoe-tm-cred",
     "crates/qsoe-tm-pseudodev",
     "crates/qsoe-tm-procfs",

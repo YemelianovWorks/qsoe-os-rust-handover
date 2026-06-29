@@ -1,6 +1,6 @@
 # QSOE Migration Handover
 
-Last updated: 2026-06-29 11:39 CEST.
+Last updated: 2026-06-29 12:25 CEST.
 
 This handover captures the current QSOE Rust migration and workflow work so it
 can move from the macOS/container setup to a native Linux development machine.
@@ -22,7 +22,7 @@ origin git@github.com:dmytro-yemelianov/qsoe-os-rust-handover.git
 Current main tip:
 
 ```text
-68c74fe37bc1d32011b6c658ea05c11f0f8051db
+ec71c4caf59788570b6a42e458d48e9177aed8b5
 ```
 
 The local tree adds:
@@ -74,8 +74,10 @@ Rust `tm_procfs` opt-in provider, PR #105 added the `tm_procfs` evidence gate,
 PR #107 applied tracked component overrides for CI, PR #108 fixed line-split
 serial marker checks in the Rust smokes, PR #109 recorded trusted CI evidence
 for #96, #97, and #103, PR #162 added the Rust opt-in `tm_cred` provider, and
-PR #163 added the Rust opt-in `tm_pseudodev` provider. The current `main` tip
-is `68c74fe37bc1d32011b6c658ea05c11f0f8051db`.
+PR #163 added the Rust opt-in `tm_pseudodev` provider, PR #164 added the Rust
+opt-in `tm_sysfs` provider, and PR #165 fixed the issue-backed roadmap
+dashboard's opt-in status display. The current `main` tip is
+`ec71c4caf59788570b6a42e458d48e9177aed8b5`.
 
 Current open follow-ups:
 
@@ -90,10 +92,9 @@ The #98 host-test gate for the portable `tm_procfs` model is satisfied by
 `make check-tm-procfs-model`. The #102 Rust provider gate is satisfied by
 `QSOE_RUST_TM_PROCFS=1`; C remains default and rollback.
 
-The current tree adds a Rust opt-in `tm_sysfs` provider behind
-`QSOE_RUST_TM_SYSFS=1`. Evidence passed through `make tm-sysfs-evidence`,
-`make container-tm-sysfs-evidence`, and `make container-source-build`; C remains
-default and rollback.
+The current tree adds a Rust opt-in `tm_cpio` provider behind
+`QSOE_RUST_TM_CPIO=1`. Evidence passed through `make tm-cpio-evidence`; C
+remains default and rollback.
 
 ## Linux Machine Setup
 

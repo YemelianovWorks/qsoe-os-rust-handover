@@ -18,6 +18,7 @@
 CROSS    ?= riscv64-linux-gnu-
 CC       := $(CROSS)gcc
 AR       := $(CROSS)ar
+QSOE_RUST_TM_CPIO ?= 0
 QSOE_RUST_TM_CRED ?= 0
 QSOE_RUST_TM_PROCFS ?= 0
 QSOE_RUST_TM_SYSFS ?= 0
@@ -45,6 +46,10 @@ CFLAGS := $(ARCHFLAGS) -std=c11 -D_XOPEN_SOURCE=700 \
           -Iinclude \
           $(EXTRA_CFLAGS)
 
+ifneq ($(filter $(QSOE_RUST_TM_CPIO),0 1),$(QSOE_RUST_TM_CPIO))
+$(error QSOE_RUST_TM_CPIO must be 0 or 1)
+endif
+
 ifneq ($(filter $(QSOE_RUST_TM_CRED),0 1),$(QSOE_RUST_TM_CRED))
 $(error QSOE_RUST_TM_CRED must be 0 or 1)
 endif
@@ -59,6 +64,9 @@ endif
 
 SRCS_ALL := $(wildcard src/*.c)
 SRCS := $(SRCS_ALL)
+ifeq ($(QSOE_RUST_TM_CPIO),1)
+SRCS := $(filter-out src/cpio.c,$(SRCS))
+endif
 ifeq ($(QSOE_RUST_TM_CRED),1)
 SRCS := $(filter-out src/cred.c,$(SRCS))
 endif

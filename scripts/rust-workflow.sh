@@ -63,6 +63,7 @@ run_fast() {
         -p qsoe-qrvfs \
         --lib
     cargo test --manifest-path "$MANIFEST" -p qsoe-minimal-rs --features host-tests --lib
+    cargo test --manifest-path "$MANIFEST" -p qsoe-tm-cpio --features host-tests --lib
     cargo test --manifest-path "$MANIFEST" -p qsoe-tm-cred --features host-tests --lib
     cargo test --manifest-path "$MANIFEST" -p qsoe-tm-pseudodev --features host-tests --lib
     cargo test --manifest-path "$MANIFEST" -p qsoe-tm-procfs --features host-tests --lib
@@ -90,6 +91,7 @@ run_deep() {
             -p qsoe-sysview \
             -p qsoe-qrvfs
         cargo test --manifest-path "$MANIFEST" -p qsoe-minimal-rs --features host-tests
+        cargo test --manifest-path "$MANIFEST" -p qsoe-tm-cpio --features host-tests
         cargo test --manifest-path "$MANIFEST" -p qsoe-tm-cred --features host-tests
         cargo test --manifest-path "$MANIFEST" -p qsoe-tm-pseudodev --features host-tests
         cargo test --manifest-path "$MANIFEST" -p qsoe-tm-procfs --features host-tests
