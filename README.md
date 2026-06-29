@@ -25,9 +25,9 @@ removed just because a Rust version exists.
 - Rust-default release-candidate paths exist for `qrvfs-tree`, `mkfs-qrv-rs`,
   `slogger-rs`, `devb-virtio-rs`, `pipe-rs`, `test_msgpass-rs`, and
   `qsoe-tm-procfs`.
-- Rust opt-in task-manager providers exist for `qsoe-tm-cred`,
-  `qsoe-tm-pseudodev`, and `qsoe-tm-sysfs`; C remains the normal taskman
-  default for each.
+- Rust opt-in task-manager providers exist for `qsoe-tm-cpio`,
+  `qsoe-tm-cred`, `qsoe-tm-pseudodev`, and `qsoe-tm-sysfs`; C remains the
+  normal taskman default for each.
 - Rust `mkfs-qrv-rs` has fixture, production-root, target-initialization,
   bounded triple-indirect allocator, live virtio `/usr`, and C rollback smoke
   evidence.
@@ -62,6 +62,7 @@ Detailed planning lives under `docs/rust-migration/`. Start with:
 | `pipe` service | Rust default RC | `qsoe-pipe` host tests pass, `pipe-rs` links and audits, `make rust-pipe-smoke` boots LQ with Rust `/sbin/pipe` registered, `make rust-pipe-data-smoke` proves a libc/taskman `pipe(2)` write/read round trip, and `make pipe-rc-data-smoke` selects Rust by default with `make pipe-rc-rollback-smoke` preserving C rollback. Next gate: #26 retirement checklist and a separate removal PR before any C retirement decision. |
 | `test_msgpass` helper | Rust default RC | `test_msgpass-rs` links, can be selected into the qrvfs test image, passes the existing suite `[msgpass]` section through `make rust-test-msgpass-smoke`, and has `make test-msgpass-rc-smoke` plus `make test-msgpass-rc-rollback-smoke` for the Rust-default test-image RC path. Next gate: #26 retirement checklist and a separate removal PR before any C retirement decision. |
 | `tm_procfs` task-manager pilot | Rust default RC | `qsoe-tm-procfs` exports the existing C ABI behind `QSOE_RUST_TM_PROCFS=1`; `make tm-procfs-rc-smoke` selects Rust by default for the RC image and `make tm-procfs-rc-rollback-smoke` restores C. Host model tests, Rust host tests, selected NQ/LQ taskman links, `make tm-procfs-evidence`, and `/proc` smokes cover the gate. Next gate: #26 retirement checklist and a separate removal PR before any C retirement decision. |
+| `tm_cpio` task-manager provider | Rust opt-in | `qsoe-tm-cpio` exports the existing `tm_cpio.h` ABI behind `QSOE_RUST_TM_CPIO=1`; `make tm-cpio-evidence` runs C/Rust host tests, audits the soft-float staticlib, and verifies NQ/LQ taskman links with C rollback and Rust-selected archives. Next gate: add boot/runtime coverage for CPIO-backed spawn and file access before any Rust-default RC decision. |
 | `tm_cred` task-manager provider | Rust opt-in | `qsoe-tm-cred` exports the existing `tm_cred.h` ABI behind `QSOE_RUST_TM_CRED=1`; `make tm-cred-evidence` runs C/Rust host tests, audits the soft-float staticlib, and verifies NQ/LQ taskman links with C rollback and Rust-selected archives. Next gate: add a credential-specific runtime smoke before any Rust-default RC decision. |
 | `tm_pseudodev` task-manager provider | Rust opt-in | `qsoe-tm-pseudodev` exports the existing LQ `/dev/null` and `/dev/zero` ABI behind `QSOE_RUST_TM_PSEUDODEV=1`; `make tm-pseudodev-evidence` runs Rust host tests, audits the soft-float staticlib, and verifies LQ C-default/Rust-selected taskman links. Next gate: add a focused `/dev/null` and `/dev/zero` runtime smoke before any Rust-default RC decision. |
 | `tm_sysfs` task-manager provider | Rust opt-in | `qsoe-tm-sysfs` exports the existing `tm_sysfs.h` ABI behind `QSOE_RUST_TM_SYSFS=1`; `make tm-sysfs-evidence` runs C/Rust host tests, audits the soft-float staticlib, and verifies NQ/LQ taskman links with C rollback and Rust-selected archives. Next gate: add a focused `/sys` runtime smoke before any Rust-default RC decision. |
@@ -94,9 +95,9 @@ Detailed planning lives under `docs/rust-migration/`. Start with:
 - `tm_procfs` now has a Rust-default release-candidate path with explicit C
   rollback through the `/proc` smoke. Keep C retirement blocked until #26's
   checklist and a separate removal PR.
-- `tm_cred`, `tm_pseudodev`, and `tm_sysfs` are Rust opt-in task-manager
-  providers only. Keep them C-default until runtime smoke coverage and a
-  separate RC decision exist.
+- `tm_cpio`, `tm_cred`, `tm_pseudodev`, and `tm_sysfs` are Rust opt-in
+  task-manager providers only. Keep them C-default until runtime smoke
+  coverage and a separate RC decision exist.
 
 ## Useful Commands
 
@@ -124,6 +125,9 @@ make rust-pipe-smoke
 make rust-pipe-data-smoke
 make pipe-rc-data-smoke
 make pipe-rc-rollback-smoke
+make check-tm-cpio-model
+make rust-tm-cpio-provider
+make tm-cpio-evidence
 make check-tm-cred-model
 make rust-tm-cred-provider
 make tm-cred-evidence

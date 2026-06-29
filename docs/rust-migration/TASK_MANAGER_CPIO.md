@@ -1,0 +1,111 @@
+# Task Manager CPIO Provider
+
+Captured: 2026-06-29 CEST.
+
+`tm_cpio` is a bounded task-manager Rust provider for the portable in-memory
+`newc` archive model:
+
+```text
+libtaskman/src/cpio.c
+libtaskman/include/tm_cpio.h
+```
+
+## Scope
+
+The Rust provider exports the existing `tm_cpio.h` C ABI:
+
+```text
+int tm_cpio_check_valid(const uint8_t *data, uint64_t size);
+void tm_cpio_iterate(const uint8_t *data, uint64_t size,
+                     tm_cpio_callback_t cb, void *user);
+int tm_cpio_find_file(const uint8_t *data, uint64_t size,
+                      const char *filename, tm_cpio_file_info_t *info);
+int tm_cpio_resolve_path(const uint8_t *data, uint64_t size,
+                         const char *path,
+                         char *out_path, unsigned out_cap,
+                         tm_cpio_file_info_t *out_info);
+int tm_cpio_dirent_at(const uint8_t *data, uint64_t size,
+                      const char *prefix,
+                      uint32_t index,
+                      unsigned *out_type,
+                      char *out_name_buf, unsigned out_name_cap,
+                      unsigned *out_namelen);
+int tm_cpio_dir_exists(const uint8_t *data, uint64_t size,
+                       const char *prefix);
+```
+
+It owns only byte-level archive walking, exact file lookup, symlink resolution,
+directory-entry synthesis, and directory-existence checks over caller-owned
+archive bytes. It does not replace taskman spawn, CPIO-backed file descriptor
+state, path-manager registration, ELF loading, relocation, process creation,
+or any seL4 object manipulation.
+
+The provider intentionally preserves the C walker's forgiving behavior:
+iteration stops at the first malformed header or `TRAILER!!!` entry rather than
+turning malformed later records into hard errors. It also follows the C
+implementation's absolute pointer-alignment behavior when the archive pointer
+itself is not 4-byte aligned.
+
+## Selector
+
+Normal taskman builds remain C-default:
+
+```text
+QSOE_RUST_TM_CPIO=0  -> C `libtaskman/src/cpio.c` remains selected
+QSOE_RUST_TM_CPIO=1  -> Rust `qsoe-tm-cpio` staticlib is linked instead
+```
+
+When Rust is selected, `libtaskman/Makefile` excludes `cpio.o` from
+`libtaskman.a`, and the NQ/LQ taskman links add:
+
+```text
+build/rust/tm-cpio/libqsoe_tm_cpio.a
+```
+
+The archive is built for `riscv64imac-unknown-none-elf` so it matches
+taskman's soft-float ABI.
+
+Current taskman Rust providers are mutually exclusive. Do not set more than one
+of `QSOE_RUST_TM_CPIO=1`, `QSOE_RUST_TM_CRED=1`,
+`QSOE_RUST_TM_PROCFS=1`, `QSOE_RUST_TM_PSEUDODEV=1`, and
+`QSOE_RUST_TM_SYSFS=1` in the same build. Each provider is currently a separate
+no-std Rust staticlib with its own panic handler; a future shared taskman Rust
+archive should package multiple providers together.
+
+## Evidence
+
+The C behavior baseline is covered by:
+
+```sh
+make check-tm-cpio-model
+```
+
+That fixture verifies archive iteration, exact lookup, symlink resolution,
+directory existence, directory-entry synthesis, short output buffers, missing
+paths, and malformed-archive stopping behavior.
+
+The Rust provider has equivalent host coverage:
+
+```sh
+cargo test --manifest-path rust/Cargo.toml -p qsoe-tm-cpio --features host-tests
+```
+
+The full opt-in evidence gate is:
+
+```sh
+make tm-cpio-evidence
+```
+
+It runs the C fixture, Rust host tests, builds and audits the Rust staticlib,
+checks exported archive and linked taskman symbols, verifies all archive members
+are RVC soft-float, and links both NQ and LQ taskman in C rollback and
+Rust-selected modes. The gate also verifies `cpio.o` is present for
+`QSOE_RUST_TM_CPIO=0` and absent for `QSOE_RUST_TM_CPIO=1`.
+
+## Current State
+
+`tm_cpio` is Rust opt-in only. It is not a Rust-default release candidate and
+has no C retirement approval. Keep `libtaskman/src/cpio.c` as the rollback
+implementation until boot/runtime smokes cover CPIO-backed spawn and file
+access, the global retirement checklist is satisfied, and a separate removal
+PR is reviewed.

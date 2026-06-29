@@ -1,6 +1,6 @@
 # QSOE Rust Migration Development Log
 
-Last updated: 2026-06-29 11:39 CEST.
+Last updated: 2026-06-29 12:33 CEST.
 
 This log tracks the development process for the Rust migration and reproducible
 toolchain work. It records what changed, what was observed, what failed, and
@@ -23,6 +23,59 @@ Result:
 Follow-up:
 - ...
 ```
+
+## 2026-06-29 12:33 CEST - tm_cpio Rust Opt-In Provider
+
+Scope:
+
+- Added `qsoe-tm-cpio`, a no-std Rust staticlib exporting the existing
+  portable `tm_cpio.h` ABI.
+- Added `QSOE_RUST_TM_CPIO=1` selection for NQ and LQ taskman. The selector
+  omits C `cpio.o` from `libtaskman.a`, then links
+  `build/rust/tm-cpio/libqsoe_tm_cpio.a`.
+- Added a C host-model fixture, Rust host tests, provider build script,
+  evidence script, tracked NQ/LQ component patches, CI evidence step, and docs.
+- Matched the C walker's absolute pointer-alignment behavior for unaligned
+  archive pointers.
+- Kept C as the normal default and rollback implementation.
+
+Commands:
+
+- `make check-tm-cpio-model`
+- `cargo test --manifest-path rust/Cargo.toml -p qsoe-tm-cpio --features host-tests`
+- `cargo clippy --manifest-path rust/Cargo.toml -p qsoe-tm-cpio --features host-tests -- -D warnings`
+- `cargo check --manifest-path rust/Cargo.toml --workspace`
+- `cargo clippy --manifest-path rust/Cargo.toml --workspace -- -D warnings`
+- `cargo fmt --manifest-path rust/Cargo.toml --all`
+- `make check-host-tools`
+- `make rust-check`
+- `bash -n scripts/check-tm-cpio-model.sh scripts/build-rust-tm-cpio-provider.sh scripts/tm-cpio-evidence.sh scripts/rust-check.sh scripts/rust-workflow.sh`
+- `make -n rust-tm-cpio-provider tm-cpio-evidence container-rust-tm-cpio-provider container-tm-cpio-evidence`
+- `./scripts/apply-component-overrides.sh`
+- `make rust-tm-cpio-provider`
+- `make tm-cpio-evidence`
+- `make container-tm-cpio-evidence`
+- `git diff --check -- ':!patches/components/*.patch'`
+
+Result:
+
+- The C host fixture and Rust host tests pass for archive iteration, exact file
+  lookup, symlink resolution, directory existence, directory-entry synthesis,
+  short output buffers, missing paths, malformed-archive stopping behavior, and
+  absolute pointer-alignment compatibility with the C walker.
+- The provider archive exports all six expected symbols and all archive members
+  report RVC soft-float ABI.
+- NQ and LQ C-default taskman archives include one `cpio.o` member.
+  Rust-selected archives include zero `cpio.o` members and link
+  `libqsoe_tm_cpio.a`; linked taskman ELFs export the expected `tm_cpio_*`
+  ABI symbols in both modes.
+- The provider mutual-exclusion guard rejects invalid multi-provider taskman
+  builds until a shared taskman Rust archive exists.
+
+Follow-up:
+
+- Keep `tm_cpio` Rust opt-in only until boot/runtime coverage proves
+  CPIO-backed spawn and file access before any Rust-default RC decision.
 
 ## 2026-06-29 11:39 CEST - tm_sysfs Rust Opt-In Provider
 

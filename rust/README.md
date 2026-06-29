@@ -325,6 +325,24 @@ make tm-procfs-rc-rollback-smoke
 `make tm-procfs-rc-rollback-smoke` sets `TM_PROCFS_RC_ROLLBACK=1` and verifies
 the same markers with the C provider restored.
 
+## Task Manager CPIO Selection
+
+The Rust `tm_cpio` provider can be built as a soft-float taskman staticlib
+without changing the normal taskman default:
+
+```sh
+make check-tm-cpio-model
+make rust-tm-cpio-provider
+make tm-cpio-evidence
+```
+
+With the default `QSOE_RUST_TM_CPIO=0`, NQ and LQ taskman link the existing
+C `cpio.o`. With `QSOE_RUST_TM_CPIO=1`, the component Makefile selector omits
+C `cpio.o`, builds `qsoe-tm-cpio` for `riscv64imac-unknown-none-elf`, and
+links `libqsoe_tm_cpio.a` into taskman. CPIO-backed file descriptor state,
+path dispatch, spawn, ELF loading, relocation, process tables, and seL4
+invocation code remain C.
+
 ## Task Manager Credential Selection
 
 The Rust `tm_cred` provider can be built as a soft-float taskman staticlib
@@ -377,11 +395,11 @@ omits C `tm_sysfs.o`, builds `qsoe-tm-sysfs` for
 Sysmap/syscfg discovery, init path selection, open/read/readdir dispatch, IPC
 decoding, process tables, and seL4 invocation code remain C.
 
-Do not set more than one of `QSOE_RUST_TM_CRED=1`,
-`QSOE_RUST_TM_PROCFS=1`, `QSOE_RUST_TM_PSEUDODEV=1`, and
-`QSOE_RUST_TM_SYSFS=1` together yet. Current taskman providers are separate
-no-std Rust staticlibs; selecting more than one requires a later shared taskman
-Rust archive.
+Do not set more than one of `QSOE_RUST_TM_CPIO=1`,
+`QSOE_RUST_TM_CRED=1`, `QSOE_RUST_TM_PROCFS=1`,
+`QSOE_RUST_TM_PSEUDODEV=1`, and `QSOE_RUST_TM_SYSFS=1` together yet. Current
+taskman providers are separate no-std Rust staticlibs; selecting more than one
+requires a later shared taskman Rust archive.
 
 ## Parser Fuzzing
 

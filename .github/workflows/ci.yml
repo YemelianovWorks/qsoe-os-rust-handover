@@ -84,6 +84,10 @@ jobs:
         if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
         run: make container-pipe-rc-rollback-smoke
 
+      - name: Run tm_cpio Rust opt-in evidence
+        if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+        run: make container-tm-cpio-evidence
+
       - name: Run tm_procfs Rust opt-in evidence
         if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
         run: make container-tm-procfs-evidence
@@ -109,6 +113,8 @@ jobs:
             build/mkfs-qrv-rc/*.log
             build/rust-pipe-data/*.log
             build/pipe-rc/*.log
+            build/tm-cpio-evidence/**/*.log
+            build/tm-cpio-evidence/**/*.txt
             build/tm-procfs-evidence/**/*.log
             build/tm-procfs-evidence/**/*.txt
             build/tm-pseudodev-evidence/**/*.log

@@ -60,20 +60,22 @@ Read in this order:
    rollback plan for the selected pilot.
 32. `TASK_MANAGER_PROCFS_RC.md`: Rust-default `tm_procfs` release-candidate
    note and C rollback drill.
-33. `TASK_MANAGER_CRED.md`: Rust opt-in task-manager credential policy
+33. `TASK_MANAGER_CPIO.md`: Rust opt-in task-manager CPIO archive provider
+   and evidence gate.
+34. `TASK_MANAGER_CRED.md`: Rust opt-in task-manager credential policy
    provider and evidence gate.
-34. `TASK_MANAGER_PSEUDODEV.md`: Rust opt-in LQ task-manager `/dev/null` and
+35. `TASK_MANAGER_PSEUDODEV.md`: Rust opt-in LQ task-manager `/dev/null` and
    `/dev/zero` provider and evidence gate.
-35. `TASK_MANAGER_SYSFS.md`: Rust opt-in task-manager `/sys` provider and
+36. `TASK_MANAGER_SYSFS.md`: Rust opt-in task-manager `/sys` provider and
    evidence gate.
-36. `KERNEL_CANDIDATES.md`: Phase 10 kernel candidate inventory, explicit
+37. `KERNEL_CANDIDATES.md`: Phase 10 kernel candidate inventory, explicit
    exclusions, and fixture-only ranking.
-37. `KERNEL_ARTIFACT_AUDIT.md`: Phase 10 kernel Rust artifact audit needs.
-38. `SPEC.md`: technical constraints, allowed boundaries, runtime/linking rules,
+38. `KERNEL_ARTIFACT_AUDIT.md`: Phase 10 kernel Rust artifact audit needs.
+39. `SPEC.md`: technical constraints, allowed boundaries, runtime/linking rules,
    and acceptance standards.
-39. `PLAN.md`: phased migration plan from baseline validation through possible
+40. `PLAN.md`: phased migration plan from baseline validation through possible
    kernel reassessment.
-40. `TASKS.md`: executable backlog with acceptance criteria.
+41. `TASKS.md`: executable backlog with acceptance criteria.
 
 The first implementation milestone should not be a subsystem rewrite. It should
 be a reproducible baseline plus artifact audit, followed by a minimal Rust

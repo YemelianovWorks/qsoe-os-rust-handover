@@ -1,0 +1,57 @@
+--- a/taskman/Makefile
++++ b/taskman/Makefile
+@@ -19,12 +19,13 @@
+ CC        = $(CROSS)gcc
+ LD        = $(CROSS)ld
+ OBJCOPY   = $(CROSS)objcopy
++QSOE_RUST_TM_CPIO ?= 0
+ QSOE_RUST_TM_PROCFS ?= 0
+ QSOE_RUST_TM_CRED ?= 0
+ QSOE_RUST_TM_SYSFS ?= 0
+ 
+-TM_RUST_PROVIDER_COUNT := $(words $(filter 1,$(QSOE_RUST_TM_CRED) $(QSOE_RUST_TM_PROCFS) $(QSOE_RUST_TM_SYSFS)))
+-ifneq ($(filter 2 3,$(TM_RUST_PROVIDER_COUNT)),)
++TM_RUST_PROVIDER_COUNT := $(words $(filter 1,$(QSOE_RUST_TM_CPIO) $(QSOE_RUST_TM_CRED) $(QSOE_RUST_TM_PROCFS) $(QSOE_RUST_TM_SYSFS)))
++ifneq ($(filter 2 3 4,$(TM_RUST_PROVIDER_COUNT)),)
+ $(error select at most one taskman Rust provider until they share one staticlib)
+ endif
+ 
+@@ -60,11 +61,15 @@
+ LIBTASKMAN_BUILD := $(abspath ../build/libtaskman)
+ LIBTASKMAN_A := $(LIBTASKMAN_BUILD)/libtaskman.a
+ REPO_ROOT := $(abspath ../..)
++RUST_TM_CPIO_A := $(REPO_ROOT)/build/rust/tm-cpio/libqsoe_tm_cpio.a
+ RUST_TM_PROCFS_A := $(REPO_ROOT)/build/rust/tm-procfs/libqsoe_tm_procfs.a
+ RUST_TM_CRED_A := $(REPO_ROOT)/build/rust/tm-cred/libqsoe_tm_cred.a
+ RUST_TM_SYSFS_A := $(REPO_ROOT)/build/rust/tm-sysfs/libqsoe_tm_sysfs.a
+ 
+ TASKMAN_RUST_LIBS :=
++ifeq ($(QSOE_RUST_TM_CPIO),1)
++TASKMAN_RUST_LIBS += $(RUST_TM_CPIO_A)
++endif
+ ifeq ($(QSOE_RUST_TM_CRED),1)
+ TASKMAN_RUST_LIBS += $(RUST_TM_CRED_A)
+ endif
+@@ -86,16 +91,20 @@
+ 	    LIBC_INC=$(abspath ../../libc/include) \
+ 	    PICFLAG=-fno-pic \
+ 	    EXTRA_CFLAGS="-fno-builtin" \
++	    QSOE_RUST_TM_CPIO=$(QSOE_RUST_TM_CPIO) \
+ 	    QSOE_RUST_TM_CRED=$(QSOE_RUST_TM_CRED) \
+ 	    QSOE_RUST_TM_PROCFS=$(QSOE_RUST_TM_PROCFS) \
+ 	    QSOE_RUST_TM_SYSFS=$(QSOE_RUST_TM_SYSFS)
+ 
+-$(RUST_TM_PROCFS_A): FORCE
+-	@$(REPO_ROOT)/scripts/build-rust-tm-procfs-provider.sh $@
++$(RUST_TM_CPIO_A): FORCE
++	@$(REPO_ROOT)/scripts/build-rust-tm-cpio-provider.sh $@
+ 
+ $(RUST_TM_CRED_A): FORCE
+ 	@$(REPO_ROOT)/scripts/build-rust-tm-cred-provider.sh $@
+ 
++$(RUST_TM_PROCFS_A): FORCE
++	@$(REPO_ROOT)/scripts/build-rust-tm-procfs-provider.sh $@
++
+ $(RUST_TM_SYSFS_A): FORCE
+ 	@$(REPO_ROOT)/scripts/build-rust-tm-sysfs-provider.sh $@
+ 
