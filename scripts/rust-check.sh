@@ -38,6 +38,7 @@ cargo test --manifest-path "$MANIFEST" -p qsoe-tm-procfs --features host-tests
 cargo test --manifest-path "$MANIFEST" -p qsoe-tm-rsrcdb --features host-tests
 cargo test --manifest-path "$MANIFEST" -p qsoe-tm-script --features host-tests
 cargo test --manifest-path "$MANIFEST" -p qsoe-tm-syscfg --features host-tests
+cargo test --manifest-path "$MANIFEST" -p qsoe-tm-sysmap --features host-tests
 cargo test --manifest-path "$MANIFEST" -p qsoe-tm-sysfs --features host-tests
 cargo test --manifest-path "$MANIFEST" -p qsoe-virtio
 cargo test --manifest-path "$MANIFEST" -p qsoe-service-example-rs --features host-tests

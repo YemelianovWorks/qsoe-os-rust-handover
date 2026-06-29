@@ -1,0 +1,66 @@
+--- a/taskman/Makefile
++++ b/taskman/Makefile
+@@ -49,10 +49,11 @@
+ QSOE_RUST_TM_RSRCDB ?= 0
+ QSOE_RUST_TM_SCRIPT ?= 0
+ QSOE_RUST_TM_SYSCFG ?= 0
++QSOE_RUST_TM_SYSMAP ?= 0
+ QSOE_RUST_TM_SYSFS ?= 0
+ 
+-TM_RUST_PROVIDER_COUNT := $(words $(filter 1,$(QSOE_RUST_TM_CPIO) $(QSOE_RUST_TM_CRED) $(QSOE_RUST_TM_ELF) $(QSOE_RUST_TM_FDT) $(QSOE_RUST_TM_PROCFS) $(QSOE_RUST_TM_PSEUDODEV) $(QSOE_RUST_TM_RSRCDB) $(QSOE_RUST_TM_SCRIPT) $(QSOE_RUST_TM_SYSCFG) $(QSOE_RUST_TM_SYSFS)))
+-ifneq ($(filter 2 3 4 5 6 7 8 9 10,$(TM_RUST_PROVIDER_COUNT)),)
++TM_RUST_PROVIDER_COUNT := $(words $(filter 1,$(QSOE_RUST_TM_CPIO) $(QSOE_RUST_TM_CRED) $(QSOE_RUST_TM_ELF) $(QSOE_RUST_TM_FDT) $(QSOE_RUST_TM_PROCFS) $(QSOE_RUST_TM_PSEUDODEV) $(QSOE_RUST_TM_RSRCDB) $(QSOE_RUST_TM_SCRIPT) $(QSOE_RUST_TM_SYSCFG) $(QSOE_RUST_TM_SYSMAP) $(QSOE_RUST_TM_SYSFS)))
++ifneq ($(filter 2 3 4 5 6 7 8 9 10 11,$(TM_RUST_PROVIDER_COUNT)),)
+ $(error select at most one taskman Rust provider until they share one staticlib)
+ endif
+ 
+@@ -106,6 +107,7 @@
+ RUST_TM_RSRCDB_A := $(REPO_ROOT)/build/rust/tm-rsrcdb/libqsoe_tm_rsrcdb.a
+ RUST_TM_SCRIPT_A := $(REPO_ROOT)/build/rust/tm-script/libqsoe_tm_script.a
+ RUST_TM_SYSCFG_A := $(REPO_ROOT)/build/rust/tm-syscfg/libqsoe_tm_syscfg.a
++RUST_TM_SYSMAP_A := $(REPO_ROOT)/build/rust/tm-sysmap/libqsoe_tm_sysmap.a
+ RUST_TM_SYSFS_A := $(REPO_ROOT)/build/rust/tm-sysfs/libqsoe_tm_sysfs.a
+ 
+ TASKMAN_RUST_LIBS :=
+@@ -134,6 +136,9 @@
+ ifeq ($(QSOE_RUST_TM_SYSCFG),1)
+ TASKMAN_RUST_LIBS += $(RUST_TM_SYSCFG_A)
+ endif
++ifeq ($(QSOE_RUST_TM_SYSMAP),1)
++TASKMAN_RUST_LIBS += $(RUST_TM_SYSMAP_A)
++endif
+ ifeq ($(QSOE_RUST_TM_SYSFS),1)
+ TASKMAN_RUST_LIBS += $(RUST_TM_SYSFS_A)
+ endif
+@@ -157,6 +162,11 @@
+ TASKMAN_FDT_OBJS += $(OBJDIR)/sys/fdt.o
+ endif
+ 
++TASKMAN_SYSMAP_OBJS :=
++ifeq ($(QSOE_RUST_TM_SYSMAP),0)
++TASKMAN_SYSMAP_OBJS += $(OBJDIR)/sys/sysmap.o
++endif
++
+ TM_CFLAGS := $(ARCH_CFLAGS) \
+     -std=c11 -ffreestanding -nostdlib -nostdinc \
+     -fno-pic -fno-pie -fno-common -fno-stack-protector \
+@@ -304,8 +314,8 @@
+     $(TASKMAN_FDT_OBJS) \
+     $(OBJDIR)/sys/irq.o \
+     $(TASKMAN_RSRCDB_OBJS) \
+     $(OBJDIR)/sys/syscfg.o \
+-    $(OBJDIR)/sys/sysmap.o \
++    $(TASKMAN_SYSMAP_OBJS) \
+     $(OBJDIR)/cpio.o \
+     $(OBJDIR)/userland_archive.o \
+     $(OBJDIR)/qsoe/state.o \
+@@ -342,6 +352,9 @@
+ $(RUST_TM_SYSCFG_A): FORCE
+ 	@$(REPO_ROOT)/scripts/build-rust-tm-syscfg-provider.sh $@
+ 
++$(RUST_TM_SYSMAP_A): FORCE
++	@$(REPO_ROOT)/scripts/build-rust-tm-sysmap-provider.sh $@
++
+ $(RUST_TM_SYSFS_A): FORCE
+ 	@$(REPO_ROOT)/scripts/build-rust-tm-sysfs-provider.sh $@
+ 

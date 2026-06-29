@@ -333,6 +333,10 @@ The strict ELF audit showed:
   `qsoe-tm-syscfg` archive into NQ/LQ taskman. C remains default and rollback
   until syscfg-backed platform-data runtime coverage and a separate RC decision
   exist.
+- `tm_sysmap` has a Rust opt-in provider behind `QSOE_RUST_TM_SYSMAP=1`. The
+  selector removes LQ C `sys/sysmap.o` and links the soft-float
+  `qsoe-tm-sysmap` archive into LQ taskman. C remains default and rollback
+  until mapped `PSYS` page runtime coverage and a separate RC decision exist.
 - `tm_sysfs` has a Rust opt-in provider behind `QSOE_RUST_TM_SYSFS=1`. The
   selector removes C `tm_sysfs.o` from `libtaskman.a` and links the soft-float
   `qsoe-tm-sysfs` archive into NQ/LQ taskman. C remains default and rollback

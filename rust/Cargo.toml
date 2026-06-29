@@ -19,6 +19,7 @@ members = [
     "crates/qsoe-tm-rsrcdb",
     "crates/qsoe-tm-script",
     "crates/qsoe-tm-syscfg",
+    "crates/qsoe-tm-sysmap",
     "crates/qsoe-tm-sysfs",
     "crates/qsoe-virtio",
     "bins/minimal-rs",

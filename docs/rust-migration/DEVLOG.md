@@ -24,6 +24,48 @@ Follow-up:
 - ...
 ```
 
+## 2026-06-29 CEST - tm_sysmap Rust Opt-In Provider
+
+Scope:
+
+- Added `qsoe-tm-sysmap`, a no-std Rust staticlib exporting the existing LQ
+  taskman `tm_sysmap_*` ABI.
+- Added `QSOE_RUST_TM_SYSMAP=1` selection for LQ taskman. The selector omits C
+  `sys/sysmap.o`, then links `build/rust/tm-sysmap/libqsoe_tm_sysmap.a`.
+- Added a C host-model fixture, Rust host tests, provider build script,
+  evidence script, tracked LQ component patches, CI evidence step, and docs.
+- Preserved the current C builder behavior for the 4 KiB `PSYS` page,
+  including header patching, END emission, 8-byte TLV padding, MTIME, PLIC,
+  PCI ECAM, PCI MEM window, and DesignWare MSI fields.
+- Kept C as the normal default and rollback implementation.
+
+Commands:
+
+- `make check-tm-sysmap-model`
+- `cargo test --manifest-path rust/Cargo.toml -p qsoe-tm-sysmap --features host-tests --lib`
+- `cargo clippy --manifest-path rust/Cargo.toml -p qsoe-tm-sysmap --features host-tests -- -D warnings`
+- `bash -n scripts/check-tm-sysmap-model.sh scripts/build-rust-tm-sysmap-provider.sh scripts/tm-sysmap-evidence.sh scripts/apply-component-overrides.sh scripts/rust-check.sh scripts/rust-workflow.sh`
+- `./scripts/apply-component-overrides.sh`
+- `make -n check-tm-sysmap-model rust-tm-sysmap-provider tm-sysmap-evidence container-rust-tm-sysmap-provider container-tm-sysmap-evidence`
+- `make rust-tm-sysmap-provider`
+- `make tm-sysmap-evidence`
+
+Result:
+
+- The C host fixture and Rust host tests pass for get-before-build, minimal
+  syscfg, and full MTIME/PLIC/PCI/DesignWare syscfg cases.
+- The provider archive exports `tm_sysmap_build` and `tm_sysmap_get`, and all
+  archive members report RVC soft-float ABI.
+- LQ C-default taskman links with C `sys/sysmap.o`; LQ Rust-selected taskman
+  omits that object and links `libqsoe_tm_sysmap.a`.
+- The final LQ taskman ELF links in both modes and passes the evidence script's
+  ELF flag and section audit.
+
+Follow-up:
+
+- Keep `tm_sysmap` Rust opt-in only until boot/runtime coverage proves the
+  mapped `PSYS` page consumed by children before any Rust-default RC decision.
+
 ## 2026-06-29 15:39 CEST - tm_fdt Rust Opt-In Provider
 
 Scope:
