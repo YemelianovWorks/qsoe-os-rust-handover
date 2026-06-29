@@ -10,13 +10,14 @@ usage: scripts/tm-script-runtime-smoke.sh [-t seconds] [-o log] [--keep-running]
 
 Adds a temporary /usr/bin/tm_script_probe shell script to the virtio qrvfs
 image, injects a sysinit fragment that runs it directly, and boots QSOE/L with
-QSOE_RUST_TM_SCRIPT=1. Running the probe by path forces taskman spawn to parse
-the script shebang before loading /bin/sh.
+Rust tm_script selected. Running the probe by path forces taskman spawn to
+parse the script shebang before loading /bin/sh.
 
 Environment:
   TM_SCRIPT_RUNTIME_SMOKE_WORKDIR  output directory, default build/tm-script-runtime-smoke
-  QSOE_RUST_TM_SCRIPT              set to 1; this smoke validates the Rust provider
+  QSOE_RUST_TM_SCRIPT              defaults to 1; set 0 only with rollback escape hatch
   QSOE_RUST_TM_PROCFS              must remain 1 after C tm_procfs retirement
+  TM_SCRIPT_RUNTIME_ALLOW_C        internal RC rollback escape hatch
 EOF
 }
 
@@ -74,13 +75,23 @@ if [ "$timeout_s" -le 0 ]; then
     exit 2
 fi
 
+tm_script_mode=
 case "${QSOE_RUST_TM_SCRIPT:-1}" in
     1|true|TRUE|yes|YES)
         export QSOE_RUST_TM_SCRIPT=1
+        tm_script_mode=rust-selected
         ;;
     0|false|FALSE|no|NO)
-        echo "tm-script-runtime-smoke.sh: this smoke validates QSOE_RUST_TM_SCRIPT=1" >&2
-        exit 2
+        case "${TM_SCRIPT_RUNTIME_ALLOW_C:-0}" in
+            1|true|TRUE|yes|YES)
+                export QSOE_RUST_TM_SCRIPT=0
+                tm_script_mode=c-rollback
+                ;;
+            *)
+                echo "tm-script-runtime-smoke.sh: this smoke validates QSOE_RUST_TM_SCRIPT=1" >&2
+                exit 2
+                ;;
+        esac
         ;;
     *)
         echo "tm-script-runtime-smoke.sh: QSOE_RUST_TM_SCRIPT must be 1" >&2
@@ -186,10 +197,10 @@ if [ ! -x "$ROOT/build/fsqrv-root/bin/tm_script_probe" ]; then
     exit 1
 fi
 
-echo "tm-script-runtime-smoke.sh: rebuilding QSOE/L image with Rust tm_script"
+echo "tm-script-runtime-smoke.sh: rebuilding QSOE/L image with $tm_script_mode tm_script"
 "$MAKE" -C "$ROOT/lq" --no-print-directory \
     QSOE_RUST_TM_PROCFS=1 \
-    QSOE_RUST_TM_SCRIPT=1
+    QSOE_RUST_TM_SCRIPT="$QSOE_RUST_TM_SCRIPT"
 
 boot_args=(-k lq -t "$timeout_s" -o "$log")
 if [ "$keep_running" -eq 1 ]; then
@@ -205,7 +216,7 @@ expected_markers=(
 )
 boot_extra_patterns=$(printf '%s\n' "${expected_markers[@]}")
 
-echo "tm-script-runtime-smoke.sh: booting Rust tm_script runtime smoke"
+echo "tm-script-runtime-smoke.sh: booting $tm_script_mode tm_script runtime smoke"
 FSQRV_BINS="$fsqrv_bins" \
     QSOE_BOOT_VIRTIO_PATTERN="/dev/vblk0 ready" \
     QSOE_BOOT_EXTRA_PATTERNS="$boot_extra_patterns" \

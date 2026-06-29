@@ -31,11 +31,11 @@ error once parsing has started.
 
 ## Selector
 
-Normal taskman builds remain C-default:
+Normal taskman builds are in a Rust-default RC window:
 
 ```text
-QSOE_RUST_TM_SCRIPT=0  -> C `libtaskman/src/script.c` remains selected
-QSOE_RUST_TM_SCRIPT=1  -> Rust `qsoe-tm-script` staticlib is linked instead
+QSOE_RUST_TM_SCRIPT=1  -> Rust `qsoe-tm-script` provider is selected (default)
+QSOE_RUST_TM_SCRIPT=0  -> C `libtaskman/src/script.c` rollback is selected
 ```
 
 When Rust is selected, `libtaskman/Makefile` excludes `script.o` from
@@ -96,11 +96,21 @@ sysinit fragment that runs the probe directly, and verifies that the probe
 prints its marker and exits successfully. Running the script by path forces
 taskman spawn to parse the shebang before loading `/bin/sh`.
 
+The Rust-default RC and rollback smokes are:
+
+```sh
+make tm-script-rc-smoke
+make tm-script-rc-rollback-smoke
+```
+
+The RC smoke first builds NQ and LQ taskman in the default selector mode and
+verifies C `script.o` is absent from `libtaskman.a`. The rollback smoke repeats
+the same archive-membership and live runtime checks with
+`QSOE_RUST_TM_SCRIPT=0`, where C `script.o` must be present.
+
 ## Current State
 
-`tm_script` is Rust opt-in only. It is not a Rust-default release candidate and
-has no C retirement approval. Runtime coverage now exists for direct
-shebang-backed script spawn, so the next gate is a separate Rust-default RC
-decision. Keep `libtaskman/src/script.c` as the rollback implementation until
-that RC window is accepted, the global retirement checklist is satisfied, and a
-separate removal PR is reviewed.
+`tm_script` is a Rust-default release candidate with C rollback still
+available. It has no C retirement approval. Keep `libtaskman/src/script.c` as
+the rollback implementation until the global retirement checklist is satisfied
+and a separate removal PR is reviewed.

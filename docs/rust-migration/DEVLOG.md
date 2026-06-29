@@ -24,6 +24,53 @@ Follow-up:
 - ...
 ```
 
+## 2026-06-30 01:52 CEST - tm_script Rust-Default RC
+
+Scope:
+
+- Promoted `tm_script` to a Rust-default release-candidate selector:
+  `QSOE_RUST_TM_SCRIPT ?= 1` in the umbrella, `libtaskman`, and applied NQ/LQ
+  component Makefiles.
+- Added component override patches that flip ignored NQ/LQ checkouts to the
+  new default while preserving `QSOE_RUST_TM_SCRIPT=0` as C rollback.
+- Added `make tm-script-rc-smoke` and `make tm-script-rc-rollback-smoke`; both
+  verify NQ/LQ `libtaskman.a` archive membership before booting the live LQ
+  shebang parser probe.
+- Added CI wiring and `TASK_MANAGER_SCRIPT_RC.md` to record the RC window and
+  rollback drill.
+
+Commands:
+
+- `bash -n scripts/tm-script-rc-smoke.sh scripts/tm-script-runtime-smoke.sh scripts/tm-script-evidence.sh scripts/apply-component-overrides.sh scripts/boot-smoke.sh`
+- `make -n tm-script-rc-smoke tm-script-rc-rollback-smoke container-tm-script-rc-smoke container-tm-script-rc-rollback-smoke`
+- `patch -d nq --reverse --dry-run -p1 < patches/components/nq-taskman-rust-tm-script-rc-default.patch`
+- `patch -d lq --reverse --dry-run -p1 < patches/components/lq-makefile-rust-tm-script-rc-default.patch`
+- `patch -d lq --reverse --dry-run -p1 < patches/components/lq-taskman-rust-tm-script-rc-default.patch`
+- `./scripts/apply-component-overrides.sh`
+- `make tm-script-rc-smoke`
+- `make tm-script-rc-rollback-smoke`
+- `make tm-script-evidence`
+- `make tm-script-runtime-smoke`
+- `git diff --check`
+- `make check-qrvfs-rust-writer-production-root`
+- `make -C libtaskman --no-print-directory`
+
+Result:
+
+- `make tm-script-rc-smoke` passed with `nq-rust-default script.o count: 0`
+  and `lq-rust-default script.o count: 0`, then reached the live shebang
+  runtime markers.
+- `make tm-script-rc-rollback-smoke` passed with
+  `nq-c-rollback script.o count: 1` and `lq-c-rollback script.o count: 1`,
+  then reached the same live runtime markers under `QSOE_RUST_TM_SCRIPT=0`.
+- The existing `tm-script-evidence` and `tm-script-runtime-smoke` gates still
+  pass after the default flip.
+
+Follow-up:
+
+- Publish the PR, wait for trusted CI, merge, and update #143 to
+  `status:rc`.
+
 ## 2026-06-30 01:30 CEST - tm_cpio Rust-Default RC
 
 Scope:
