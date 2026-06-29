@@ -22,7 +22,7 @@ origin git@github.com:dmytro-yemelianov/qsoe-os-rust-handover.git
 Current main tip:
 
 ```text
-fd493ac8a7c4a37ab5e9c5b76295936eb534cb6e
+6868954014d81c8c9c7a3e5a744e75cb105f459e
 ```
 
 The local tree adds:
@@ -83,14 +83,15 @@ opt-in status display, PR #166 added the Rust opt-in `tm_cpio` provider, PR
 `tm_fdt` provider, PR #173 added the Rust opt-in `tm_sysmap` provider, PR #174
 added the Rust opt-in `tm_pathmgr` provider, PR #175 retired the C
 `test_msgpass` helper, and PR #176 styled retired roadmap state in the
-dashboard. The current `main` tip is
-`fd493ac8a7c4a37ab5e9c5b76295936eb534cb6e`.
+dashboard. PR #177 retired the C `slogger` service, and PR #178 retired the C
+`pipe` service. The current `main` tip is
+`6868954014d81c8c9c7a3e5a744e75cb105f459e`.
 
 Current open follow-ups:
 
-- #137: `slogger` service. The current branch exercises the next #26-style
-  removal by retiring the C `/sbin/slogger` service after the Rust-default RC
-  and rollback evidence.
+- #138: `devb-virtio` block driver. The current branch exercises the next
+  #26-style removal by retiring the C `/sbin/devb-virtio` driver after the
+  Rust-default file-read RC and rollback evidence.
 
 The #96 Rust pipe data-path gate, #97 Rust `test_msgpass` gate, and #103
 `tm_procfs` opt-in gate are satisfied by trusted `main` CI run `28102250069` at
@@ -100,10 +101,10 @@ The #98 host-test gate for the portable `tm_procfs` model is satisfied by
 `make check-tm-procfs-model`. The #102 Rust provider gate is satisfied by
 `QSOE_RUST_TM_PROCFS=1`; C remains default and rollback.
 
-The current branch retires the C `slogger` service. NQ/LQ image paths now stage
-Rust `slogger-rs` at `/sbin/slogger`, the tracked `quser` override removes
-`sbin/slogger`, and the old C rollback flags fail fast. C remains default and
-rollback for all non-retired migration candidates.
+The current branch retires the C `devb-virtio` driver. NQ/LQ image paths now
+stage Rust `devb-virtio-rs` at `/sbin/devb-virtio`, the tracked `quser`
+override removes `dev/virtio`, and the old C rollback flags fail fast. C
+remains default and rollback for all non-retired migration candidates.
 
 ## Linux Machine Setup
 

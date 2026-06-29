@@ -28,7 +28,7 @@ Environment:
   QSOE_BOOT_SLOGGER_PATTERN   slogger startup milestone; defaults to
                               "[slogger-rs] alive"
   QSOE_BOOT_VIRTIO_PATTERN    LQ virtio block milestone; defaults to
-                              "devb-virtio: /dev/vblk0 ready"
+                              "[devb-virtio-rs] /dev/vblk0 ready"
   QSOE_BOOT_EXTRA_PATTERNS    optional newline-separated milestones to wait
                               for before stopping QEMU
 EOF
@@ -41,7 +41,7 @@ log=
 keep_running=0
 emu_args=()
 slogger_pattern=${QSOE_BOOT_SLOGGER_PATTERN:-"[slogger-rs] alive"}
-virtio_pattern=${QSOE_BOOT_VIRTIO_PATTERN:-"devb-virtio: /dev/vblk0 ready"}
+virtio_pattern=${QSOE_BOOT_VIRTIO_PATTERN:-"[devb-virtio-rs] /dev/vblk0 ready"}
 
 while [ "$#" -gt 0 ]; do
     case "$1" in

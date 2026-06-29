@@ -27,8 +27,8 @@ Only the qrvfs image writer selected by the RC smoke changes. Normal
 unless `QSOE_RUST_MKFS_QRV=1` or the RC smoke selects Rust.
 
 The RC smoke builds the normal QSOE/L virtio qrvfs image with the selected
-writer, boots with C `devb-virtio` by default to isolate writer evidence,
-mounts `/usr`, and reads `/usr/conf/passwd` from the generated image.
+writer, boots with the retired Rust-only `devb-virtio-rs` storage path, mounts
+`/usr`, and reads `/usr/conf/passwd` from the generated image.
 
 ## Rollback
 
@@ -68,8 +68,9 @@ The live smokes succeed when the boot log contains the guest marker
 - This RC does not retire `host_tools/mkfs-qrv.c`; removal still requires the
   retirement checklist and a separate C-removal PR.
 - The C writer remains the rollback implementation for qrvfs image creation.
-- The RC smoke uses C `devb-virtio` by default so storage-driver changes do not
-  obscure writer evidence.
+- The RC smoke now uses Rust-only `devb-virtio-rs` because the C storage driver
+  rollback is retired. The mkfs-qrv writer rollback remains independent through
+  `QSOE_RUST_MKFS_QRV=0`.
 
 ## Operator Impact
 

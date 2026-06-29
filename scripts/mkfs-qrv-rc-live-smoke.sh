@@ -15,7 +15,7 @@ read /usr/conf/passwd from that image.
 Environment:
   MKFS_QRV_RC_ROLLBACK       set 1 to select C mkfs-qrv rollback
   QSOE_RUST_MKFS_QRV         defaults to 1 for the RC path
-  QSOE_RUST_VIRTIO           defaults to 0 to isolate writer evidence
+  QSOE_RUST_VIRTIO           must remain 1 after C devb-virtio retirement
   MKFS_QRV_RC_WORKDIR        output directory, default build/mkfs-qrv-rc
 EOF
 }
@@ -68,7 +68,7 @@ case "$rollback" in
 esac
 
 export QSOE_RUST_MKFS_QRV
-export QSOE_RUST_VIRTIO=${QSOE_RUST_VIRTIO:-0}
+export QSOE_RUST_VIRTIO=${QSOE_RUST_VIRTIO:-1}
 export RUST_VIRTIO_FILE_WORKDIR=${RUST_VIRTIO_FILE_WORKDIR:-"$workdir"}
 export RUST_VIRTIO_WORKDIR=${RUST_VIRTIO_WORKDIR:-"$workdir"}
 
@@ -80,5 +80,5 @@ if [ "$has_log" -eq 1 ]; then
 fi
 
 exec "$ROOT/scripts/rust-virtio-file-smoke.sh" \
-    -o "$workdir/boot-smoke-lq-$mode-mkfs-qrv-c-virtio-file.log" \
+    -o "$workdir/boot-smoke-lq-$mode-mkfs-qrv-rust-virtio-file.log" \
     "$@"

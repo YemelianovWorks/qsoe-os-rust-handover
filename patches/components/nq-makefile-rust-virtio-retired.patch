@@ -1,0 +1,30 @@
+diff --git a/Makefile b/Makefile
+--- a/Makefile
++++ b/Makefile
+@@ -103,6 +103,7 @@ RTLD_SO     = build/rtld/ld-qsoe.so.1
+ MODPKG      = build/modpkg.cpio
+ SELECTED_SLOGGER_ELF ?= $(abspath ../build/rust/selected/sbin/slogger.elf)
+ SELECTED_PIPE_ELF ?= $(abspath ../build/rust/selected/sbin/pipe.elf)
++SELECTED_VIRTIO_ELF ?= $(abspath ../build/rust/selected/sbin/devb-virtio.elf)
+ 
+ # Distinct object suffixes so `foo.c` and `foo.S` don't both
+ # produce `foo.o` and clash at link time.
+@@ -241,6 +242,9 @@ $(MODPKG): $(TASKMAN_BIN) $(LIBC_SO) $(QSH_ELF) $(RTLD_SO) FORCE
+ 	+@$(MAKE) -C .. pipe-artifact \
+ 	    LIBC_SO=$(abspath $(LIBC_SO)) \
+ 	    SELECTED_PIPE_ELF=$(SELECTED_PIPE_ELF)
++	+@$(MAKE) -C .. virtio-artifact \
++	    LIBC_SO=$(abspath $(LIBC_SO)) \
++	    SELECTED_VIRTIO_ELF=$(SELECTED_VIRTIO_ELF)
+ 	+@$(MAKE) -C ../quser cpio \
+ 	    MODPKG_CPIO=$(abspath $(MODPKG)) \
+ 	    LIBC_SO=$(abspath $(LIBC_SO)) \
+@@ -249,7 +253,8 @@ $(MODPKG): $(TASKMAN_BIN) $(LIBC_SO) $(QSH_ELF) $(RTLD_SO) FORCE
+ 	    EXTRA_ROOT_FILES="$(abspath $(TASKMAN_BIN))" \
+ 	    SBIN_SLOG_ELF=$(SELECTED_SLOGGER_ELF) \
+-	    SBIN_PIPE_ELF=$(SELECTED_PIPE_ELF)
++	    SBIN_PIPE_ELF=$(SELECTED_PIPE_ELF) \
++	    SBIN_VIRTIO_ELF=$(SELECTED_VIRTIO_ELF)
+ 
+ $(KERNEL): $(OBJS) $(LDSCRIPT)
+ 	@echo "  LINK  $@"

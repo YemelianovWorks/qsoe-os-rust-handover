@@ -173,9 +173,9 @@ The first Rust crate should expose:
 
 ### Driver Pilot: devb-virtio
 
-`quser/dev/virtio/main.c` is a later pilot after bindings and artifact checks
-exist. It exercises MMIO, DMA-like memory sharing, queue state, interrupts, and
-resource-server behavior.
+`devb-virtio-rs` completed the driver pilot and now replaces the retired C
+`quser/dev/virtio` implementation in tracked NQ/LQ images. It exercises MMIO,
+DMA-like memory sharing, queue state, interrupts, and resource-server behavior.
 
 The Rust version must keep unsafe code localized around:
 

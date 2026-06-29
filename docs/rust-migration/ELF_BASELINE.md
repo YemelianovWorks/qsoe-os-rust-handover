@@ -8,7 +8,6 @@ on binaries relevant to early migration work and smoke coverage.
 
 Selected artifacts:
 
-- `devb-virtio`: later driver pilot.
 - `fs-qrv`: filesystem server and parser-heavy behavior.
 - `qsh`: large shell baseline and high-relocation example.
 - `login`: on-disk login path.
@@ -19,6 +18,8 @@ Selected artifacts:
   current C baseline set.
 - The former C `pipe` service is retired and no longer part of the current C
   baseline set.
+- The former C `devb-virtio` driver is retired and no longer part of the
+  current C baseline set.
 
 Regenerate the compact table from a built tree:
 
@@ -40,7 +41,6 @@ by git. The checked-in table below is the reviewable baseline summary.
 
 | Artifact | Interpreter | Needed | Relocations | Undefined | TLS | Unwind |
 | --- | --- | --- | --- | ---: | --- | --- |
-| `quser/build/dev/virtio/devb-virtio.elf` | `/lib/ld-qsoe.so.1` | `libc.so` | `R_RISCV_64=1,R_RISCV_JUMP_SLOT=19` | 42 | no | yes |
 | `quser/build/fs/qrv/fs-qrv.elf` | `/lib/ld-qsoe.so.1` | `libc.so` | `R_RISCV_64=1,R_RISCV_JUMP_SLOT=25` | 54 | no | yes |
 | `quser/build/qsh/qsh.elf` | `/lib/ld-qsoe.so.1` | `libc.so` | `R_RISCV_64=186,R_RISCV_JUMP_SLOT=66` | 138 | no | yes |
 | `quser/build/sbin/login/login.elf` | `/lib/ld-qsoe.so.1` | `libc.so` | `R_RISCV_64=3,R_RISCV_JUMP_SLOT=29` | 68 | no | yes |

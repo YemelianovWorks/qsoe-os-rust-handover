@@ -24,6 +24,74 @@ Follow-up:
 - ...
 ```
 
+## 2026-06-29 20:01 CEST - Retired C devb-virtio Driver
+
+Scope:
+
+- Retired the C `quser/dev/virtio` block driver after the Rust-default
+  `devb-virtio-rs` RC and rollback evidence.
+- Changed `QSOE_RUST_VIRTIO` to default to Rust and reject `0` because the C
+  driver is no longer staged.
+- Removed the `virtio-rc-rollback-smoke` and container rollback targets.
+- Added tracked NQ/LQ component patches so fresh CPIO builds call top-level
+  `make virtio-artifact` and pass `SBIN_VIRTIO_ELF` into `quser`.
+- Removed the C `devb-virtio` source from the `quser` component override.
+- Removed the retired C `devb-virtio` ELF from the `qsoe-elf` relocation
+  fixture list.
+- Updated README/status/inventory/retirement docs and added
+  `VIRTIO_RETIREMENT.md`.
+
+Commands:
+
+- `./scripts/apply-component-overrides.sh`
+- `patch -d nq --reverse --silent --dry-run -p1 < patches/components/nq-makefile-rust-virtio-retired.patch`
+- `patch -d lq --reverse --silent --dry-run -p1 < patches/components/lq-makefile-rust-virtio-retired.patch`
+- `patch -d quser --reverse --silent --dry-run -p1 < patches/components/quser-retire-virtio-c.patch`
+- `bash -n scripts/apply-component-overrides.sh scripts/select-virtio-artifact.sh scripts/rust-virtio-boot-smoke.sh scripts/rust-virtio-file-smoke.sh scripts/virtio-rc-file-smoke.sh scripts/boot-smoke.sh scripts/rust-mkfs-qrv-live-smoke.sh scripts/mkfs-qrv-rc-live-smoke.sh scripts/rust-slogger-boot-smoke.sh scripts/rust-pipe-smoke.sh scripts/rust-pipe-data-smoke.sh scripts/capture-elf-baseline.sh`
+- `QSOE_RUST_VIRTIO=0 make virtio-artifact`
+- `QSOE_VIRTIO_RC_ROLLBACK=1 scripts/virtio-rc-file-smoke.sh`
+- `make rust-virtio-link-smoke`
+- `make check-elf-reloc-fixture`
+- `make virtio-artifact`
+- `make rust-check`
+- `make slogger-artifact pipe-artifact virtio-artifact && make -C quser cpio`
+- `make rust-virtio-file-smoke`
+- `make virtio-rc-file-smoke`
+- `make mkfs-qrv-rc-live-smoke`
+- `make mkfs-qrv-rc-rollback-smoke`
+- `make rust-pipe-data-smoke`
+- `make`
+- `scripts/boot-smoke.sh -k lq -t 120`
+- `make rust-slogger-boot-smoke`
+- `make rust-pipe-smoke`
+- `scripts/c-index.sh files`
+
+Result:
+
+- Component overrides replayed idempotently and verified
+  `quser/dev/virtio` is absent.
+- The retired C selector and rollback flags fail fast with status 2 and clear
+  retirement messages.
+- `qsoe-devb-virtio-rs` links and passes strict user ELF audit with no TLS or
+  unwind sections.
+- The required relocation fixture test no longer reads the retired C
+  `quser/build/dev/virtio/devb-virtio.elf` path.
+- Direct `quser` CPIO packaging succeeds when the selected Rust `slogger`,
+  `pipe`, and `devb-virtio` artifacts are present.
+- CPIO inspection confirms `/sbin/devb-virtio` contains the Rust
+  `[devb-virtio-rs] /dev/vblk0 ready` marker.
+- The Rust-only virtio file-read smoke and compatibility RC smoke both pass.
+- Rust mkfs live smoke, C mkfs rollback live smoke, Rust pipe data smoke,
+  focused slogger/pipe smokes, normal source build, and QSOE/L boot smoke all
+  pass with Rust `devb-virtio-rs` staged as `/sbin/devb-virtio`.
+- The C inventory now reports 810 indexed files and 130,214 approximate LOC;
+  `quser` dropped to 121 indexed files after removing C `devb-virtio`.
+
+Follow-up:
+
+- Merge the retirement PR, then update #138 to `status:retired` and close it.
+- Continue with the next candidate only after its own evidence and removal PR.
+
 ## 2026-06-29 19:27 CEST - Retired C pipe Service
 
 Scope:

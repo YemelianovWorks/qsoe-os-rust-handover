@@ -13,8 +13,7 @@ reuses the virtio file-read smoke to prove the guest can mount /usr and read
 /usr/conf/passwd from the Rust-written image.
 
 Environment:
-  QSOE_RUST_VIRTIO             set 1 to combine with the Rust virtio driver;
-                               default is 0 to isolate qrvfs writer evidence
+  QSOE_RUST_VIRTIO             must remain 1 after C devb-virtio retirement
   RUST_MKFS_QRV_LIVE_WORKDIR   output directory, default build/rust-mkfs-qrv-live
 EOF
 }
@@ -39,7 +38,7 @@ done
 mkdir -p "$workdir"
 
 export QSOE_RUST_MKFS_QRV=1
-export QSOE_RUST_VIRTIO=${QSOE_RUST_VIRTIO:-0}
+export QSOE_RUST_VIRTIO=${QSOE_RUST_VIRTIO:-1}
 export RUST_VIRTIO_FILE_WORKDIR=${RUST_VIRTIO_FILE_WORKDIR:-"$workdir"}
 export RUST_VIRTIO_WORKDIR=${RUST_VIRTIO_WORKDIR:-"$workdir"}
 
