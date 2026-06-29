@@ -385,6 +385,7 @@ without changing the normal taskman default:
 make check-tm-fdt-model
 make rust-tm-fdt-provider
 make tm-fdt-evidence
+make tm-fdt-runtime-smoke
 ```
 
 With the default `QSOE_RUST_TM_FDT=0`, LQ taskman links the existing C
@@ -392,6 +393,11 @@ With the default `QSOE_RUST_TM_FDT=0`, LQ taskman links the existing C
 C `sys/fdt.o`, builds `qsoe-tm-fdt` for `riscv64imac-unknown-none-elf`, and
 links `libqsoe_tm_fdt.a` into taskman. FDT discovery, syscfg/sysmap policy,
 initrd handling, process tables, and seL4 invocation code remain C.
+
+`make tm-fdt-runtime-smoke` boots QSOE/L with Rust `tm_fdt` selected, verifies
+the Rust-selected LQ taskman link plan omits C `sys/fdt.o`, and checks the
+booted FDT consumers through `/chosen` bootargs, syscfg/sysmap construction,
+`/sys/board`, `/sys/cmdline`, and `/usr/bin/sysinfo`.
 
 ## Task Manager Syscfg Selection
 

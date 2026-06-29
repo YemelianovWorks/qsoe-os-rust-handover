@@ -24,6 +24,39 @@ Follow-up:
 - ...
 ```
 
+## 2026-06-29 23:45 CEST - tm_fdt Runtime Smoke
+
+Scope:
+
+- Added `make tm-fdt-runtime-smoke` and container CI wiring.
+- The smoke rebuilds QSOE/L with `QSOE_RUST_TM_FDT=1` and mandatory
+  `QSOE_RUST_TM_PROCFS=1`.
+- It captures the Rust-selected LQ taskman dry-run plan, rejects any remaining
+  `sys/fdt.o` link, verifies the selected Rust provider archive exports all
+  nine `tm_fdt_*` ABI symbols, waits for `/chosen` command-line,
+  `syscfg built from FDT`, and `sysmap page built` boot markers, then checks
+  `/sys/board`, `/sys/cmdline`, and `/usr/bin/sysinfo` from sysinit.
+- Updated `tm_fdt` status docs so the next gate is a separate Rust-default RC
+  decision rather than missing basic boot/syscfg runtime coverage.
+
+Commands:
+
+- `bash -n scripts/tm-fdt-runtime-smoke.sh scripts/tm-fdt-evidence.sh scripts/boot-smoke.sh`
+- `make -n tm-fdt-runtime-smoke container-tm-fdt-runtime-smoke`
+- `make tm-fdt-runtime-smoke`
+
+Result:
+
+- The local `make tm-fdt-runtime-smoke` run passed.
+- The smoke proves the Rust-selected FDT parser is exercised through the LQ
+  `/chosen`, syscfg/sysmap, `/sys`, and `sysinfo` boot-consumer path.
+
+Follow-up:
+
+- Keep `tm_fdt` Rust opt-in while deciding whether to open a separate
+  Rust-default RC window. Broader PCI and memory-topology risk still needs
+  explicit acceptance before any C removal.
+
 ## 2026-06-29 23:20 CEST - tm_syscfg Runtime Smoke
 
 Scope:
@@ -626,9 +659,10 @@ Result:
 
 Follow-up:
 
-- Keep `tm_fdt` Rust opt-in only until boot/syscfg runtime coverage proves the
-  FDT-backed `/chosen`, memory, PCI, and command-line paths before any
-  Rust-default RC decision.
+- Later `make tm-fdt-runtime-smoke` added focused `/chosen`, syscfg/sysmap,
+  `/sys`, and `sysinfo` boot-consumer coverage. Keep `tm_fdt` Rust opt-in
+  pending a separate RC decision, with broader PCI and memory-topology risk
+  still called out explicitly.
 
 ## 2026-06-29 15:05 CEST - tm_elf Rust Opt-In Provider
 
