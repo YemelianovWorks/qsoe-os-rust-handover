@@ -369,8 +369,10 @@ The strict ELF audit showed:
   default and rollback until a separate RC decision exists.
 - `tm_fdt` has a Rust opt-in provider behind `QSOE_RUST_TM_FDT=1`. The
   selector removes LQ C `sys/fdt.o` and links through the shared taskman Rust
-  provider archive. C remains default and rollback until boot/syscfg runtime
-  coverage and a separate RC decision exist.
+  provider archive. `make tm-fdt-runtime-smoke` covers `/chosen` bootargs,
+  syscfg/sysmap construction, `/sys`, and `sysinfo` consumers with Rust
+  `tm_fdt` selected. C remains default and rollback until a separate RC
+  decision exists.
 
 ## Current Decisions
 
