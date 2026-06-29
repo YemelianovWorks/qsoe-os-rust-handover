@@ -54,6 +54,7 @@ The top-level evidence target is:
 
 ```sh
 make tm-rsrcdb-evidence
+make tm-rsrcdb-runtime-smoke
 ```
 
 Multiple taskman Rust providers may be selected together. The shared
@@ -71,6 +72,7 @@ cargo test --manifest-path rust/Cargo.toml -p qsoe-tm-rsrcdb --features host-tes
 cargo clippy --manifest-path rust/Cargo.toml -p qsoe-tm-rsrcdb --features host-tests -- -D warnings
 make rust-tm-rsrcdb-provider
 make tm-rsrcdb-evidence
+make tm-rsrcdb-runtime-smoke
 ```
 
 `make tm-rsrcdb-evidence` verified:
@@ -83,6 +85,11 @@ make tm-rsrcdb-evidence
 - LQ C-default dry-run and final taskman link include C `sys/rsrcdb.o`;
 - LQ Rust-selected dry-run and final taskman link omit C `sys/rsrcdb.o` and
   link the shared taskman Rust provider archive.
+- `make tm-rsrcdb-runtime-smoke` boots LQ with Rust `tm_rsrcdb` selected,
+  verifies the selected `libtaskman.a` omits C `rsrcdb.o`, verifies the shared
+  Rust provider archive exports the `tm_rsrc_*` ABI, and exercises live
+  `rsrcdbmgr_*` create, attach, query, detach, and destroy calls through a
+  qrvfs-staged `/usr/bin/rsrcdb_probe` helper.
 
 The C and Rust fixtures also assert the real `rsrc_request_t` ABI size is 56
 bytes on RV64-style layouts. Taskman's dispatcher currently replies enough
@@ -97,6 +104,5 @@ C remains the default and rollback path:
 - `QSOE_RUST_TM_RSRCDB=1` excludes `sys/rsrcdb.o` and links
   the shared taskman Rust provider archive.
 
-Do not promote this provider to a Rust-default RC until runtime coverage proves
-resource attach/query/detach behavior through `rsrcdbmgr_*` callers, and do not
-retire C until #26 is satisfied in a separate removal PR.
+Do not promote this provider to a Rust-default RC without a separate RC
+decision, and do not retire C until #26 is satisfied in a separate removal PR.

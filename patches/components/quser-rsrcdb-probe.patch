@@ -1,0 +1,219 @@
+diff --git a/Makefile b/Makefile
+--- a/Makefile
++++ b/Makefile
+@@ -36,6 +36,7 @@ COMPONENTS := libpci \
+               fs/qrv \
+               test/cred_probe \
+               test/pathmgr_probe \
++              test/rsrcdb_probe \
+               test/syncspace \
+               test/suite
+ 
+diff --git a/test/rsrcdb_probe/Makefile b/test/rsrcdb_probe/Makefile
+new file mode 100644
+--- /dev/null
++++ b/test/rsrcdb_probe/Makefile
+@@ -0,0 +1,11 @@
++# quser/test/rsrcdb_probe/Makefile -- rsrcdb runtime probe.
++#
++# Copyright (c) 2026 Yuri Zaporozhets <yuriz@qsoe.net>
++# SPDX-License-Identifier: Apache-2.0
++
++include ../../common.mk
++
++PROGRAM := rsrcdb_probe
++SRCS    := main.c
++
++include $(QUSER)/build_prog.mk
+diff --git a/test/rsrcdb_probe/main.c b/test/rsrcdb_probe/main.c
+new file mode 100644
+--- /dev/null
++++ b/test/rsrcdb_probe/main.c
+@@ -0,0 +1,187 @@
++/*
++ * rsrcdb_probe: runtime taskman resource DB lifecycle smoke helper.
++ *
++ * Exercises the public rsrcdbmgr_* libc wrappers against a non-memory class so
++ * the probe stays independent from FDT/syscfg-seeded physical memory ranges.
++ *
++ * Copyright (c) 2026 Yuri Zaporozhets <yuriz@qsoe.net>
++ * SPDX-License-Identifier: Apache-2.0
++ */
++
++#include <errno.h>
++#include <stdio.h>
++#include <string.h>
++#include <sys/qsoe.h>
++#include <sys/rsrcdbmgr.h>
++
++#define PROBE_CLASS       RSRCDBMGR_DMA_CHANNEL
++#define PROBE_START       100u
++#define PROBE_END         199u
++#define PROBE_ATTACH_LO   120u
++#define PROBE_ATTACH_HI   180u
++#define PROBE_ALIGN       16u
++#define PROBE_LENGTH      16u
++
++static int fail(const char *msg)
++{
++    printf("tm-rsrcdb-runtime-smoke: %s\n", msg);
++    return 1;
++}
++
++static int fail_errno(const char *msg)
++{
++    printf("tm-rsrcdb-runtime-smoke: %s errno=%d\n", msg, qsoe_errno);
++    return 1;
++}
++
++static int flags_match(const rsrc_alloc_t *entry, unsigned used)
++{
++    uint32_t expected = PROBE_CLASS;
++    if (used)
++        expected |= RSRCDBMGR_FLAG_USED;
++    return entry->flags == expected;
++}
++
++static int range_match(const rsrc_alloc_t *entry, uint64_t start,
++                       uint64_t end, unsigned used)
++{
++    return entry->start == start &&
++           entry->end == end &&
++           flags_match(entry, used);
++}
++
++static int query_entries(rsrc_alloc_t *entries, int capacity)
++{
++    memset(entries, 0, (unsigned)capacity * sizeof(entries[0]));
++    int count = rsrcdbmgr_query(entries, capacity, 0, PROBE_CLASS);
++    if (count < 0)
++        return -1;
++    if (count > capacity) {
++        qsoe_errno = E2BIG;
++        return -1;
++    }
++    return count;
++}
++
++static int expect_single_free(void)
++{
++    rsrc_alloc_t entries[8];
++    int count = query_entries(entries, 8);
++    if (count < 0)
++        return fail_errno("query single free failed");
++    if (count != 1 || !range_match(&entries[0], PROBE_START, PROBE_END, 0)) {
++        printf("tm-rsrcdb-runtime-smoke: single free mismatch count=%d "
++               "start=%llu end=%llu flags=0x%x\n",
++               count,
++               (unsigned long long)entries[0].start,
++               (unsigned long long)entries[0].end,
++               (unsigned)entries[0].flags);
++        return 1;
++    }
++    return 0;
++}
++
++static int expect_attached_split(void)
++{
++    rsrc_alloc_t entries[8];
++    int count = query_entries(entries, 8);
++    if (count < 0)
++        return fail_errno("query attach split failed");
++    if (count != 3 ||
++        !range_match(&entries[0], PROBE_START, 127u, 0) ||
++        !range_match(&entries[1], 128u, 143u, 1) ||
++        !range_match(&entries[2], 144u, PROBE_END, 0)) {
++        printf("tm-rsrcdb-runtime-smoke: attach split mismatch count=%d "
++               "e0=%llu-%llu/0x%x e1=%llu-%llu/0x%x e2=%llu-%llu/0x%x\n",
++               count,
++               (unsigned long long)entries[0].start,
++               (unsigned long long)entries[0].end,
++               (unsigned)entries[0].flags,
++               (unsigned long long)entries[1].start,
++               (unsigned long long)entries[1].end,
++               (unsigned)entries[1].flags,
++               (unsigned long long)entries[2].start,
++               (unsigned long long)entries[2].end,
++               (unsigned)entries[2].flags);
++        return 1;
++    }
++    return 0;
++}
++
++int main(void)
++{
++    int before = rsrcdbmgr_query(0, 0, 0, PROBE_CLASS);
++    if (before < 0)
++        return fail_errno("initial query failed");
++    if (before != 0) {
++        printf("tm-rsrcdb-runtime-smoke: class not empty count=%d\n", before);
++        return 1;
++    }
++
++    rsrc_alloc_t range = {
++        .start = PROBE_START,
++        .end = PROBE_END,
++        .flags = PROBE_CLASS,
++        .name = 0,
++    };
++    if (rsrcdbmgr_create(&range, 1) != 0)
++        return fail_errno("create failed");
++    printf("tm-rsrcdb-runtime-smoke: create ok\n");
++
++    if (expect_single_free() != 0)
++        return 1;
++    printf("tm-rsrcdb-runtime-smoke: query create ok\n");
++
++    rsrc_request_t req = {
++        .length = PROBE_LENGTH,
++        .align = PROBE_ALIGN,
++        .start = PROBE_ATTACH_LO,
++        .end = PROBE_ATTACH_HI,
++        .flags = PROBE_CLASS | RSRCDBMGR_FLAG_RANGE | RSRCDBMGR_FLAG_ALIGN,
++        .zero = { 0, 0 },
++        .name = 0,
++    };
++    if (rsrcdbmgr_attach(&req, 1) != 0)
++        return fail_errno("attach failed");
++    if (req.start != 128u || req.end != 143u || req.length != PROBE_LENGTH) {
++        printf("tm-rsrcdb-runtime-smoke: attach grant mismatch "
++               "start=%llu end=%llu length=%llu\n",
++               (unsigned long long)req.start,
++               (unsigned long long)req.end,
++               (unsigned long long)req.length);
++        return 1;
++    }
++    printf("tm-rsrcdb-runtime-smoke: attach ok\n");
++
++    if (expect_attached_split() != 0)
++        return 1;
++    printf("tm-rsrcdb-runtime-smoke: query attach ok\n");
++
++    rsrc_request_t detach = {
++        .length = PROBE_LENGTH,
++        .align = 0,
++        .start = req.start,
++        .end = req.end,
++        .flags = PROBE_CLASS,
++        .zero = { 0, 0 },
++        .name = 0,
++    };
++    if (rsrcdbmgr_detach(&detach, 1) != 0)
++        return fail_errno("detach failed");
++    if (expect_single_free() != 0)
++        return 1;
++    printf("tm-rsrcdb-runtime-smoke: detach merge ok\n");
++
++    if (rsrcdbmgr_destroy(&range, 1) != 0)
++        return fail_errno("destroy failed");
++    int after = rsrcdbmgr_query(0, 0, 0, PROBE_CLASS);
++    if (after < 0)
++        return fail_errno("final query failed");
++    if (after != 0) {
++        printf("tm-rsrcdb-runtime-smoke: destroy left count=%d\n", after);
++        return 1;
++    }
++    printf("tm-rsrcdb-runtime-smoke: destroy ok\n");
++    printf("tm-rsrcdb-runtime-smoke: rsrcdb probe ok\n");
++    return 0;
++}

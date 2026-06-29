@@ -24,6 +24,45 @@ Follow-up:
 - ...
 ```
 
+## 2026-06-30 00:56 CEST - tm_rsrcdb Runtime Smoke
+
+Scope:
+
+- Added `make tm-rsrcdb-runtime-smoke` and container CI wiring.
+- Added `/usr/bin/rsrcdb_probe`, a qrvfs-staged smoke helper that exercises
+  public `rsrcdbmgr_*` create, attach, query, detach, and destroy calls.
+- The smoke rebuilds QSOE/L with `QSOE_RUST_TM_RSRCDB=1` and mandatory
+  `QSOE_RUST_TM_PROCFS=1`, verifies the selected `libtaskman.a` omits C
+  `rsrcdb.o`, and verifies the Rust provider archive exports the `tm_rsrc_*`
+  ABI.
+- The helper is staged only through the smoke-specific `FSQRV_BINS`, keeping the
+  production qrvfs root unchanged.
+
+Commands:
+
+- `bash -n scripts/tm-rsrcdb-runtime-smoke.sh scripts/apply-component-overrides.sh scripts/boot-smoke.sh`
+- `make -n tm-rsrcdb-runtime-smoke container-tm-rsrcdb-runtime-smoke`
+- `patch -d quser --reverse --dry-run -p1 < patches/components/quser-rsrcdb-probe.patch`
+- `./scripts/apply-component-overrides.sh`
+- `make tm-rsrcdb-runtime-smoke`
+- `make tm-rsrcdb-evidence`
+- `git diff --check`
+- `make check-qrvfs-rust-writer-production-root`
+
+Result:
+
+- `make tm-rsrcdb-runtime-smoke` passes locally with markers for create, query
+  after create, attach, query after attach, detach merge, destroy, and final
+  probe success.
+- `make tm-rsrcdb-evidence` continues to pass, including C/Rust host tests,
+  provider archive audit, and LQ C-default/Rust-selected link checks.
+- The runtime smoke closes the resource-DB caller coverage gate for #151, but
+  `tm_rsrcdb` remains Rust opt-in pending a separate Rust-default RC decision.
+
+Follow-up:
+
+- Publish the PR, wait for trusted CI, merge, and update #151.
+
 ## 2026-06-30 00:37 CEST - tm_cred Runtime Smoke
 
 Scope:

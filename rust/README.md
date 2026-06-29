@@ -524,6 +524,7 @@ staticlib without changing the normal taskman default:
 make check-tm-rsrcdb-model
 make rust-tm-rsrcdb-provider
 make tm-rsrcdb-evidence
+make tm-rsrcdb-runtime-smoke
 ```
 
 With the default `QSOE_RUST_TM_RSRCDB=0`, LQ taskman links the existing C
@@ -532,6 +533,9 @@ omits C `sys/rsrcdb.o`, builds `qsoe-tm-rsrcdb` for
 `riscv64imac-unknown-none-elf`, and links `libqsoe_tm_rsrcdb.a` into taskman.
 The libc `rsrcdbmgr_*` wrappers, taskman IPC dispatcher, IRQ handling, FDT and
 syscfg construction, process tables, and seL4 invocation code remain C.
+The runtime smoke boots LQ with Rust `tm_rsrcdb` selected and runs a staged
+`/usr/bin/rsrcdb_probe` helper through live `rsrcdbmgr_*` create, attach,
+query, detach, and destroy calls.
 
 ## Task Manager `/sys` Selection
 
