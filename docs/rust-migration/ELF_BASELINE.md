@@ -13,7 +13,9 @@ Selected artifacts:
 - `fs-qrv`: filesystem server and parser-heavy behavior.
 - `qsh`: large shell baseline and high-relocation example.
 - `login`: on-disk login path.
-- `test_msgpass`, `test_syncspace`, `suite`: in-guest test helpers.
+- `test_syncspace`, `suite`: in-guest test helpers. The former C
+  `test_msgpass` helper is retired and no longer part of the current C
+  baseline set.
 
 Regenerate the compact table from a built tree:
 
@@ -40,7 +42,6 @@ by git. The checked-in table below is the reviewable baseline summary.
 | `quser/build/fs/qrv/fs-qrv.elf` | `/lib/ld-qsoe.so.1` | `libc.so` | `R_RISCV_64=1,R_RISCV_JUMP_SLOT=25` | 54 | no | yes |
 | `quser/build/qsh/qsh.elf` | `/lib/ld-qsoe.so.1` | `libc.so` | `R_RISCV_64=186,R_RISCV_JUMP_SLOT=66` | 138 | no | yes |
 | `quser/build/sbin/login/login.elf` | `/lib/ld-qsoe.so.1` | `libc.so` | `R_RISCV_64=3,R_RISCV_JUMP_SLOT=29` | 68 | no | yes |
-| `quser/build/test/msgpass/test_msgpass.elf` | `/lib/ld-qsoe.so.1` | `libc.so` | `R_RISCV_JUMP_SLOT=11` | 24 | no | yes |
 | `quser/build/test/syncspace/test_syncspace.elf` | `/lib/ld-qsoe.so.1` | `libc.so` | `R_RISCV_JUMP_SLOT=9` | 20 | no | yes |
 | `quser/build/test/suite/suite.elf` | `/lib/ld-qsoe.so.1` | `libc.so` | `R_RISCV_JUMP_SLOT=66` | 134 | no | yes |
 

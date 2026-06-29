@@ -1,0 +1,122 @@
+diff --git a/Makefile b/Makefile
+--- a/Makefile
++++ b/Makefile
+@@ -39,4 +39,5 @@ COMPONENTS := libpci \
+               fs/qrv \
+-              test/msgpass \
+               test/syncspace \
+               test/suite
++
++# test/msgpass C helper is retired; the umbrella stages Rust test_msgpass-rs.
+diff --git a/test/msgpass/Makefile b/test/msgpass/Makefile
+deleted file mode 100644
+--- a/test/msgpass/Makefile
++++ /dev/null
+@@ -1,12 +0,0 @@
+-# quser/test/msgpass/Makefile -- /bin/test_msgpass (large-message IPC
+-# echo server; counterpart of the suite's [msgpass] section).
+-#
+-# Copyright (c) 2026 Yuri Zaporozhets <yuriz@qsoe.net>
+-# SPDX-License-Identifier: Apache-2.0
+-
+-include ../../common.mk
+-
+-PROGRAM := test_msgpass
+-SRCS    := main.c
+-
+-include $(QUSER)/build_prog.mk
+diff --git a/test/msgpass/main.c b/test/msgpass/main.c
+deleted file mode 100644
+--- a/test/msgpass/main.c
++++ /dev/null
+@@ -1,90 +0,0 @@
+-/*
+- * test_msgpass: large-message IPC echo server (halfword byte-swap).
+- *
+- * Counterpart of the conformance suite's [msgpass] section.  The
+- * suite posix_spawn()s this binary, which:
+- *
+- *   1. ChannelCreate + qsoe_pathmgr_register(MSGPASS_PATH) so the
+- *      suite can resolve the channel and ConnectAttach directly --
+- *      taskman is only in the lookup, never in the data path.
+- *   2. MsgReceive's ONE message of up to MSGPASS_MAX_BYTES.
+- *   3. Swaps the bytes of every 16-bit halfword in place (a trailing
+- *      odd byte, if any, passes through unswapped).
+- *   4. MsgReply's the transformed payload back at the same length,
+- *      then exits so the suite can waitpid-reap it.
+- *
+- * The suite's canonical payload is 4 MiB minus 2 bytes -- big enough
+- * to exercise the kernel's bulk IPC path in both directions, with a
+- * deliberately page-unaligned tail.
+- *
+- * Copyright (c) 2026 Yuri Zaporozhets <yuriz@qsoe.net>
+- * SPDX-License-Identifier: Apache-2.0
+- */
+-
+-#include <stdio.h>
+-#include <stdlib.h>
+-#include <stdint.h>
+-#include <string.h>
+-#include <sys/qsoe.h>
+-
+-/* Where the suite finds us.  Keep in sync with suite/msgpass_test.c. */
+-#define MSGPASS_PATH        "/dev/msgpass"
+-
+-/* Receive-buffer capacity: one halfword above the suite's 4 MiB - 2
+- * payload so an off-by-a-little sender truncates loudly (length
+- * mismatch in the suite) instead of silently fitting. */
+-#define MSGPASS_MAX_BYTES   (4UL * 1024 * 1024)
+-
+-int main(int argc, char **argv, char **envp)
+-{
+-    (void)envp;
+-
+-    /* --no-reply: receive one message, then exit WITHOUT MsgReply.
+-     * The suite uses this to assert the kernel completes the
+-     * REPLY-parked sender with ESRVRFAULT at our teardown instead of
+-     * stranding it. */
+-    int no_reply = (argc > 1 && strcmp(argv[1], "--no-reply") == 0);
+-
+-    unsigned char *buf = malloc(MSGPASS_MAX_BYTES);
+-    if (buf == NULL) {
+-        printf("[test_msgpass] malloc(%lu) failed\n", MSGPASS_MAX_BYTES);
+-        return 1;
+-    }
+-
+-    int chid = ChannelCreate(0);
+-    if (chid < 0) {
+-        printf("[test_msgpass] ChannelCreate failed: errno=%d\n",
+-               qsoe_errno);
+-        return 1;
+-    }
+-    if (qsoe_pathmgr_register(MSGPASS_PATH, chid) != 0) {
+-        printf("[test_msgpass] pathmgr_register failed: errno=%d\n",
+-               qsoe_errno);
+-        return 1;
+-    }
+-
+-    struct _msg_info info = { 0 };
+-    int rcvid = MsgReceive(chid, buf, (int) MSGPASS_MAX_BYTES, &info);
+-    if (rcvid <= 0) {
+-        printf("[test_msgpass] MsgReceive failed: rcvid=%d errno=%d\n",
+-               rcvid, qsoe_errno);
+-        return 1;
+-    }
+-
+-    if (no_reply)
+-        return 0;       /* sender stays REPLY-parked -- kernel's job now */
+-
+-    /* Byte-swap every 16-bit halfword in place. */
+-    int n = info.msglen;
+-    uint16_t *h = (uint16_t *) buf;
+-    for (int i = 0; i < n / 2; i++)
+-        h[i] = (uint16_t) ((h[i] >> 8) | (h[i] << 8));
+-
+-    if (MsgReply(rcvid, 0, buf, n) != 0) {
+-        printf("[test_msgpass] MsgReply(%d bytes) failed: errno=%d\n",
+-               n, qsoe_errno);
+-        return 1;
+-    }
+-
+-    return 0;
+-}

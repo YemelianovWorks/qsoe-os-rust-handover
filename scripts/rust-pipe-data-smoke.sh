@@ -103,6 +103,7 @@ else
     selected_cpio="$workdir/modpkg-lq-c-rollback-pipe.cpio"
 fi
 selected_pipe="$ROOT/build/rust/selected/sbin/pipe.elf"
+selected_msgpass="$ROOT/build/rust/selected/usr/bin/test_msgpass.elf"
 lq_libc="$ROOT/lq/build/libc/libc.so"
 lq_rtld="$ROOT/lq/build/rtld/ld-qsoe.so.1"
 helper_src="$workdir/test_pipe_data.c"
@@ -328,7 +329,7 @@ touch "$selected_cpio"
 echo "rust-pipe-data-smoke.sh: wrote $selected_cpio"
 
 fsqrv_bins="$ROOT/quser/build/test/suite/suite.elf:suite"
-fsqrv_bins="$fsqrv_bins $ROOT/quser/build/test/msgpass/test_msgpass.elf:test_msgpass"
+fsqrv_bins="$fsqrv_bins $selected_msgpass:test_msgpass"
 fsqrv_bins="$fsqrv_bins $ROOT/quser/build/test/syncspace/test_syncspace.elf:test_syncspace"
 fsqrv_bins="$fsqrv_bins $ROOT/quser/build/utils/time.elf:time"
 fsqrv_bins="$fsqrv_bins $ROOT/quser/build/utils/sysinfo.elf:sysinfo"

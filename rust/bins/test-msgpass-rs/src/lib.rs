@@ -63,7 +63,6 @@ unsafe extern "C" {
     fn malloc(size: usize) -> *mut c_void;
     fn free(ptr: *mut c_void);
     fn _exit(status: c_int) -> !;
-    fn ProcessTerminate(pid: c_int, status: c_int) -> c_int;
 }
 
 #[cfg(not(any(test, feature = "host-tests")))]
@@ -123,14 +122,6 @@ pub extern "C" fn main(argc: isize, argv: *const *const u8, _envp: *const *const
             Err(_) => {
                 debug_write(b"[test_msgpass-rs] shutdown err\n");
             }
-        }
-        debug_write(b"[test_msgpass-rs] calling ProcessTerminate\n");
-        let rc = unsafe { ProcessTerminate(0, 0) };
-        if rc != 0 {
-            debug_write(b"[test_msgpass-rs] ProcessTerminate failed\n");
-        } else {
-            // Under normal circumstances, self ProcessTerminate doesn't return, so this shouldn't execute
-            debug_write(b"[test_msgpass-rs] ProcessTerminate returned 0?\n");
         }
         debug_write(b"[test_msgpass-rs] calling _exit\n");
         unsafe { _exit(0) };

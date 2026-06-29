@@ -582,10 +582,6 @@ mod tests {
                 &[(riscv::R_RISCV_64, 3), (riscv::R_RISCV_JUMP_SLOT, 29)],
             ),
             (
-                "quser/build/test/msgpass/test_msgpass.elf",
-                &[(riscv::R_RISCV_JUMP_SLOT, 11)],
-            ),
-            (
                 "quser/build/test/syncspace/test_syncspace.elf",
                 &[(riscv::R_RISCV_JUMP_SLOT, 9)],
             ),

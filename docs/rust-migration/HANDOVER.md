@@ -22,7 +22,7 @@ origin git@github.com:dmytro-yemelianov/qsoe-os-rust-handover.git
 Current main tip:
 
 ```text
-1a6b196afc2ff02705f51fe66ec44343e5e3ed8a
+335adb91b6f97ff0959495000da0816c11ef3b65
 ```
 
 The local tree adds:
@@ -73,19 +73,22 @@ to CI, PR #101 added host-model coverage for `tm_procfs`, PR #104 added the
 Rust `tm_procfs` opt-in provider, PR #105 added the `tm_procfs` evidence gate,
 PR #107 applied tracked component overrides for CI, PR #108 fixed line-split
 serial marker checks in the Rust smokes, PR #109 recorded trusted CI evidence
-for #96, #97, and #103, PR #162 added the Rust opt-in `tm_cred` provider, and
-PR #163 added the Rust opt-in `tm_pseudodev` provider, PR #164 added the Rust
+for #96, #97, and #103, PR #162 added the Rust opt-in `tm_cred` provider, PR
+#163 added the Rust opt-in `tm_pseudodev` provider, PR #164 added the Rust
 opt-in `tm_sysfs` provider, PR #165 fixed the issue-backed roadmap dashboard's
-opt-in status display, PR #166 added the Rust opt-in `tm_cpio` provider, and
-PR #167 added the Rust opt-in `tm_script` provider, PR #168 added the Rust
-opt-in `tm_syscfg` provider, and PR #169 added the Rust opt-in `tm_rsrcdb`
-provider. The current `main` tip is
-`51b40459a75c6bcefcf3cfd578a2fe983d4356c1`.
+opt-in status display, PR #166 added the Rust opt-in `tm_cpio` provider, PR
+#167 added the Rust opt-in `tm_script` provider, PR #168 added the Rust opt-in
+`tm_syscfg` provider, PR #169 added the Rust opt-in `tm_rsrcdb` provider, PR
+#170 added the Rust opt-in `tm_elf` provider, PR #171 added the Rust opt-in
+`tm_fdt` provider, PR #173 added the Rust opt-in `tm_sysmap` provider, and PR
+#174 added the Rust opt-in `tm_pathmgr` provider. The current `main` tip is
+`335adb91b6f97ff0959495000da0816c11ef3b65`.
 
 Current open follow-ups:
 
-- #26: keep C retirement blocked until the retirement checklist in
-  `RETIREMENT.md` is satisfied and a separate removal PR is reviewed.
+- #26: first C retirement checklist. The current branch exercises it by
+  retiring the C `test_msgpass` helper after the Rust-default RC and rollback
+  evidence.
 
 The #96 Rust pipe data-path gate, #97 Rust `test_msgpass` gate, and #103
 `tm_procfs` opt-in gate are satisfied by trusted `main` CI run `28102250069` at
@@ -95,10 +98,10 @@ The #98 host-test gate for the portable `tm_procfs` model is satisfied by
 `make check-tm-procfs-model`. The #102 Rust provider gate is satisfied by
 `QSOE_RUST_TM_PROCFS=1`; C remains default and rollback.
 
-The current branch adds a Rust opt-in `tm_pathmgr` provider behind
-`QSOE_RUST_TM_PATHMGR=1`. Focused local evidence has passed through the C host
-model, Rust host tests, clippy, override assertions, and Rust staticlib build;
-C remains default and rollback.
+The current branch retires the C `test_msgpass` helper. The qrvfs test image
+now stages Rust `test_msgpass-rs` at `/usr/bin/test_msgpass`, the tracked
+`quser` override removes `test/msgpass`, and the old C rollback flags fail
+fast. C remains default and rollback for all non-retired migration candidates.
 
 ## Linux Machine Setup
 
@@ -281,20 +284,23 @@ The strict ELF audit showed:
 - QSOE/N AIA MSI/MSI-X experiments still need QEMU `11.0.1+`.
 - The first Rust userland pilots remain `no_std`, `panic=abort`, no TLS, no
   unwind, and out of the default image.
-- C implementations remain the rollback path until a Rust service has host
-  tests, fixture parity, ELF audit, boot evidence, and documented differences.
+- Non-retired C implementations remain the rollback path until a Rust service
+  has host tests, fixture parity, ELF audit, boot evidence, documented
+  differences, and a separate retirement PR.
 - `slogger` has C-selected and Rust-selected `/dev/slog` readback baselines.
   It also has a Rust-default RC path with `make slogger-rc-readback-smoke` and
   a C rollback drill with `make slogger-rc-rollback-smoke`. CI includes both
   container RC readback smokes for trusted PRs and pushes. #95's
   local-equivalent RC evidence window is accepted; C retirement is still
   blocked by #26.
-- `test_msgpass` has an opt-in Rust helper and Rust-selected suite `[msgpass]`
-  smoke. CI includes `container-rust-test-msgpass-smoke` for trusted PRs and
-  pushes. Trusted `main` run `28102250069` passed the smoke and uploaded the
-  targeted `[msgpass]` markers plus boot-to-login evidence. The wider suite
-  still reports the known unrelated QSOE/L sync failure, so the smoke gates
-  only the targeted `[msgpass]` markers and boot-to-login.
+- `test_msgpass` has moved from opt-in to Rust-default RC to first C helper
+  retirement. CI includes `container-rust-test-msgpass-smoke` for trusted PRs
+  and pushes. Trusted `main` run `28102250069` passed the smoke and uploaded
+  the targeted `[msgpass]` markers plus boot-to-login evidence. The current
+  branch removes the C helper from tracked `quser` source/image paths and
+  rejects the old rollback flags. The wider suite still reports the known
+  unrelated QSOE/L sync failure, so the smoke gates only the targeted
+  `[msgpass]` markers and boot-to-login.
 - `pipe` has an opt-in Rust service, registration boot smoke, data-path smoke,
   and a Rust-default RC path with C rollback. CI includes
   `container-rust-pipe-data-smoke`, `container-pipe-rc-data-smoke`, and

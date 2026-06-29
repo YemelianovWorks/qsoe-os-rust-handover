@@ -2,15 +2,20 @@
 
 Selected: 2026-06-24 01:53 CEST.
 Opt-in helper validated: 2026-06-24 07:54 CEST.
+Rust-default RC validated: 2026-06-28.
+C helper retired: 2026-06-29.
 
-The first Rust test helper candidate is `test_msgpass-rs`, a Rust replacement
-for the current C helper:
+The first Rust test helper candidate was `test_msgpass-rs`, a Rust replacement
+for the original C helper:
 
 ```text
 quser/test/msgpass/main.c -> /usr/bin/test_msgpass
 ```
 
-The existing C helper remains the default and rollback path.
+The existing C helper remained the default and rollback path through the
+opt-in and Rust-default RC stages. It is now retired by the dedicated
+`test_msgpass` removal PR, so test images stage Rust `test_msgpass-rs` at
+`/usr/bin/test_msgpass`.
 
 ## Why `test_msgpass`
 
@@ -79,8 +84,8 @@ Implementation constraints:
 
 ## Opt-In Implementation
 
-The implemented opt-in path keeps C as the default and stages the Rust helper
-only when selected:
+The implemented opt-in path originally kept C as the default and staged the
+Rust helper only when selected:
 
 ```sh
 QSOE_RUST_TEST_MSGPASS=1 make test-msgpass-artifact
@@ -88,11 +93,12 @@ make rust-test-msgpass-link-smoke
 make rust-test-msgpass-smoke
 ```
 
-The smoke builds the helper with the LQ libc, places it at
-`/usr/bin/test_msgpass` in a temporary qrvfs image, runs the existing suite, and
-checks the `[msgpass]` markers. The wider suite still reports the current
-unrelated QSOE/L sync failure; this smoke gates only the Rust-selected
-`msgpass` section plus boot-to-login.
+After retirement, `make test-msgpass-artifact` always stages the Rust helper
+and rejects `QSOE_RUST_TEST_MSGPASS=0`. The smoke builds the helper with the
+LQ libc, places it at `/usr/bin/test_msgpass` in a temporary qrvfs image, runs
+the existing suite, and checks the `[msgpass]` markers. The wider suite still
+reports the current unrelated QSOE/L sync failure; this smoke gates only the
+Rust-selected `msgpass` section plus boot-to-login.
 
 ## Test-Image Safety
 
@@ -103,17 +109,27 @@ unrelated QSOE/L sync failure; this smoke gates only the Rust-selected
 - it owns no persistent global service path after exit
 - it touches no hardware
 - failure is contained to the suite result
-- rollback is a single artifact selection back to the existing C helper
+- the retired C helper has no persistent deployment state; failures stay
+  contained to the test-image suite path
 
 ## Acceptance Status
 
 Before any Rust helper is selected into a test image:
 
 - the Rust binary links and passes the strict QSOE user ELF link smoke
-- the C helper remains the default installed `/usr/bin/test_msgpass`
+- the C helper remained the default installed `/usr/bin/test_msgpass` through
+  the opt-in gate
 - an opt-in artifact selector stages `qsoe-test-msgpass-rs` at
   `/usr/bin/test_msgpass`
 - the existing suite `[msgpass]` section passes with the Rust helper selected
 - boot still reaches login after the test-image staging change
 - trusted `main` CI run `28102250069` accepted the #97 hosted-runner evidence
   for `container-rust-test-msgpass-smoke`
+
+Current retirement status:
+
+- `make test-msgpass-artifact` stages Rust only.
+- `make rust-test-msgpass-smoke` and `make test-msgpass-rc-smoke` validate the
+  Rust-only test-image path.
+- `QSOE_RUST_TEST_MSGPASS=0` and `QSOE_TEST_MSGPASS_RC_ROLLBACK=1` are rejected
+  because the C helper is retired.

@@ -83,6 +83,21 @@ require_line() {
         fail "$file is missing expected override: $needle"
 }
 
+require_absent() {
+    local file=$1
+    local needle=$2
+
+    ! grep -Fq "$needle" "$file" ||
+        fail "$file still contains retired override text: $needle"
+}
+
+require_missing() {
+    local path=$1
+
+    [ ! -e "$path" ] ||
+        fail "$path should have been removed by component overrides"
+}
+
 require_adjacent_contains() {
     local file=$1
     local first=$2
@@ -230,6 +245,9 @@ apply_patch_if_possible_or_present lq lq-taskman-rust-tm-pathmgr.patch \
     "$ROOT/lq/taskman/Makefile" \
     'RUST_TM_PATHMGR_A := $(REPO_ROOT)/build/rust/tm-pathmgr/libqsoe_tm_pathmgr.a'
 apply_patch_if_possible lq lq-msgpass-mcs-teardown-and-bulk-copy.patch
+apply_patch_if_possible_or_present quser quser-retire-test-msgpass-c.patch \
+    "$ROOT/quser/Makefile" \
+    'test_msgpass-rs'
 apply_patch_if_possible quser quser-msgpass-lq-no-reply-skip.patch
 
 require_line "$ROOT/nq/taskman/Makefile" 'QSOE_RUST_TM_CPIO ?= 0'
@@ -450,6 +468,10 @@ require_line "$ROOT/lq/taskman/Makefile" '$(TASKMAN_ELF): $(TASKMAN_OBJS) $(LIBT
 require_line "$ROOT/lq/libc/qsoe/msg.c" 'if (label == QSOE_MSG_BULK_LABEL) {'
 require_line "$ROOT/lq/taskman/proc/process.c" 'tm_pathmgr_unregister_pid(target);'
 require_line "$ROOT/lq/taskman/proc/spawn.c" 'tm_process_resolve_frame(src_proc, sva'
+require_line "$ROOT/quser/Makefile" 'test_msgpass-rs'
+require_absent "$ROOT/quser/Makefile" '              test/msgpass \'
+require_missing "$ROOT/quser/test/msgpass/Makefile"
+require_missing "$ROOT/quser/test/msgpass/main.c"
 require_line "$ROOT/quser/test/suite/msgpass_test.c" '(void) ProcessTerminate(nr_pid, 0);'
 
 echo "apply-component-overrides.sh: component overrides ready"

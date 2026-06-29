@@ -1,8 +1,7 @@
 #!/usr/bin/env bash
 #
 # Boot QSOE/L with a selected /usr/bin/test_msgpass helper and run the
-# existing suite [msgpass] path from a temporary sysinit fragment. Rust is
-# selected by default; set QSOE_RUST_TEST_MSGPASS=0 for the C rollback path.
+# existing suite [msgpass] path from a temporary sysinit fragment.
 
 set -eu
 
@@ -10,14 +9,12 @@ usage() {
     cat <<'EOF'
 usage: scripts/rust-test-msgpass-smoke.sh [-t seconds] [-o log] [--keep-running] [-- <emu args>]
 
-Builds and stages the selected helper at /usr/bin/test_msgpass in a temporary
+Builds and stages test_msgpass-rs at /usr/bin/test_msgpass in a temporary
 virtio qrvfs image, injects a sysinit fragment that runs /usr/bin/suite, and
-verifies the existing [msgpass] suite markers. Rust is selected by default; set
-QSOE_RUST_TEST_MSGPASS=0 for the C rollback path.
+verifies the existing [msgpass] suite markers.
 
 Environment:
-  QSOE_RUST_TEST_MSGPASS    selected artifact mode, default 1 (Rust)
-                             set 0 to prepare the C rollback image
+  QSOE_RUST_TEST_MSGPASS    must be 1 if set; the C helper is retired
   RUST_TEST_MSGPASS_WORKDIR   output directory, default build/rust-test-msgpass
 EOF
 }
@@ -78,16 +75,16 @@ fi
 
 QSOE_RUST_TEST_MSGPASS=${QSOE_RUST_TEST_MSGPASS:-1}
 case "$QSOE_RUST_TEST_MSGPASS" in
-    0|false|FALSE|no|NO)
-        msgpass_mode=c
-        helper_string="[test_msgpass] MsgReply"
-        ;;
     1|true|TRUE|yes|YES)
         msgpass_mode=rust
         helper_string="[test_msgpass-rs] /dev/msgpass registered"
         ;;
+    0|false|FALSE|no|NO)
+        echo "rust-test-msgpass-smoke.sh: C test_msgpass is retired; use Rust test_msgpass-rs" >&2
+        exit 2
+        ;;
     *)
-        echo "rust-test-msgpass-smoke.sh: QSOE_RUST_TEST_MSGPASS must be 0 or 1" >&2
+        echo "rust-test-msgpass-smoke.sh: QSOE_RUST_TEST_MSGPASS must be 1 after C retirement" >&2
         exit 2
         ;;
 esac
@@ -144,8 +141,7 @@ echo "rust-test-msgpass-smoke.sh: building LQ runtime prerequisites"
 "$MAKE" -C "$ROOT/lq" libc rtld libtaskman --no-print-directory
 
 echo "rust-test-msgpass-smoke.sh: selecting $msgpass_mode test_msgpass helper"
-QSOE_RUST_TEST_MSGPASS="$QSOE_RUST_TEST_MSGPASS" \
-    LIBC_SO="$lq_libc" \
+LIBC_SO="$lq_libc" \
     SELECTED_TEST_MSGPASS_ELF="$selected_helper" \
     "$MAKE" -C "$ROOT" test-msgpass-artifact --no-print-directory
 
@@ -179,6 +175,7 @@ if [ "${#emu_args[@]}" -gt 0 ]; then
 fi
 
 expected_markers=(
+    "[test_msgpass-rs] alive" \
     "PASS  msgpass: resolve /dev/msgpass" \
     "PASS  msgpass: 4MB-2 round-trip" \
     "PASS  msgpass: payload halfword-swapped" \
@@ -186,9 +183,6 @@ expected_markers=(
     "SKIP  msgpass: no-reply exit -> ESRVRFAULT" \
     "rust-test-msgpass-smoke: suite exited"
 )
-if [ "$msgpass_mode" = rust ]; then
-    expected_markers=("[test_msgpass-rs] alive" "${expected_markers[@]}")
-fi
 boot_extra_patterns=$(printf '%s\n' "${expected_markers[@]}")
 
 echo "rust-test-msgpass-smoke.sh: booting $msgpass_mode test_msgpass suite smoke"
