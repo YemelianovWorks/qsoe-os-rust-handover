@@ -359,10 +359,29 @@ Makefile selector omits those two objects, builds `qsoe-tm-pseudodev` for
 taskman. Path dispatch, fd ownership, request decoding, process tables, and
 seL4 invocation code remain C.
 
+## Task Manager `/sys` Selection
+
+The Rust `tm_sysfs` provider can be built as a soft-float taskman staticlib
+without changing the normal taskman default:
+
+```sh
+make check-tm-sysfs-model
+make rust-tm-sysfs-provider
+make tm-sysfs-evidence
+```
+
+With the default `QSOE_RUST_TM_SYSFS=0`, NQ and LQ taskman link the existing
+C `tm_sysfs.o`. With `QSOE_RUST_TM_SYSFS=1`, the component Makefile selector
+omits C `tm_sysfs.o`, builds `qsoe-tm-sysfs` for
+`riscv64imac-unknown-none-elf`, and links `libqsoe_tm_sysfs.a` into taskman.
+Sysmap/syscfg discovery, init path selection, open/read/readdir dispatch, IPC
+decoding, process tables, and seL4 invocation code remain C.
+
 Do not set more than one of `QSOE_RUST_TM_CRED=1`,
-`QSOE_RUST_TM_PROCFS=1`, and `QSOE_RUST_TM_PSEUDODEV=1` together yet. Current
-taskman providers are separate no-std Rust staticlibs; selecting more than one
-requires a later shared taskman Rust archive.
+`QSOE_RUST_TM_PROCFS=1`, `QSOE_RUST_TM_PSEUDODEV=1`, and
+`QSOE_RUST_TM_SYSFS=1` together yet. Current taskman providers are separate
+no-std Rust staticlibs; selecting more than one requires a later shared taskman
+Rust archive.
 
 ## Parser Fuzzing
 

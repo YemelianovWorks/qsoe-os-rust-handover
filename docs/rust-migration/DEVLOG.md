@@ -1,6 +1,6 @@
 # QSOE Rust Migration Development Log
 
-Last updated: 2026-06-29 11:06 CEST.
+Last updated: 2026-06-29 11:39 CEST.
 
 This log tracks the development process for the Rust migration and reproducible
 toolchain work. It records what changed, what was observed, what failed, and
@@ -23,6 +23,57 @@ Result:
 Follow-up:
 - ...
 ```
+
+## 2026-06-29 11:39 CEST - tm_sysfs Rust Opt-In Provider
+
+Scope:
+
+- Added `qsoe-tm-sysfs`, a no-std Rust staticlib exporting the existing
+  portable `tm_sysfs.h` ABI.
+- Added `QSOE_RUST_TM_SYSFS=1` selection for NQ and LQ taskman. The selector
+  omits C `tm_sysfs.o` from `libtaskman.a`, then links
+  `build/rust/tm-sysfs/libqsoe_tm_sysfs.a`.
+- Added a C host-model fixture, Rust host tests, provider build script,
+  evidence script, tracked NQ/LQ component patches, CI evidence step, and docs.
+- Kept C as the normal default and rollback implementation.
+
+Commands:
+
+- `cargo fmt --manifest-path rust/Cargo.toml --all --check`
+- `cargo test --manifest-path rust/Cargo.toml -p qsoe-tm-sysfs --features host-tests`
+- `cargo clippy --manifest-path rust/Cargo.toml -p qsoe-tm-sysfs --features host-tests -- -D warnings`
+- `cargo check --manifest-path rust/Cargo.toml --workspace`
+- `cargo clippy --manifest-path rust/Cargo.toml --workspace -- -D warnings`
+- `make rust-check`
+- `bash -n scripts/build-rust-tm-sysfs-provider.sh scripts/tm-sysfs-evidence.sh scripts/check-tm-sysfs-model.sh scripts/apply-component-overrides.sh scripts/rust-check.sh scripts/rust-workflow.sh`
+- `make -n rust-tm-sysfs-provider tm-sysfs-evidence container-rust-tm-sysfs-provider container-tm-sysfs-evidence`
+- `./scripts/apply-component-overrides.sh`
+- `make rust-tm-sysfs-provider`
+- `make tm-sysfs-evidence`
+- `make container-tm-sysfs-evidence`
+- `make container-source-build`
+- `git diff --check -- ':!patches/components/*.patch'`
+
+Result:
+
+- The C host fixture and Rust host tests pass for newline/NUL snapshot behavior,
+  null and empty source fallback, truncation, `/sys` path resolution, entry
+  order, content lookup, and out-of-range behavior.
+- The provider archive exports all six expected symbols and all archive members
+  report RVC soft-float ABI.
+- NQ and LQ C-default taskman archives include one `tm_sysfs.o` member.
+  Rust-selected archives include zero `tm_sysfs.o` members and link
+  `libqsoe_tm_sysfs.a`.
+- The provider mutual-exclusion guard rejects invalid multi-provider taskman
+  builds until a shared taskman Rust archive exists.
+- The NQ/LQ component patch stack replays cleanly from fresh temporary
+  component worktrees.
+
+Follow-up:
+
+- Keep `tm_sysfs` Rust opt-in only until a focused `/sys` runtime smoke covers
+  the read-only pseudo-filesystem and a separate Rust-default RC decision
+  exists.
 
 ## 2026-06-29 11:06 CEST - tm_pseudodev Rust Opt-In Provider
 

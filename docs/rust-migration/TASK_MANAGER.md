@@ -31,7 +31,7 @@ no direct seL4 object manipulation, not automatically low risk.
 | Sysmap builder | `lq/taskman/sys/sysmap.c`, `lq/taskman/sys/sysmap.h` | Builds the read-only `PSYS` page mapped into children. | Medium: child runtime metadata. |
 | `/proc` model | `libtaskman/src/tm_procfs.c`, `libtaskman/include/tm_procfs.h` | Formats `/proc/<pid>/info`, resolves paths, and walks pid directories through callbacks. | Low: diagnostic surface, no initial process creation. |
 | `/proc` LQ glue | `lq/taskman/path/procfs.c`, `lq/taskman/path/procfs.h` | Connects the portable `/proc` model to LQ process-table accessors and connection context. | Low-medium: reads live process table but does not create caps. |
-| `/sys` model | `libtaskman/src/tm_sysfs.c`, `libtaskman/include/tm_sysfs.h` | Read-only file model for board, cmdline, osname, version, and builddate. | Medium: `/sys/cmdline` can influence init's mainfs path. |
+| `/sys` model | `libtaskman/src/tm_sysfs.c`, `libtaskman/include/tm_sysfs.h` | Read-only file model for board, cmdline, osname, version, and builddate. Rust opt-in provider exists behind `QSOE_RUST_TM_SYSFS=1`; see `TASK_MANAGER_SYSFS.md`. | Medium: `/sys/cmdline` can influence init's mainfs path. |
 | Path registry | `libtaskman/src/pathmgr.c`, `libtaskman/include/tm_pathmgr.h` | Fixed-pool namespace tree, path resolve, repath, symlink expansion, and child iteration. | Medium-high: every open and device registration depends on it. |
 | Credentials policy | `libtaskman/src/cred.c`, `libtaskman/include/tm_cred.h` | Pure cwd, umask, uid/gid mutation, and permission checks. Rust opt-in provider exists behind `QSOE_RUST_TM_CRED=1`; see `TASK_MANAGER_CRED.md`. | Low-medium: process semantics, not boot spawn. |
 | Resource DB accounting | `lq/taskman/sys/rsrcdb.c`, `lq/taskman/sys/rsrcdb.h` | Fixed-pool resource-range allocation, split/merge, rollback on partial attach. | Low-medium: accounting table, but service-facing. |
@@ -42,9 +42,10 @@ The selected Phase 9 pilot candidate is the portable `/proc` model
 (`tm_procfs`). See `TASK_MANAGER_PROCFS.md` for the scope exclusions and
 evidence required before implementation.
 
-Subsequent bounded providers now exist for `tm_cred` and LQ pseudo-devices.
-They remain Rust opt-in only and do not change the rule that task-manager Rust
-work must avoid spawn, capability, relocation, and loader paths.
+Subsequent bounded providers now exist for `tm_cred`, LQ pseudo-devices, and
+`tm_sysfs`. They remain Rust opt-in only and do not change the rule that
+task-manager Rust work must avoid spawn, capability, relocation, and loader
+paths.
 
 ## Spawn-Critical Paths
 

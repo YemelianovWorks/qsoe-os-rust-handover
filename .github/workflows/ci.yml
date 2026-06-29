@@ -92,6 +92,10 @@ jobs:
         if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
         run: make container-tm-pseudodev-evidence
 
+      - name: Run tm_sysfs Rust opt-in evidence
+        if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+        run: make container-tm-sysfs-evidence
+
       - name: Upload boot smoke logs
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
@@ -109,4 +113,6 @@ jobs:
             build/tm-procfs-evidence/**/*.txt
             build/tm-pseudodev-evidence/**/*.log
             build/tm-pseudodev-evidence/**/*.txt
+            build/tm-sysfs-evidence/**/*.log
+            build/tm-sysfs-evidence/**/*.txt
           if-no-files-found: ignore
