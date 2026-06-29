@@ -98,7 +98,9 @@ if [ -n "${RUST_PIPE_DATA_MODPKG_CPIO:-}" ]; then
 else
     selected_cpio="$workdir/modpkg-lq-rust-pipe.cpio"
 fi
+selected_slogger="$ROOT/build/rust/selected/sbin/slogger.elf"
 selected_pipe="$ROOT/build/rust/selected/sbin/pipe.elf"
+selected_virtio="$ROOT/build/rust/selected/sbin/devb-virtio.elf"
 selected_msgpass="$ROOT/build/rust/selected/usr/bin/test_msgpass.elf"
 lq_libc="$ROOT/lq/build/libc/libc.so"
 lq_rtld="$ROOT/lq/build/rtld/ld-qsoe.so.1"
@@ -176,6 +178,13 @@ echo "rust-pipe-data-smoke.sh: selecting $pipe_mode pipe artifact"
 QSOE_RUST_PIPE="$QSOE_RUST_PIPE" \
     LIBC_SO="$lq_libc" \
     "$MAKE" -C "$ROOT" pipe-artifact --no-print-directory
+echo "rust-pipe-data-smoke.sh: selecting retired Rust boot service artifacts"
+QSOE_RUST_SLOGGER=1 \
+    LIBC_SO="$lq_libc" \
+    "$MAKE" -C "$ROOT" slogger-artifact --no-print-directory
+QSOE_RUST_VIRTIO=1 \
+    LIBC_SO="$lq_libc" \
+    "$MAKE" -C "$ROOT" virtio-artifact --no-print-directory
 
 if [ ! -f "$selected_pipe" ]; then
     echo "rust-pipe-data-smoke.sh: missing selected pipe at $selected_pipe" >&2
@@ -287,7 +296,9 @@ echo "rust-pipe-data-smoke.sh: building base LQ modpkg.cpio"
     LIBC_SO="$lq_libc" \
     RTLD_SO="$lq_rtld" \
     DYNLIBC_SO="$lq_libc" \
-    SBIN_PIPE_ELF="$selected_pipe"
+    SBIN_SLOG_ELF="$selected_slogger" \
+    SBIN_PIPE_ELF="$selected_pipe" \
+    SBIN_VIRTIO_ELF="$selected_virtio"
 
 tmp=$(mktemp -d "${TMPDIR:-/tmp}/qsoe-rust-pipe-data-cpio.XXXXXX")
 cleanup_tmp() {

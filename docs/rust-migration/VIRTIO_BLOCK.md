@@ -1,13 +1,14 @@
 # QSOE Virtio Block Driver Behavior
 
-This document specifies the current C `devb-virtio` behavior that
-`devb-virtio-rs` must preserve before any Rust implementation is selected.
-The C driver remains the default rollback path.
+This document specifies the `devb-virtio` external behavior that
+`devb-virtio-rs` preserves. It originally captured the C driver contract before
+Rust selection; the C implementation is now retired by `VIRTIO_RETIREMENT.md`.
 
 ## Role
 
-`quser/dev/virtio` provides `/sbin/devb-virtio`, the QSOE/L QEMU block
-resource manager. It serves one raw whole-disk block node:
+Historically, `quser/dev/virtio` provided `/sbin/devb-virtio`, the QSOE/L QEMU
+block resource manager. The Rust `devb-virtio-rs` binary now provides the same
+image path and serves one raw whole-disk block node:
 
 ```text
 /dev/vblk0
@@ -268,10 +269,10 @@ Host tests cover the current three-descriptor request shape, descriptor
 exhaustion without partial consumption, device-owned chain rejection, reclaim,
 and descriptor reuse without touching hardware.
 
-## Rust Opt-In Driver Artifact
+## Rust Driver Artifact
 
-`rust/bins/devb-virtio-rs` is the opt-in Rust driver binary. It is built as a
-no-std staticlib and linked through the existing QSOE userland path with
+`rust/bins/devb-virtio-rs` is the Rust driver binary. It is built as a no-std
+staticlib and linked through the existing QSOE userland path with
 `libressrv`:
 
 ```sh
@@ -281,24 +282,21 @@ make rust-virtio-link-smoke
 The link smoke emits `build/rust/qsoe-devb-virtio-rs.elf` and runs
 `scripts/audit-elf.sh --strict-qsoe-user` on it.
 
-Selection stays explicit:
+Selection is Rust-only after C retirement:
 
 ```sh
 make virtio-artifact
-QSOE_RUST_VIRTIO=1 make virtio-artifact
 ```
 
-The default `QSOE_RUST_VIRTIO=0` stages the C `devb-virtio` artifact. The Rust
-mode stages the audited Rust ELF at
-`build/rust/selected/sbin/devb-virtio.elf`, ready for a boot-smoke task to
-place into an opt-in or release-candidate QSOE/L image.
+The selector stages the audited Rust ELF at
+`build/rust/selected/sbin/devb-virtio.elf`, ready for NQ/LQ image packaging.
+`QSOE_RUST_VIRTIO=0` is rejected because the C `devb-virtio` source has been
+removed from the tracked `quser` component override.
 
-## Rust Opt-In Boot Smoke
+## Rust Boot Smoke
 
-`scripts/rust-virtio-boot-smoke.sh` builds an opt-in QSOE/L image by replacing
-only `sbin/devb-virtio` in a temporary boot CPIO. The script selects Rust by
-default and accepts `QSOE_RUST_VIRTIO=0` for the same selected-artifact path
-with the C driver:
+`scripts/rust-virtio-boot-smoke.sh` builds a QSOE/L image by staging the
+selected Rust `sbin/devb-virtio` in a temporary boot CPIO:
 
 ```sh
 make rust-virtio-boot-smoke
@@ -313,9 +311,6 @@ milestones:
 - `fs-qrv: mounted qrvfs at /usr`.
 - `login:`.
 
-When `QSOE_RUST_VIRTIO=0`, the same script expects the C readiness marker:
-`devb-virtio: /dev/vblk0 ready`.
-
 Typical boot-smoke log:
 
 ```text
@@ -325,7 +320,7 @@ build/boot-smoke-lq-<timestamp>.log
 ## Rust File Access Smoke
 
 `scripts/rust-virtio-file-smoke.sh` layers one more acceptance check on top of
-the opt-in Rust virtio boot smoke:
+the Rust virtio boot smoke:
 
 ```sh
 make rust-virtio-file-smoke
@@ -352,18 +347,17 @@ Validated log:
 build/rust-virtio-file/boot-smoke-lq-rust-virtio-file.log
 ```
 
-## Rust-Default RC File Access Smoke
+## Rust-Only RC Compatibility Smoke
 
-`scripts/virtio-rc-file-smoke.sh` makes Rust the default for the targeted RC
-image while preserving a C rollback drill:
+`scripts/virtio-rc-file-smoke.sh` keeps the former RC command name as a
+Rust-only compatibility smoke:
 
 ```sh
 make virtio-rc-file-smoke
-make virtio-rc-rollback-smoke
 ```
 
-The RC path sets `QSOE_RUST_VIRTIO=1` and uses the same `/usr/conf/passwd`
-file-read marker. The rollback target sets `QSOE_VIRTIO_RC_ROLLBACK=1`, which
-selects `QSOE_RUST_VIRTIO=0` and verifies the same marker with the C
-`/sbin/devb-virtio` restored. See `VIRTIO_RC.md` for the release-candidate
-record.
+The path sets `QSOE_RUST_VIRTIO=1` and uses the same `/usr/conf/passwd`
+file-read marker. `QSOE_VIRTIO_RC_ROLLBACK=1` and `QSOE_RUST_VIRTIO=0` are
+rejected after retirement. See `VIRTIO_RC.md` for the historical
+release-candidate record and `VIRTIO_RETIREMENT.md` for the current
+Rust-only state.

@@ -198,6 +198,11 @@ small reviewable change unless it explicitly says otherwise.
 - [x] Run file access smoke.
   - Acceptance: an in-guest command can read files from `/usr`.
 
+- [x] Retire the C `devb-virtio` driver after RC evidence.
+  - Acceptance: Rust `devb-virtio-rs` is staged as `/sbin/devb-virtio`,
+    C rollback flags fail fast, and NQ/LQ image packaging uses the selected
+    Rust artifact.
+
 ## Phase 7: Shared Parsers
 
 - [x] Add CPIO parser crate.

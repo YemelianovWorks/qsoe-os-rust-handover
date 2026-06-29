@@ -107,6 +107,8 @@ else
     rust_cpio="$workdir/modpkg-lq-rust-slogger.cpio"
 fi
 selected_slogger="$ROOT/build/rust/selected/sbin/slogger.elf"
+selected_pipe="$ROOT/build/rust/selected/sbin/pipe.elf"
+selected_virtio="$ROOT/build/rust/selected/sbin/devb-virtio.elf"
 lq_libc="$ROOT/lq/build/libc/libc.so"
 lq_rtld="$ROOT/lq/build/rtld/ld-qsoe.so.1"
 
@@ -125,10 +127,20 @@ if [ ! -f "$selected_slogger" ]; then
     exit 1
 fi
 
+echo "rust-slogger-boot-smoke.sh: selecting retired Rust boot service artifacts"
+QSOE_RUST_PIPE=1 \
+    LIBC_SO="$lq_libc" \
+    "$MAKE" -C "$ROOT" pipe-artifact --no-print-directory
+QSOE_RUST_VIRTIO=1 \
+    LIBC_SO="$lq_libc" \
+    "$MAKE" -C "$ROOT" virtio-artifact --no-print-directory
+
 echo "rust-slogger-boot-smoke.sh: building base LQ modpkg.cpio"
 "$MAKE" -C "$ROOT/quser" cpio --no-print-directory \
     MODPKG_CPIO="$base_cpio" \
     SBIN_SLOG_ELF="$selected_slogger" \
+    SBIN_PIPE_ELF="$selected_pipe" \
+    SBIN_VIRTIO_ELF="$selected_virtio" \
     LIBC_SO="$lq_libc" \
     RTLD_SO="$lq_rtld" \
     DYNLIBC_SO="$lq_libc"

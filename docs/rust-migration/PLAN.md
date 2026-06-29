@@ -153,8 +153,12 @@ Exit criteria:
 
 ## Phase 6: Driver Pilot: devb-virtio-rs
 
-Objective: test Rust against real device state while preserving the current
-driver as the default.
+Objective: test Rust against real device state while preserving the external
+block-device contract.
+
+Status: complete. `devb-virtio-rs` passed opt-in and Rust-default file-read RC
+evidence, then the C `/sbin/devb-virtio` driver was retired in a separate
+removal PR.
 
 Work:
 
@@ -163,7 +167,7 @@ Work:
 - Build safe queue-state abstractions around unsafe descriptor memory.
 - Keep all unsafe code in narrow modules.
 - Add fixtures for virtio queue setup where host-side testing is possible.
-- Boot with C driver and Rust driver images.
+- Boot with historical C driver and Rust driver images during the RC window.
 - Run qrvfs mount and basic file access checks.
 
 Exit criteria:
@@ -171,7 +175,8 @@ Exit criteria:
 - Rust driver can expose `/dev/vblk0`.
 - `/usr` mounts from qrvfs.
 - Login still starts from on-disk init.
-- Existing driver remains available as rollback.
+- Rust `devb-virtio-rs` is staged as `/sbin/devb-virtio`.
+- C rollback was available through the RC window and is now retired.
 
 ## Phase 7: Shared Parsers And Format Libraries
 

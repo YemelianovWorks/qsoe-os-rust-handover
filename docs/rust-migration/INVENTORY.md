@@ -1,6 +1,6 @@
 # OS-wide C Inventory
 
-Captured: 2026-06-29 18:45 CEST.
+Captured: 2026-06-29 19:49 CEST.
 
 This inventory gives the migration tracker an OS-wide baseline. It is not a
 claim that every C file is an independently translatable component. It separates
@@ -27,22 +27,22 @@ excluded unless `QSOE_INDEX_SEL4=1` is set.
 | `libtaskman` | 23 | 3,013 | Best source of host-testable task-manager modules. `tm_procfs` is Rust-default RC; `tm_cpio`, `tm_cred`, `tm_elf`, `tm_pathmgr`, `tm_script`, `tm_syscfg`, and `tm_sysfs` are Rust opt-in; remaining candidates are tracked in #153. |
 | `lq` | 90 | 17,853 | seL4 task manager, LQ libc wrappers, process, capability, path, memory, syscall, and boot glue. Pure/diagnostic slices only are candidates; LQ FDT, sysmap, pseudo-devices, and resource DB accounting are Rust opt-in. |
 | `nq` | 125 | 25,053 | Kernel, NQ libc, and NQ taskman surface. Near-term linked Rust is deferred by policy; fixture-only candidates are tracked in #155. |
-| `quser` | 124 | 40,656 | Userland services, drivers, resource-server support, shell, tests, and utilities. `test_msgpass` is the first retired C helper; `slogger` and `pipe` are retired C production services; several services have Rust pilots; many remain C. |
-| **Total** | **813** | **130,795** | QSOE-owned C/asm/linker surface in this checkout, excluding generated build outputs and vendor seL4. |
+| `quser` | 121 | 40,075 | Userland services, drivers, resource-server support, shell, tests, and utilities. `test_msgpass` is the first retired C helper; `slogger`, `pipe`, and `devb-virtio` are retired C production paths; several services have Rust pilots; many remain C. |
+| **Total** | **810** | **130,214** | QSOE-owned C/asm/linker surface in this checkout, excluding generated build outputs and vendor seL4. |
 
-By file type: `520` C files, `281` headers, `10` assembly files, and `2` linker
+By file type: `518` C files, `280` headers, `10` assembly files, and `2` linker
 scripts.
 
 ## Issue-backed Migration Ledger
 
 The canonical tracker is GitHub Issues filtered by `label:roadmap`. At this
-capture, the tracker contains 33 roadmap issues:
+capture, the tracker contains 34 roadmap issues:
 
 | Kind | Count | Meaning |
 | --- | ---: | --- |
 | Phase issues | 11 | Migration phases and policy gates from baseline through possible kernel reassessment. |
 | Component issues | 17 | Components with concrete Rust artifacts or RC evidence. |
-| Backlog, retirement, and inventory issues | 5 | Remaining candidates, deferred areas, retirement gate, and this inventory. |
+| Backlog, retirement, and inventory issues | 6 | Remaining candidates, deferred areas, retirement gate, shared task-manager Rust archive work, and this inventory. |
 
 All roadmap issues carry parseable `qsoe-roadmap:v1` metadata for the dashboard.
 Issue state, labels, and metadata are the source of truth for current progress.
@@ -53,7 +53,7 @@ Issue state, labels, and metadata are the source of truth for current progress.
 | --- | --- | --- |
 | Host qrvfs tools | #136 | Rust-default RC for `qrvfs-tree` and `mkfs-qrv-rs`; C remains rollback and no C implementation is retired. |
 | `slogger` | #137 | Retired C service; Rust `slogger-rs` is always staged as `/sbin/slogger` in NQ/LQ images. |
-| `devb-virtio` | #138 | Rust-default RC with C rollback. |
+| `devb-virtio` | #138 | Retired C block driver; Rust `devb-virtio-rs` is always staged as `/sbin/devb-virtio` in NQ/LQ images. |
 | `pipe` | #139 | Retired C service; Rust `pipe-rs` is always staged as `/sbin/pipe` in NQ/LQ images. |
 | `test_msgpass` | #140 | Retired C helper; Rust `test_msgpass-rs` is always staged as `/usr/bin/test_msgpass` in test images. |
 | `tm_procfs` | #141 | Rust-default RC with C rollback. |
@@ -71,8 +71,8 @@ Issue state, labels, and metadata are the source of truth for current progress.
 
 `test_msgpass` is the first tracked C implementation retired after an RC window
 and rollback drill. `slogger` is the first retired production service, followed
-by `pipe`. Future retirements remain governed by #26 and must be separate
-removal PRs after their own RC evidence.
+by `pipe` and `devb-virtio`. Future retirements remain governed by #26 and must
+be separate removal PRs after their own RC evidence.
 
 ## Remaining Candidate Buckets
 
@@ -82,7 +82,7 @@ removal PRs after their own RC evidence.
 | Task-manager pure or diagnostic modules | #153 | Candidate backlog. Prefer host-tested modules that avoid direct seL4 invocations, spawn, capability ownership, relocation writes, and loader admission. |
 | Spawn, capability, relocation, and loader paths | #154 | Deferred. These paths are load-bearing for process creation and teardown. |
 | Kernel Rust | #155 | Deferred. Current policy allows documentation and fixtures only. |
-| C retirement gate | #26 | Exercised by retiring the C `test_msgpass` helper and C `slogger` and `pipe` services after their Rust-default RC evidence. Future removals must repeat the same checklist. |
+| C retirement gate | #26 | Exercised by retiring the C `test_msgpass` helper plus C `slogger`, `pipe`, and `devb-virtio` production paths after their Rust-default RC evidence. Future removals must repeat the same checklist. |
 | OS-wide inventory | #156 | Satisfied by this document once merged. |
 
 ## Areas Not Yet Split Into Per-component Issues

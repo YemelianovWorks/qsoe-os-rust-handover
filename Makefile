@@ -16,7 +16,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 QSOE_RUST_SLOGGER ?= 1
-QSOE_RUST_VIRTIO ?= 0
+QSOE_RUST_VIRTIO ?= 1
 QSOE_RUST_TEST_MSGPASS ?= 1
 QSOE_RUST_PIPE ?= 1
 QSOE_RUST_TM_CPIO ?= 0
@@ -73,7 +73,7 @@ SELECTED_PIPE_ELF ?= build/rust/selected/sbin/pipe.elf
         tm-syscfg-evidence tm-sysmap-evidence tm-sysfs-evidence tm-pseudodev-evidence \
         rust-slogger-boot-smoke \
         rust-virtio-boot-smoke rust-virtio-file-smoke \
-        virtio-rc-file-smoke virtio-rc-rollback-smoke \
+        virtio-rc-file-smoke \
         rust-test-msgpass-smoke test-msgpass-rc-smoke pipe-smoke rust-pipe-smoke \
         rust-pipe-data-smoke pipe-rc-data-smoke \
         procfs-smoke tm-procfs-rc-smoke tm-procfs-rc-rollback-smoke \
@@ -98,7 +98,7 @@ SELECTED_PIPE_ELF ?= build/rust/selected/sbin/pipe.elf
         container-tm-rsrcdb-evidence container-tm-script-evidence container-tm-syscfg-evidence \
         container-tm-sysmap-evidence container-tm-sysfs-evidence container-tm-pseudodev-evidence \
         container-rust-virtio-boot-smoke \
-        container-virtio-rc-file-smoke container-virtio-rc-rollback-smoke \
+        container-virtio-rc-file-smoke \
         container-rust-mkfs-qrv-live-smoke \
         container-mkfs-qrv-rc-live-smoke container-mkfs-qrv-rc-rollback-smoke \
         container-rust-slog-readback-smoke container-slogger-rc-boot-smoke \
@@ -510,9 +510,6 @@ mkfs-qrv-rc-rollback-smoke:
 virtio-rc-file-smoke:
 	@scripts/virtio-rc-file-smoke.sh
 
-virtio-rc-rollback-smoke:
-	@QSOE_VIRTIO_RC_ROLLBACK=1 scripts/virtio-rc-file-smoke.sh
-
 rust-test-msgpass-smoke:
 	@scripts/rust-test-msgpass-smoke.sh
 
@@ -706,9 +703,6 @@ container-rust-virtio-boot-smoke:
 
 container-virtio-rc-file-smoke:
 	@scripts/container-toolchain.sh run make virtio-rc-file-smoke
-
-container-virtio-rc-rollback-smoke:
-	@scripts/container-toolchain.sh run make virtio-rc-rollback-smoke
 
 container-rust-mkfs-qrv-live-smoke:
 	@scripts/container-toolchain.sh run make rust-mkfs-qrv-live-smoke

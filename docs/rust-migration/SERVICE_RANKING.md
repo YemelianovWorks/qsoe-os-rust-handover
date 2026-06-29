@@ -3,13 +3,14 @@
 Captured: 2026-06-24 01:44 CEST.
 
 Historical note: `pipe` was selected from this ranking, moved through a
-Rust-default RC, and is now a retired C service. Keep the original scores as the
+Rust-default RC, and is now a retired C service. `devb-virtio` has also moved
+past its Rust pilot into C driver retirement. Keep the original scores as the
 selection record.
 
 This ranking supports Phase 8 service selection. It excludes components that
-already have Rust pilots (`slogger`, `devb-virtio`) and excludes standalone
-test helpers, which are tracked separately. Higher scores mean lower migration
-risk for the next Rust service.
+already had separate Rust pilot tracks (`slogger`, `devb-virtio`) and excludes
+standalone test helpers, which are tracked separately. Higher scores mean lower
+migration risk for the next Rust service.
 
 ## Scoring
 

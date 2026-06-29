@@ -142,8 +142,8 @@ historical rollback drill is documented in
 
 ## Virtio Driver Selection
 
-The opt-in Rust virtio block driver can be linked and audited without changing
-the boot default:
+The C `devb-virtio` driver is retired. The Rust virtio block driver can still
+be linked and audited directly:
 
 ```sh
 make rust-virtio-link-smoke
@@ -151,31 +151,26 @@ make rust-virtio-link-smoke
 
 It builds `qsoe-devb-virtio-rs` as a no-std staticlib and links it with
 `libressrv` through the same QSOE userland CRT/libc path. The selected artifact
-target mirrors the slogger pattern:
+target always stages Rust:
 
 ```sh
 make virtio-artifact
-QSOE_RUST_VIRTIO=1 make virtio-artifact
 ```
 
-With the default `QSOE_RUST_VIRTIO=0`, the target stages the existing C
-`quser/build/dev/virtio/devb-virtio.elf`. With `QSOE_RUST_VIRTIO=1`, it first
-links and audits `qsoe-devb-virtio-rs`. Both modes write the selected binary to
-`build/rust/selected/sbin/devb-virtio.elf`; non-RC normal builds keep the C
-driver selected unless the Rust flag is set explicitly.
+The target links and audits `qsoe-devb-virtio-rs`, then writes the selected
+binary to `build/rust/selected/sbin/devb-virtio.elf`. Setting
+`QSOE_RUST_VIRTIO=0` is rejected because the C driver has been removed from the
+tracked `quser` component override.
 
-The opt-in LQ boot smoke uses that selected artifact without changing the C
-default:
+The LQ boot smoke uses that selected artifact:
 
 ```sh
 make rust-virtio-boot-smoke
 ```
 
-It builds a temporary `build/rust-virtio/modpkg-lq-rust-virtio.cpio`, rebuilds
-the LQ QEMU image with `MODPKG_CPIO` pointing at that archive, and waits for
+It builds a temporary `build/rust-virtio/modpkg-lq-base.cpio`, rebuilds the LQ
+QEMU image with `MODPKG_CPIO` pointing at that archive, and waits for
 `[devb-virtio-rs] /dev/vblk0 ready`, the `/usr` qrvfs mount, and `login:`.
-Set `QSOE_RUST_VIRTIO=0` to run the same selected-artifact boot path with the
-C driver.
 
 The file-access smoke adds an in-guest `/usr` read check on top of the same
 Rust virtio boot path:
@@ -189,18 +184,16 @@ fragment runs after `/usr` is mounted and prints
 `rust-virtio-file-smoke: read /usr/conf/passwd ok` only after `/bin/cat` can
 read the file through the Rust-backed `/dev/vblk0` mount.
 
-The release-candidate path makes Rust the default for the targeted file-read
-image while keeping an explicit C rollback drill:
+The historical release-candidate command remains as a Rust-only compatibility
+smoke:
 
 ```sh
 make virtio-rc-file-smoke
-make virtio-rc-rollback-smoke
 ```
 
-`make virtio-rc-file-smoke` selects `devb-virtio-rs` by default and verifies
-the `/usr` mount plus file-read marker. `make virtio-rc-rollback-smoke` sets
-`QSOE_VIRTIO_RC_ROLLBACK=1` and verifies the same marker with the C driver
-restored.
+`make virtio-rc-file-smoke` stages `devb-virtio-rs` and verifies the `/usr`
+mount plus file-read marker. Setting `QSOE_VIRTIO_RC_ROLLBACK=1` is rejected
+because the rollback target was removed by the C retirement.
 
 ## Test Msgpass Selection
 
@@ -657,13 +650,14 @@ crates/qsoe-virtio
 ```
 
 It contains legacy virtio-mmio register constants and `VirtioMmio`, a no-std
-volatile register wrapper for the future `devb-virtio-rs` pilot. Host tests
+volatile register wrapper for the `devb-virtio-rs` driver. Host tests
 exercise the wrapper against an in-memory register array. The crate also models
 the C virtqueue descriptor, available-ring, used-ring, and block-request
 layouts, with explicit descriptor ownership, device mutability metadata, and
-host-side descriptor free-list tests. The C driver remains the boot default.
+host-side descriptor free-list tests. The C driver is retired; normal image
+packaging now stages Rust `devb-virtio-rs` at `/sbin/devb-virtio`.
 
-The opt-in driver binary is:
+The driver binary is:
 
 ```text
 bins/devb-virtio-rs

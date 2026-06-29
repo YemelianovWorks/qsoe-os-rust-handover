@@ -25,12 +25,14 @@ gate in `docs/rust-migration/RETIREMENT.md`.
 ## Current Status
 
 - Rust-default release-candidate paths exist for `qrvfs-tree`, `mkfs-qrv-rs`,
-  `devb-virtio-rs`, and `qsoe-tm-procfs`.
+  and `qsoe-tm-procfs`.
 - Retired C implementations: the C `test_msgpass` helper is removed from
   tracked `quser` test-image paths, and the C `/sbin/slogger` and `/sbin/pipe`
-  services are removed from tracked `quser` service paths. Test images stage
-  Rust `test_msgpass-rs` at `/usr/bin/test_msgpass`; normal NQ/LQ images stage
-  Rust `slogger-rs` at `/sbin/slogger` and Rust `pipe-rs` at `/sbin/pipe`.
+  services and C `/sbin/devb-virtio` block driver are removed from tracked
+  `quser` service paths. Test images stage Rust `test_msgpass-rs` at
+  `/usr/bin/test_msgpass`; normal NQ/LQ images stage Rust `slogger-rs` at
+  `/sbin/slogger`, Rust `pipe-rs` at `/sbin/pipe`, and Rust
+  `devb-virtio-rs` at `/sbin/devb-virtio`.
 - Rust opt-in task-manager providers exist for `qsoe-tm-cpio`,
   `qsoe-tm-cred`, `qsoe-tm-elf`, `qsoe-tm-fdt`, `qsoe-tm-pseudodev`,
   `qsoe-tm-rsrcdb`, `qsoe-tm-script`, `qsoe-tm-syscfg`,
@@ -64,7 +66,7 @@ Detailed planning lives under `docs/rust-migration/`. Start with:
 | Rust ABI/FFI foundation | Complete | `qsoe-abi`, `qsoe-ffi`, and `qsoe-ressrv` compile for the QSOE target with layout tests and reviewed unsafe boundaries. |
 | Host qrvfs tools | Rust default RC for inspector and writer | Rust fixture checks compare against the existing C host tool; `make tree` selects Rust `qrvfs-tree` by default, and `make treeqrvfs-rc-rollback-smoke` preserves C rollback. `make mkfs-qrv-rc-live-smoke` selects Rust `mkfs-qrv-rs` by default for the writer RC, and `make mkfs-qrv-rc-rollback-smoke` restores C. Fixture, production-root, stale-target, bounded triple-indirect allocator, and live `/usr` smokes cover the writer path. Production C remains rollback. |
 | `slogger` service | Retired C service | `slogger-rs` links, boots, registers `/dev/slog`, is staged as `/sbin/slogger` in normal NQ/LQ images, and passes the `/dev/slog` readback smoke through `make slogger-rc-readback-smoke`. The C service source and rollback targets are removed by the retirement PR. |
-| `devb-virtio` block driver | Rust default RC | Rust MMIO/virtqueue model, host queue tests, opt-in boot/file-read smokes, and `make virtio-rc-file-smoke` plus `make virtio-rc-rollback-smoke` cover the Rust-default file-read RC path with C rollback. Next gate: #26 retirement checklist and a separate removal PR before any C retirement decision. |
+| `devb-virtio` block driver | Retired C driver | Rust MMIO/virtqueue model, host queue tests, link/boot/file-read smokes, and `make virtio-rc-file-smoke` cover the Rust-only file-read path. Normal NQ/LQ images stage Rust `devb-virtio-rs` as `/sbin/devb-virtio`; the C driver source and rollback target are removed by the retirement PR. |
 | Shared parsers | Complete for current scope | CPIO, syscfg/sysmap, and ELF inspection crates exist with host tests and host/guest reuse coverage. |
 | `pipe` service | Retired C service | `qsoe-pipe` host tests pass, `pipe-rs` links and audits, `make rust-pipe-smoke` boots LQ with Rust `/sbin/pipe` registered, `make rust-pipe-data-smoke` proves a libc/taskman `pipe(2)` write/read round trip, and `make pipe-rc-data-smoke` validates the Rust-only service path. The C service source and rollback targets are removed by the retirement PR. |
 | `test_msgpass` helper | Retired C helper | `test_msgpass-rs` links, is always staged into the qrvfs test image as `/usr/bin/test_msgpass`, and passes the existing suite `[msgpass]` section through `make rust-test-msgpass-smoke` and `make test-msgpass-rc-smoke`. The C helper source and rollback target are removed by the retirement PR. |
@@ -81,7 +83,7 @@ Detailed planning lives under `docs/rust-migration/`. Start with:
 | `tm_sysmap` task-manager provider | Rust opt-in | `qsoe-tm-sysmap` exports the existing LQ `tm_sysmap_*` ABI behind `QSOE_RUST_TM_SYSMAP=1`; `make tm-sysmap-evidence` runs C/Rust host tests, audits the soft-float staticlib, and verifies LQ taskman links with C rollback and Rust-selected archives. Next gate: add boot/runtime coverage for the mapped `PSYS` page before any Rust-default RC decision. |
 | `tm_sysfs` task-manager provider | Rust opt-in | `qsoe-tm-sysfs` exports the existing `tm_sysfs.h` ABI behind `QSOE_RUST_TM_SYSFS=1`; `make tm-sysfs-evidence` runs C/Rust host tests, audits the soft-float staticlib, and verifies NQ/LQ taskman links with C rollback and Rust-selected archives. Next gate: add a focused `/sys` runtime smoke before any Rust-default RC decision. |
 | Kernel Rust | Deferred | Current decision rejects near-term Rust in `nq` kernel code; only fixture/audit candidates are documented. |
-| C retirement | Three removals complete | `test_msgpass` is the first retired C helper; `slogger` and `pipe` are retired C production services after their Rust-default RC evidence. Future removals still require #26's checklist and a separate removal PR. |
+| C retirement | Four removals complete | `test_msgpass` is the first retired C helper; `slogger`, `pipe`, and `devb-virtio` are retired C production paths after their Rust-default RC evidence. Future removals still require #26's checklist and a separate removal PR. |
 
 ## Current Follow-ups
 
@@ -103,9 +105,9 @@ Detailed planning lives under `docs/rust-migration/`. Start with:
 - `test_msgpass-rs` passed its Rust-default test-image release-candidate path
   with explicit C rollback, then became the first C retirement candidate. The
   current image path stages Rust only.
-- `devb-virtio-rs` now has a Rust-default release-candidate path with explicit
-  C rollback through the `/usr` file-read smoke. Keep C retirement blocked
-  until #26's checklist and a separate removal PR.
+- `devb-virtio-rs` has moved past its Rust-default release-candidate path into
+  C driver retirement. The old C rollback flags now fail fast; normal NQ/LQ
+  images stage Rust `devb-virtio-rs` as `/sbin/devb-virtio`.
 - `tm_procfs` now has a Rust-default release-candidate path with explicit C
   rollback through the `/proc` smoke. Keep C retirement blocked until #26's
   checklist and a separate removal PR.
@@ -133,7 +135,6 @@ make rust-slog-readback-smoke
 make slogger-rc-readback-smoke
 make rust-virtio-file-smoke
 make virtio-rc-file-smoke
-make virtio-rc-rollback-smoke
 make rust-test-msgpass-smoke
 make test-msgpass-rc-smoke
 make pipe-smoke

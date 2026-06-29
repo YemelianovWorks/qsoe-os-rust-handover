@@ -1,0 +1,662 @@
+--- a/Makefile
++++ b/Makefile
+@@ -33,7 +33,6 @@
+               sbin/login \
+               dev/sersifive \
+               dev/nvme \
+-              dev/virtio \
+               fs/qrv \
+               test/syncspace \
+               test/suite
+@@ -43,6 +42,8 @@
+ # through SBIN_SLOG_ELF before assembling modpkg.cpio.
+ # sbin/pipe C service is retired; per-OS callers provide Rust pipe-rs
+ # through SBIN_PIPE_ELF before assembling modpkg.cpio.
++# dev/virtio C block driver is retired; per-OS callers provide Rust
++# devb-virtio-rs through SBIN_VIRTIO_ELF before assembling modpkg.cpio.
+ 
+ # Userland module package — the QSOE-wide spawnable-binary archive.
+ # Name mirrors QRV's "modpkg.cpio" convention: a single CPIO ("newc")
+@@ -71,7 +72,7 @@
+ SBIN_PCI_ELF   := $(BUILD)/sbin/pci-server/pci-server.elf
+ DSERSIFIVE_ELF := $(BUILD)/dev/sersifive/devc-sersifive.elf
+ NVME_ELF       := $(BUILD)/dev/nvme/devb-nvme.elf
+-VIRTIO_ELF     := $(BUILD)/dev/virtio/devb-virtio.elf
++SBIN_VIRTIO_ELF ?= $(abspath $(QUSER)/../build/rust/selected/sbin/devb-virtio.elf)
+ FS_QRV_ELF     := $(BUILD)/fs/qrv/fs-qrv.elf
+ # The test binaries (suite, test_msgpass, test_syncspace) are no longer
+ # staged into the boot cpio -- they live on the qrvfs disk image (built by
+@@ -159,7 +160,7 @@
+ 	@cp $(DSER_ELF)                   $(CPIO_ROOT)/sbin/devc-ser8250
+ 	@cp $(DSERSIFIVE_ELF)             $(CPIO_ROOT)/sbin/devc-sersifive
+ 	@if [ -f $(NVME_ELF) ]; then cp $(NVME_ELF) $(CPIO_ROOT)/sbin/devb-nvme; fi
+-	@if [ -f $(VIRTIO_ELF) ]; then cp $(VIRTIO_ELF) $(CPIO_ROOT)/sbin/devb-virtio; fi
++	@cp $(SBIN_VIRTIO_ELF)            $(CPIO_ROOT)/sbin/devb-virtio
+ 	@if [ -f $(FS_QRV_ELF) ]; then cp $(FS_QRV_ELF) $(CPIO_ROOT)/sbin/fs-qrv; fi
+ 	@cp $(SBIN_PIPE_ELF)              $(CPIO_ROOT)/sbin/pipe
+ 	@cp $(SBIN_SLOG_ELF)              $(CPIO_ROOT)/sbin/slogger
+@@ -187,10 +188,9 @@
+ 	@mkdir -p $(dir $(MODPKG_CPIO))
+ 	@cd $(CPIO_ROOT) && \
+ 	    { printf '%s\n' sbin/init sbin/devc-ser8250 sbin/devc-sersifive sbin/slogger \
+-	                    sbin/pci-server sbin/pipe etc home \
++	                    sbin/pci-server sbin/devb-virtio sbin/pipe etc home \
+ 	                    bin/qsh bin/sh bin/shutdown bin/reboot bin/pci bin/sloginfo; \
+ 	      [ -e sbin/devb-nvme ] && echo sbin/devb-nvme; \
+-      [ -e sbin/devb-virtio ] && echo sbin/devb-virtio; \
+       [ -e sbin/fs-qrv ] && echo sbin/fs-qrv; \
+ 	      [ -e lib/ld-qsoe.so.1 ] && echo lib/ld-qsoe.so.1; \
+ 	      [ -e lib/libc.so ] && echo lib/libc.so; \
+--- a/dev/virtio/Makefile
++++ /dev/null
+@@ -1,20 +0,0 @@
+-# quser/dev/virtio/Makefile -- /sbin/devb-virtio, the virtio-mmio block
+-# driver used by QSOE/L under QEMU (no NVMe there: seL4 has no AIA).
+-#
+-# Serves /dev/vblk0 raw (no GPT) on the QSOE resource-server framework
+-# (libressrv); the disk carries a qrvfs image that fs-qrv mounts.
+-#
+-# Copyright (c) 2026 Yuri Zaporozhets <yuriz@qsoe.net>
+-# SPDX-License-Identifier: Apache-2.0
+-
+-include ../../common.mk
+-
+-PROGRAM := devb-virtio
+-SRCS    := main.c virtio_blk.c
+-
+-EXTRA_CFLAGS := -I$(QUSER)/ressrv/include
+-
+-EXTRA_LDFLAGS := -L$(BUILD)/ressrv
+-EXTRA_LDLIBS  := -lressrv
+-
+-include $(QUSER)/build_prog.mk
+--- a/dev/virtio/main.c
++++ /dev/null
+@@ -1,160 +0,0 @@
+-/*
+- * main.c -- devb-virtio: a whole-disk block resource manager for QEMU's
+- * legacy virtio-mmio block device, serving /dev/vblk0 on libressrv.
+- *
+- * QSOE/L uses this under QEMU, where there is no NVMe (seL4 has no AIA, so
+- * PCIe MSI-X cannot be delivered).  The disk is served raw -- one node, no
+- * GPT -- and carries a qrvfs image directly; fs-qrv mounts /dev/vblk0 as
+- * the main filesystem.  Discovery walks QEMU virt's fixed virtio-mmio
+- * window and takes the first slot that reports a block device.
+- *
+- * Copyright (c) 2026 Yuri Zaporozhets <yuriz@qsoe.net>
+- * SPDX-License-Identifier: Apache-2.0
+- */
+-
+-#include <errno.h>
+-#include <stdint.h>
+-#include <stdio.h>
+-#include <string.h>
+-#include <sys/mman.h>           /* MAP_PHYS, MAP_SHARED, PROT_*, munmap      */
+-#include <sys/stat.h>           /* S_IFBLK                                   */
+-#include <sys/qsoe.h>           /* qsoe_mmap, qsoe_alloc_phys, procmgr_detach */
+-
+-#include <ressrv.h>
+-
+-#include "virtio_blk.h"
+-
+-/* QEMU virt machine virtio-mmio window: 8 device slots, 4 KiB apart,
+- * starting at 0x10001000 (from QEMU hw/riscv/virt.c).  Each slot is one
+- * 4 KiB register block; we probe them for a block device. */
+-#define VIRT_VIRTIO_MMIO_BASE   0x10001000UL
+-#define VIRT_VIRTIO_MMIO_STRIDE 0x1000UL
+-#define VIRT_VIRTIO_MMIO_COUNT  8u
+-#define VIRT_VIRTIO_REG_BYTES   0x1000UL
+-
+-static struct virtio_blk_dev g_dev;
+-
+-/* Read-staging bounce: virtio_blk_rw copies device data here (it DMAs
+- * through the driver's own DMA-region buffer), then we hand the requested
+- * slice to the framework.  Plain memory -- not the DMA region. */
+-static uint8_t g_bounce[VIRTIO_DATA_BYTES];
+-
+-/* pull: read up to `nbytes` at byte offset `off`, clipped to the device
+- * capacity.  Reads the covering sectors through the bounce buffer and
+- * copies the requested slice out; the framework advances h->pos. */
+-static ssize_t vblk_pull(qsoe_provider_t *self, qsoe_handle_t *h,
+-                         void *buf, size_t nbytes, off_t off)
+-{
+-    (void) self;
+-    (void) h;
+-    if (nbytes == 0)
+-        return 0;
+-    if (nbytes > VIRTIO_DATA_BYTES)
+-        nbytes = VIRTIO_DATA_BYTES;
+-
+-    uint64_t cap  = g_dev.capacity_sectors * VIRTIO_BLK_SECTOR_SIZE;
+-    uint64_t uoff = (uint64_t) off;
+-    if (uoff >= cap)
+-        return 0;                         /* EOF */
+-    if (uoff + nbytes > cap)
+-        nbytes = (size_t) (cap - uoff);
+-
+-    uint64_t first_lba = uoff / VIRTIO_BLK_SECTOR_SIZE;
+-    uint64_t last_lba  = (uoff + nbytes - 1) / VIRTIO_BLK_SECTOR_SIZE;
+-    uint64_t nlba      = last_lba - first_lba + 1;
+-    unsigned head_skip = (unsigned) (uoff % VIRTIO_BLK_SECTOR_SIZE);
+-    size_t   dma_bytes = (size_t) (nlba * VIRTIO_BLK_SECTOR_SIZE);
+-
+-    if (dma_bytes > VIRTIO_DATA_BYTES)
+-        return -EIO;
+-    if (virtio_blk_rw(&g_dev, first_lba, g_bounce, dma_bytes, 0) != 0)
+-        return -EIO;
+-
+-    memcpy(buf, g_bounce + head_skip, nbytes);
+-    return (ssize_t) nbytes;
+-}
+-
+-/* seek/query/acquire/release come from the defaults: query reports
+- * attr (mode S_IFBLK|0444, size = capacity); seek is against attr.size.
+- * push is intentionally unset -- read-only for now. */
+-static const qsoe_provider_vtbl_t vblk_vtbl = {
+-    QSOE_PROVIDER_DEFAULTS,
+-    .pull = vblk_pull,
+-};
+-
+-static qsoe_provider_t s_vblk;
+-
+-/* Map a virtio-mmio slot's registers and return them, or NULL. */
+-static volatile uint32_t *map_regs(uint64_t phys)
+-{
+-    void *p = qsoe_mmap(0, VIRT_VIRTIO_REG_BYTES, PROT_READ | PROT_WRITE,
+-                        MAP_PHYS | MAP_SHARED, -1, (off_t) phys);
+-    return (p == QSOE_MAP_FAILED) ? 0 : (volatile uint32_t *) p;
+-}
+-
+-/* Walk the QEMU virt virtio-mmio window; return the regs of the first block
+- * device, or NULL.  Non-block slots are unmapped before moving on. */
+-static volatile uint32_t *find_block_device(void)
+-{
+-    for (unsigned i = 0; i < VIRT_VIRTIO_MMIO_COUNT; i++) {
+-        uint64_t phys = VIRT_VIRTIO_MMIO_BASE + (uint64_t) i * VIRT_VIRTIO_MMIO_STRIDE;
+-        volatile uint32_t *regs = map_regs(phys);
+-        if (!regs)
+-            continue;
+-        if (virtio_blk_probe(regs)) {
+-            printf("devb-virtio: block device at virtio-mmio slot %u (%lx)\n",
+-                   i, (unsigned long) phys);
+-            return regs;
+-        }
+-        munmap((void *) regs, VIRT_VIRTIO_REG_BYTES);
+-    }
+-    return 0;
+-}
+-
+-int main(void)
+-{
+-    g_dev.regs = find_block_device();
+-    if (!g_dev.regs) {
+-        fprintf(stderr, "devb-virtio: no virtio-mmio block device found\n");
+-        return 1;
+-    }
+-
+-    /* DMA region: physically-contiguous, the device reads its ring + data
+-     * out of it via the PFN we hand it in virtio_blk_init. */
+-    uint64_t dma_pa = 0;
+-    g_dev.dma_va = qsoe_alloc_phys(VIRTIO_DMA_SIZE, PROT_READ | PROT_WRITE,
+-                                   &dma_pa);
+-    if (g_dev.dma_va == QSOE_MAP_FAILED) {
+-        fprintf(stderr, "devb-virtio: alloc_phys DMA region: errno=%d\n",
+-                qsoe_errno);
+-        return 1;
+-    }
+-    g_dev.dma_pa = dma_pa;
+-
+-    if (virtio_blk_init(&g_dev) != 0) {
+-        fprintf(stderr, "devb-virtio: device init failed\n");
+-        return 1;
+-    }
+-
+-    qsoe_provider_init(&s_vblk, &vblk_vtbl, "/dev/vblk0", S_IFBLK | 0444);
+-    s_vblk.attr.size =
+-        (off_t) (g_dev.capacity_sectors * VIRTIO_BLK_SECTOR_SIZE);
+-
+-    int rc = qsoe_provider_listen(&s_vblk);
+-    if (rc != 0) {
+-        fprintf(stderr, "devb-virtio: listen(/dev/vblk0) failed: errno=%d\n",
+-                -rc);
+-        return 1;
+-    }
+-
+-    fprintf(stderr, "devb-virtio: /dev/vblk0 ready (%lu MiB)\n",
+-            (unsigned long) (g_dev.capacity_sectors * VIRTIO_BLK_SECTOR_SIZE
+-                             / (1024 * 1024)));
+-
+-    /* Up and serving -- let init's waitpid() return so boot proceeds. */
+-    if (procmgr_detach(0) != 0)
+-        fprintf(stderr, "devb-virtio: procmgr_detach failed: errno=%d\n",
+-                qsoe_errno);
+-
+-    return qsoe_dispatch_run(&s_vblk);   /* never returns on success */
+-}
+--- a/dev/virtio/virtio_blk.c
++++ /dev/null
+@@ -1,257 +0,0 @@
+-/*
+- * virtio_blk.c -- virtio-mmio legacy block device: handshake, virtqueue
+- * management, and a synchronous polling I/O path.
+- *
+- * One virtqueue, three descriptors per request (header / data / status).
+- * After kicking the device via QUEUE_NOTIFY the driver spins on the used
+- * ring -- QEMU processes the queue on the notify write, so completion is
+- * immediate; sched_yield() keeps the wait cooperative on SMP.
+- *
+- * Copyright (c) 2026 Yuri Zaporozhets <yuriz@qsoe.net>
+- * SPDX-License-Identifier: Apache-2.0
+- */
+-
+-#include <errno.h>
+-#include <sched.h>
+-#include <stdio.h>
+-#include <string.h>
+-
+-#include "virtio_blk.h"
+-
+-/* Device-config space begins here in the virtio-mmio window; virtio-blk
+- * places its 64-bit capacity (in 512-byte sectors) at config offset 0. */
+-#define VIRTIO_MMIO_CONFIG      0x100
+-
+-/* The guest page size the legacy device uses to interpret QUEUE_PFN. */
+-#define VIRTIO_GUEST_PAGE_SIZE  4096u
+-
+-/* INTERRUPT_STATUS bits we acknowledge (used-buffer | config-change); the
+- * polling path never enables interrupts but clears any stale status. */
+-#define VIRTIO_INT_ACK_MASK     0x3u
+-
+-/* 32-bit MMIO register accessor (offset is a byte offset). */
+-#define REG(dev, off)           ((dev)->regs[(off) / 4])
+-
+-/* ---- descriptor allocation -------------------------------------- */
+-
+-static int alloc_desc(struct virtio_blk_dev *dev)
+-{
+-    for (unsigned i = 0; i < VIRTQ_NUM; i++) {
+-        if (dev->free[i]) {
+-            dev->free[i] = 0;
+-            return (int) i;
+-        }
+-    }
+-    return -1;
+-}
+-
+-static void free_desc(struct virtio_blk_dev *dev, int i)
+-{
+-    dev->desc[i].addr  = 0;
+-    dev->desc[i].len   = 0;
+-    dev->desc[i].flags = 0;
+-    dev->desc[i].next  = 0;
+-    dev->free[i]       = 1;
+-}
+-
+-static void free_chain(struct virtio_blk_dev *dev, int i)
+-{
+-    for (;;) {
+-        int flags = dev->desc[i].flags;
+-        int next  = dev->desc[i].next;
+-        free_desc(dev, i);
+-        if (flags & VRING_DESC_F_NEXT)
+-            i = next;
+-        else
+-            break;
+-    }
+-}
+-
+-static int alloc3_desc(struct virtio_blk_dev *dev, int idx[3])
+-{
+-    for (int i = 0; i < 3; i++) {
+-        idx[i] = alloc_desc(dev);
+-        if (idx[i] < 0) {
+-            for (int j = 0; j < i; j++)
+-                free_desc(dev, idx[j]);
+-            return -1;
+-        }
+-    }
+-    return 0;
+-}
+-
+-/* ---- discovery + bring-up --------------------------------------- */
+-
+-int virtio_blk_probe(volatile uint32_t *regs)
+-{
+-    if (regs[VIRTIO_MMIO_MAGIC_VALUE / 4] != VIRTIO_MAGIC)
+-        return 0;
+-    if (regs[VIRTIO_MMIO_VERSION / 4] != VIRTIO_VERSION_LEGACY)
+-        return 0;
+-    if (regs[VIRTIO_MMIO_DEVICE_ID / 4] != VIRTIO_DEVID_BLK)
+-        return 0;
+-    return 1;
+-}
+-
+-int virtio_blk_init(struct virtio_blk_dev *dev)
+-{
+-    uint32_t status = 0;
+-
+-    if (!virtio_blk_probe(dev->regs)) {
+-        printf("devb-virtio: not a legacy virtio block device "
+-               "(magic=%x ver=%u id=%u)\n",
+-               REG(dev, VIRTIO_MMIO_MAGIC_VALUE),
+-               REG(dev, VIRTIO_MMIO_VERSION),
+-               REG(dev, VIRTIO_MMIO_DEVICE_ID));
+-        return -ENODEV;
+-    }
+-
+-    /* Reset, then walk the spec handshake: ACK -> DRIVER -> feature
+-     * negotiation -> FEATURES_OK -> DRIVER_OK. */
+-    REG(dev, VIRTIO_MMIO_STATUS) = 0;
+-
+-    status |= VIRTIO_STATUS_ACKNOWLEDGE;
+-    REG(dev, VIRTIO_MMIO_STATUS) = status;
+-
+-    status |= VIRTIO_STATUS_DRIVER;
+-    REG(dev, VIRTIO_MMIO_STATUS) = status;
+-
+-    /* Take the device's features minus everything we don't implement: a
+-     * plain read/write queue with no indirect descriptors or event index. */
+-    uint32_t features = REG(dev, VIRTIO_MMIO_DEVICE_FEATURES);
+-    features &= ~(1u << VIRTIO_BLK_F_RO);
+-    features &= ~(1u << VIRTIO_BLK_F_SCSI);
+-    features &= ~(1u << VIRTIO_BLK_F_CONFIG_WCE);
+-    features &= ~(1u << VIRTIO_BLK_F_MQ);
+-    features &= ~(1u << VIRTIO_F_ANY_LAYOUT);
+-    features &= ~(1u << VIRTIO_RING_F_EVENT_IDX);
+-    features &= ~(1u << VIRTIO_RING_F_INDIRECT_DESC);
+-    REG(dev, VIRTIO_MMIO_DRIVER_FEATURES) = features;
+-
+-    status |= VIRTIO_STATUS_FEATURES_OK;
+-    REG(dev, VIRTIO_MMIO_STATUS) = status;
+-
+-    status |= VIRTIO_STATUS_DRIVER_OK;
+-    REG(dev, VIRTIO_MMIO_STATUS) = status;
+-
+-    /* Legacy: tell the device the page size it uses for QUEUE_PFN. */
+-    REG(dev, VIRTIO_MMIO_GUEST_PAGE_SIZE) = VIRTIO_GUEST_PAGE_SIZE;
+-
+-    /* Select and size queue 0. */
+-    REG(dev, VIRTIO_MMIO_QUEUE_SEL) = 0;
+-    uint32_t qmax = REG(dev, VIRTIO_MMIO_QUEUE_NUM_MAX);
+-    if (qmax == 0) {
+-        printf("devb-virtio: device has no queue 0\n");
+-        return -ENODEV;
+-    }
+-    if (qmax < VIRTQ_NUM) {
+-        printf("devb-virtio: max queue size %u < %u\n", qmax, VIRTQ_NUM);
+-        return -ENODEV;
+-    }
+-    REG(dev, VIRTIO_MMIO_QUEUE_NUM) = VIRTQ_NUM;
+-
+-    /* Place the ring in the DMA region and hand the device its base PFN. */
+-    memset(dev->dma_va, 0, VIRTIO_DMA_SIZE);
+-    REG(dev, VIRTIO_MMIO_QUEUE_PFN) =
+-        (uint32_t) (dev->dma_pa / VIRTIO_GUEST_PAGE_SIZE);
+-
+-    uint8_t *base = dev->dma_va;
+-    dev->desc   = (struct virtq_desc *) base;
+-    dev->avail  = (struct virtq_avail *)
+-                  (base + VIRTQ_NUM * sizeof(struct virtq_desc));
+-    dev->used   = (struct virtq_used *)   (base + VIRTIO_OFF_USED);
+-    dev->ops    = (struct virtio_blk_req *)(base + VIRTIO_OFF_OPS);
+-    dev->status = (uint8_t *) (base + VIRTIO_OFF_OPS +
+-                               VIRTQ_NUM * sizeof(struct virtio_blk_req));
+-    dev->databuf = base + VIRTIO_OFF_DATA;
+-
+-    for (unsigned i = 0; i < VIRTQ_NUM; i++)
+-        dev->free[i] = 1;
+-    dev->used_idx = 0;
+-
+-    /* Capacity is a 64-bit sector count at the start of device-config. */
+-    uint64_t cap_lo = REG(dev, VIRTIO_MMIO_CONFIG);
+-    uint64_t cap_hi = REG(dev, VIRTIO_MMIO_CONFIG + 4);
+-    dev->capacity_sectors = cap_lo | (cap_hi << 32);
+-
+-    printf("devb-virtio: initialized, queue depth=%u, capacity=%lu sectors\n",
+-           VIRTQ_NUM, (unsigned long) dev->capacity_sectors);
+-    return 0;
+-}
+-
+-/* ---- synchronous polling I/O ------------------------------------ */
+-
+-int virtio_blk_rw(struct virtio_blk_dev *dev, uint64_t sector,
+-                  void *buf, size_t len, int write)
+-{
+-    if (len == 0)
+-        return 0;
+-    if (len > VIRTIO_DATA_BYTES)
+-        len = VIRTIO_DATA_BYTES;
+-
+-    int idx[3];
+-    if (alloc3_desc(dev, idx) < 0)
+-        return -EBUSY;             /* single-threaded: never seen in practice */
+-
+-    /* Physical addresses of the three sections this request touches. */
+-    uint64_t ops_pa    = dev->dma_pa + VIRTIO_OFF_OPS +
+-                         (unsigned) idx[0] * sizeof(struct virtio_blk_req);
+-    uint64_t status_pa = dev->dma_pa + VIRTIO_OFF_OPS +
+-                         VIRTQ_NUM * sizeof(struct virtio_blk_req) +
+-                         (unsigned) idx[0];
+-    uint64_t data_pa   = dev->dma_pa + VIRTIO_OFF_DATA;
+-
+-    dev->ops[idx[0]].type     = write ? VIRTIO_BLK_T_OUT : VIRTIO_BLK_T_IN;
+-    dev->ops[idx[0]].reserved = 0;
+-    dev->ops[idx[0]].sector   = sector;
+-
+-    /* desc 0: request header (device-readable). */
+-    dev->desc[idx[0]].addr  = ops_pa;
+-    dev->desc[idx[0]].len   = sizeof(struct virtio_blk_req);
+-    dev->desc[idx[0]].flags = VRING_DESC_F_NEXT;
+-    dev->desc[idx[0]].next  = (uint16_t) idx[1];
+-
+-    if (write)
+-        memcpy(dev->databuf, buf, len);
+-
+-    /* desc 1: data buffer (device-writable on read). */
+-    dev->desc[idx[1]].addr  = data_pa;
+-    dev->desc[idx[1]].len   = (uint32_t) len;
+-    dev->desc[idx[1]].flags = (write ? 0 : VRING_DESC_F_WRITE) |
+-                              VRING_DESC_F_NEXT;
+-    dev->desc[idx[1]].next  = (uint16_t) idx[2];
+-
+-    /* desc 2: status byte (device-writable). */
+-    dev->status[idx[0]]     = 0xFF;
+-    dev->desc[idx[2]].addr  = status_pa;
+-    dev->desc[idx[2]].len   = 1;
+-    dev->desc[idx[2]].flags = VRING_DESC_F_WRITE;
+-    dev->desc[idx[2]].next  = 0;
+-
+-    /* Publish to the available ring and kick. */
+-    dev->avail->ring[dev->avail->idx % VIRTQ_NUM] = (uint16_t) idx[0];
+-    __sync_synchronize();
+-    dev->avail->idx += 1;
+-    __sync_synchronize();
+-    REG(dev, VIRTIO_MMIO_QUEUE_NOTIFY) = 0;
+-
+-    /* Poll the used ring.  QEMU completes on the notify write, so this
+-     * spins zero or few times; yield to be friendly under SMP. */
+-    while (dev->used_idx == dev->used->idx) {
+-        __sync_synchronize();
+-        sched_yield();
+-    }
+-    dev->used_idx++;
+-
+-    /* Clear any interrupt status the device raised (we don't use IRQs). */
+-    uint32_t isr = REG(dev, VIRTIO_MMIO_INTERRUPT_STATUS);
+-    if (isr)
+-        REG(dev, VIRTIO_MMIO_INTERRUPT_ACK) = isr & VIRTIO_INT_ACK_MASK;
+-
+-    int err = (dev->status[idx[0]] != 0) ? -EIO : 0;
+-    if (!write && !err)
+-        memcpy(buf, dev->databuf, len);
+-
+-    free_chain(dev, idx[0]);
+-    return err;
+-}
+--- a/dev/virtio/virtio_blk.h
++++ /dev/null
+@@ -1,164 +0,0 @@
+-/*
+- * virtio_blk.h -- virtio-mmio legacy block device: register map, virtqueue
+- * layout, and driver state.
+- *
+- * The legacy (version 1) virtio-mmio interface as QEMU's `virt` machine
+- * exposes it: a single virtqueue programmed through QUEUE_PFN, ring placed
+- * in a physically-contiguous DMA region.  Modeled structurally on xv6's
+- * virtio_disk and the QRV devb-virtio driver; this implementation is
+- * polling (no interrupt service thread) -- the synchronous block path spins
+- * on the used ring after kicking the device.  Used by QSOE/L under QEMU,
+- * where there is no NVMe (seL4 has no AIA, so PCIe MSI-X cannot be
+- * delivered); virtio-mmio rides a plain wired IRQ we don't even enable.
+- *
+- * Copyright (c) 2026 Yuri Zaporozhets <yuriz@qsoe.net>
+- * SPDX-License-Identifier: Apache-2.0
+- */
+-#ifndef QSOE_VIRTIO_BLK_H
+-#define QSOE_VIRTIO_BLK_H
+-
+-#include <stddef.h>
+-#include <stdint.h>
+-
+-/* MMIO register offsets (virtio-mmio legacy, from the virtio spec). */
+-#define VIRTIO_MMIO_MAGIC_VALUE         0x000
+-#define VIRTIO_MMIO_VERSION             0x004
+-#define VIRTIO_MMIO_DEVICE_ID           0x008
+-#define VIRTIO_MMIO_VENDOR_ID           0x00c
+-#define VIRTIO_MMIO_DEVICE_FEATURES     0x010
+-#define VIRTIO_MMIO_DRIVER_FEATURES     0x020
+-#define VIRTIO_MMIO_GUEST_PAGE_SIZE     0x028
+-#define VIRTIO_MMIO_QUEUE_SEL           0x030
+-#define VIRTIO_MMIO_QUEUE_NUM_MAX       0x034
+-#define VIRTIO_MMIO_QUEUE_NUM           0x038
+-#define VIRTIO_MMIO_QUEUE_ALIGN         0x03c
+-#define VIRTIO_MMIO_QUEUE_PFN           0x040
+-#define VIRTIO_MMIO_QUEUE_NOTIFY        0x050
+-#define VIRTIO_MMIO_INTERRUPT_STATUS    0x060
+-#define VIRTIO_MMIO_INTERRUPT_ACK       0x064
+-#define VIRTIO_MMIO_STATUS              0x070
+-
+-/* Status register bits (virtio spec sec. 2.1). */
+-#define VIRTIO_STATUS_ACKNOWLEDGE       1u
+-#define VIRTIO_STATUS_DRIVER            2u
+-#define VIRTIO_STATUS_DRIVER_OK         4u
+-#define VIRTIO_STATUS_FEATURES_OK       8u
+-
+-/* Device feature bits we explicitly strip during negotiation. */
+-#define VIRTIO_BLK_F_RO                 5
+-#define VIRTIO_BLK_F_SCSI               7
+-#define VIRTIO_BLK_F_CONFIG_WCE         11
+-#define VIRTIO_BLK_F_MQ                 12
+-#define VIRTIO_F_ANY_LAYOUT             27
+-#define VIRTIO_RING_F_INDIRECT_DESC     28
+-#define VIRTIO_RING_F_EVENT_IDX         29
+-
+-/* Identity registers: "virt" little-endian magic + the block device id. */
+-#define VIRTIO_MAGIC                    0x74726976u    /* 'v''i''r''t' */
+-#define VIRTIO_VERSION_LEGACY           1u             /* version 1 == legacy */
+-#define VIRTIO_DEVID_BLK                2u
+-
+-/* Block request types (virtio-blk). */
+-#define VIRTIO_BLK_T_IN                 0u             /* read  */
+-#define VIRTIO_BLK_T_OUT                1u             /* write */
+-
+-/* virtio-blk fixes the logical sector at 512 bytes regardless of media. */
+-#define VIRTIO_BLK_SECTOR_SIZE          512u
+-
+-/* Descriptor flags (virtq). */
+-#define VRING_DESC_F_NEXT               1u
+-#define VRING_DESC_F_WRITE              2u
+-
+-/* Queue depth (power of two; one in-flight request uses 3 descriptors). */
+-#define VIRTQ_NUM                       8u
+-
+-/* Largest single transfer per request: 8 sectors == one 4 KiB page.  The
+- * data bounce buffer in the DMA region is sized to match. */
+-#define VIRTIO_DATA_BYTES               4096u
+-
+-/* Virtqueue descriptor (16 bytes, virtq layout). */
+-struct virtq_desc {
+-    uint64_t addr;
+-    uint32_t len;
+-    uint16_t flags;
+-    uint16_t next;
+-};
+-
+-/* Available ring (driver -> device). */
+-struct virtq_avail {
+-    uint16_t flags;
+-    uint16_t idx;
+-    uint16_t ring[VIRTQ_NUM];
+-    uint16_t unused;
+-};
+-
+-/* Used ring element + ring (device -> driver). */
+-struct virtq_used_elem {
+-    uint32_t id;
+-    uint32_t len;
+-};
+-struct virtq_used {
+-    uint16_t flags;
+-    uint16_t idx;
+-    struct virtq_used_elem ring[VIRTQ_NUM];
+-};
+-
+-/* Block request header (first descriptor in each chain). */
+-struct virtio_blk_req {
+-    uint32_t type;
+-    uint32_t reserved;
+-    uint64_t sector;
+-};
+-
+-/* DMA region layout (legacy QUEUE_PFN scheme).  The device derives the
+- * avail/used ring addresses from the single base PFN, so the rings must sit
+- * at the spec-mandated offsets within one contiguous region:
+- *   page 0: descriptor table + available ring
+- *   page 1: used ring (page-aligned per QUEUE_ALIGN)
+- *   page 2: request headers + status bytes
+- *   page 3: data bounce buffer (VIRTIO_DATA_BYTES)
+- */
+-#define VIRTIO_DMA_PAGE_BYTES           4096u
+-#define VIRTIO_DMA_PAGES                4u
+-#define VIRTIO_DMA_SIZE                 (VIRTIO_DMA_PAGES * VIRTIO_DMA_PAGE_BYTES)
+-
+-/* DMA-region page offsets for the four sections above. */
+-#define VIRTIO_OFF_USED                 (1u * VIRTIO_DMA_PAGE_BYTES)
+-#define VIRTIO_OFF_OPS                  (2u * VIRTIO_DMA_PAGE_BYTES)
+-#define VIRTIO_OFF_DATA                 (3u * VIRTIO_DMA_PAGE_BYTES)
+-
+-/* Driver state. */
+-struct virtio_blk_dev {
+-    volatile uint32_t *regs;        /* MMIO register block (MAP_PHYS)        */
+-
+-    struct virtq_desc  *desc;       /* views into the DMA region             */
+-    struct virtq_avail *avail;
+-    struct virtq_used  *used;
+-    struct virtio_blk_req *ops;     /* per-descriptor request headers        */
+-    uint8_t            *status;     /* per-descriptor device-written status  */
+-    uint8_t            *databuf;    /* single shared data bounce buffer      */
+-
+-    void     *dma_va;               /* DMA region base (virtual)             */
+-    uint64_t  dma_pa;               /* DMA region base (physical)            */
+-
+-    uint8_t   free[VIRTQ_NUM];      /* descriptor free map                   */
+-    uint16_t  used_idx;             /* last used-ring index we consumed      */
+-
+-    uint64_t  capacity_sectors;     /* device capacity (from config space)   */
+-};
+-
+-/* Probe an MMIO slot already mapped at `regs`: returns 1 if it is a legacy
+- * virtio block device, 0 otherwise.  Used during bus discovery. */
+-int  virtio_blk_probe(volatile uint32_t *regs);
+-
+-/* Bring up the device: legacy handshake + virtqueue setup.  `regs`,
+- * `dma_va`, and `dma_pa` must be set on `dev` first.  Returns 0 or -errno. */
+-int  virtio_blk_init(struct virtio_blk_dev *dev);
+-
+-/* Synchronous one-shot transfer: read (write==0) or write `len` bytes
+- * (<= VIRTIO_DATA_BYTES, a multiple of the sector size) at `sector`.
+- * Polls the used ring for completion.  Returns 0 or -errno. */
+-int  virtio_blk_rw(struct virtio_blk_dev *dev, uint64_t sector,
+-                   void *buf, size_t len, int write);
+-
+-#endif /* QSOE_VIRTIO_BLK_H */
