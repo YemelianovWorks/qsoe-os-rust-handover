@@ -20,6 +20,7 @@ CC       := $(CROSS)gcc
 AR       := $(CROSS)ar
 QSOE_RUST_TM_CRED ?= 0
 QSOE_RUST_TM_PROCFS ?= 0
+QSOE_RUST_TM_SYSFS ?= 0
 
 O           ?= build
 LIBC_INC    ?= ../libc/include
@@ -52,6 +53,10 @@ ifneq ($(filter $(QSOE_RUST_TM_PROCFS),0 1),$(QSOE_RUST_TM_PROCFS))
 $(error QSOE_RUST_TM_PROCFS must be 0 or 1)
 endif
 
+ifneq ($(filter $(QSOE_RUST_TM_SYSFS),0 1),$(QSOE_RUST_TM_SYSFS))
+$(error QSOE_RUST_TM_SYSFS must be 0 or 1)
+endif
+
 SRCS_ALL := $(wildcard src/*.c)
 SRCS := $(SRCS_ALL)
 ifeq ($(QSOE_RUST_TM_CRED),1)
@@ -59,6 +64,9 @@ SRCS := $(filter-out src/cred.c,$(SRCS))
 endif
 ifeq ($(QSOE_RUST_TM_PROCFS),1)
 SRCS := $(filter-out src/tm_procfs.c,$(SRCS))
+endif
+ifeq ($(QSOE_RUST_TM_SYSFS),1)
+SRCS := $(filter-out src/tm_sysfs.c,$(SRCS))
 endif
 OBJS := $(addprefix $(O)/,$(notdir $(SRCS:.c=.o)))
 DEPS := $(OBJS:.o=.d)

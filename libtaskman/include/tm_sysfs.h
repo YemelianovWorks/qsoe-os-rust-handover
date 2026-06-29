@@ -2,7 +2,7 @@
  * tm_sysfs.h -- OS-independent /sys model for every QSOE taskman.
  *
  * The read-only /sys pseudo-filesystem ("the kernel describes itself")
- * is identical in shape across QSOE/N and QSOE/L: the same four entries,
+ * is identical in shape across QSOE/N and QSOE/L: the same five entries,
  * the same path-resolution and directory-listing rules.  Only two things
  * differ per kernel and stay OUT of this module:
  *
@@ -20,7 +20,7 @@
 #ifndef TM_SYSFS_H
 #define TM_SYSFS_H
 
-/* Snapshot the four /sys file contents into this module's own buffers.
+/* Snapshot the five /sys file contents into this module's own buffers.
  * Each source string is copied verbatim and a trailing '\n' appended so
  * `cat /sys/<x>` looks right at the shell; a NULL or empty source yields
  * a one-byte "\n".  Idempotent -- safe to call again after a syscfg/
