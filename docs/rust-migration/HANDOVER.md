@@ -369,8 +369,10 @@ The strict ELF audit showed:
   decision exists.
 - `tm_rsrcdb` has a Rust opt-in provider behind `QSOE_RUST_TM_RSRCDB=1`. The
   selector removes LQ C `sys/rsrcdb.o` and links through the shared taskman
-  Rust provider archive. C remains default and rollback until resource
-  attach/query/detach runtime coverage and a separate RC decision exist.
+  Rust provider archive. `make tm-rsrcdb-runtime-smoke` covers live
+  `rsrcdbmgr_*` create, attach, query, detach, and destroy calls with Rust
+  `tm_rsrcdb` selected. C remains default and rollback until a separate RC
+  decision exists.
 - `tm_elf` has a Rust opt-in provider behind `QSOE_RUST_TM_ELF=1`. The selector
   removes C `elf.o` from `libtaskman.a` and links through the shared taskman
   Rust provider archive. `make tm-elf-runtime-smoke` covers dynamic

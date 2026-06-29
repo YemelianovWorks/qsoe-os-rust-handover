@@ -82,7 +82,7 @@ Detailed planning lives under `docs/rust-migration/`. Start with:
 | `tm_fdt` task-manager provider | Rust opt-in | `qsoe-tm-fdt` exports the existing LQ `tm_fdt_*` ABI behind `QSOE_RUST_TM_FDT=1`; `make tm-fdt-evidence` runs C/Rust host tests, audits the soft-float staticlib, and verifies LQ taskman links with C rollback and Rust-selected archives. `make tm-fdt-runtime-smoke` boots LQ with Rust `tm_fdt` selected and covers `/chosen` bootargs, syscfg/sysmap construction, `/sys`, and `sysinfo` consumers. Next gate: separate Rust-default RC decision. |
 | `tm_pathmgr` task-manager provider | Rust opt-in | `qsoe-tm-pathmgr` exports the existing `tm_pathmgr.h` ABI behind `QSOE_RUST_TM_PATHMGR=1`; `make tm-pathmgr-evidence` runs C/Rust host tests, audits the soft-float staticlib, and verifies NQ/LQ taskman links with C rollback and Rust-selected archives. `make tm-pathmgr-runtime-smoke` boots LQ with Rust `tm_pathmgr` selected and covers `/dev` readdir, `/etc` symlink file access, `/dev/console` repath, dynamic helper registration, duplicate rejection, MsgSend through the resolved binding, and unregister-on-exit cleanup. Next gate: separate Rust-default RC decision. |
 | `tm_pseudodev` task-manager provider | Rust opt-in | `qsoe-tm-pseudodev` exports the existing LQ `/dev/null` and `/dev/zero` ABI behind `QSOE_RUST_TM_PSEUDODEV=1`; `make tm-pseudodev-evidence` runs Rust host tests, audits the soft-float staticlib, and verifies LQ C-default/Rust-selected taskman links. Next gate: add a focused `/dev/null` and `/dev/zero` runtime smoke before any Rust-default RC decision. |
-| `tm_rsrcdb` task-manager provider | Rust opt-in | `qsoe-tm-rsrcdb` exports the existing LQ `tm_rsrc_*` ABI behind `QSOE_RUST_TM_RSRCDB=1`; `make tm-rsrcdb-evidence` runs C/Rust host tests, audits the soft-float staticlib, and verifies LQ C-default/Rust-selected taskman links. Next gate: add runtime coverage through `rsrcdbmgr_*` callers before any Rust-default RC decision. |
+| `tm_rsrcdb` task-manager provider | Rust opt-in | `qsoe-tm-rsrcdb` exports the existing LQ `tm_rsrc_*` ABI behind `QSOE_RUST_TM_RSRCDB=1`; `make tm-rsrcdb-evidence` runs C/Rust host tests, audits the soft-float staticlib, and verifies LQ C-default/Rust-selected taskman links. `make tm-rsrcdb-runtime-smoke` boots LQ with Rust `tm_rsrcdb` selected and covers live `rsrcdbmgr_*` create, attach, query, detach, and destroy calls. Next gate: separate Rust-default RC decision. |
 | `tm_script` task-manager provider | Rust opt-in | `qsoe-tm-script` exports the existing `tm_script.h` ABI behind `QSOE_RUST_TM_SCRIPT=1`; `make tm-script-evidence` runs C/Rust host tests, audits the soft-float staticlib, and verifies NQ/LQ taskman links with C rollback and Rust-selected archives. `make tm-script-runtime-smoke` boots LQ with Rust `tm_script` selected and runs a staged `/usr/bin` shebang script directly. Next gate: separate Rust-default RC decision. |
 | `tm_syscfg` task-manager provider | Rust opt-in | `qsoe-tm-syscfg` exports the existing `tm_syscfg.h` ABI behind `QSOE_RUST_TM_SYSCFG=1`; `make tm-syscfg-evidence` runs C/Rust host tests, audits the soft-float staticlib, and verifies NQ/LQ taskman links with C rollback and Rust-selected archives. `make tm-syscfg-runtime-smoke` boots LQ with Rust `tm_syscfg` selected and verifies syscfg-backed `/sys` and `sysinfo` consumers still work while LQ's private runtime syscfg builder remains C. Next gate: separate Rust-default RC decision that accepts this boundary. |
 | `tm_sysmap` task-manager provider | Rust opt-in | `qsoe-tm-sysmap` exports the existing LQ `tm_sysmap_*` ABI behind `QSOE_RUST_TM_SYSMAP=1`; `make tm-sysmap-evidence` runs C/Rust host tests, audits the soft-float staticlib, and verifies LQ taskman links with C rollback and Rust-selected archives. `make tm-sysmap-runtime-smoke` boots LQ with Rust `tm_sysmap` selected and verifies a spawned `sysinfo` child consumes the mapped `PSYS` page for timebase, PLIC, and PCI data. Next gate: separate Rust-default RC decision. |
@@ -120,7 +120,8 @@ Detailed planning lives under `docs/rust-migration/`. Start with:
 - `tm_cpio`, `tm_cred`, `tm_elf`, `tm_fdt`, `tm_pathmgr`, `tm_pseudodev`,
   `tm_rsrcdb`, `tm_script`, `tm_syscfg`, `tm_sysmap`, and `tm_sysfs` are Rust
   opt-in task-manager providers only.
-  `tm_cpio`, `tm_elf`, `tm_fdt`, `tm_script`, `tm_syscfg`, `tm_sysmap`, and `tm_sysfs` now have focused runtime
+  `tm_cpio`, `tm_cred`, `tm_elf`, `tm_fdt`, `tm_pathmgr`, `tm_rsrcdb`,
+  `tm_script`, `tm_syscfg`, `tm_sysmap`, and `tm_sysfs` now have focused runtime
   smoke coverage; keep all opt-in providers C-default until their runtime
   evidence and separate RC decisions exist.
 
@@ -173,6 +174,10 @@ make rust-tm-procfs-provider
 make tm-procfs-evidence
 make rust-tm-pseudodev-provider
 make tm-pseudodev-evidence
+make check-tm-rsrcdb-model
+make rust-tm-rsrcdb-provider
+make tm-rsrcdb-evidence
+make tm-rsrcdb-runtime-smoke
 make check-tm-script-model
 make rust-tm-script-provider
 make tm-script-evidence
