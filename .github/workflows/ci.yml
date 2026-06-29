@@ -80,6 +80,10 @@ jobs:
         if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
         run: make container-tm-cpio-evidence
 
+      - name: Run tm_cpio Rust runtime smoke
+        if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+        run: make container-tm-cpio-runtime-smoke
+
       - name: Run tm_script Rust opt-in evidence
         if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
         run: make container-tm-script-evidence
@@ -135,6 +139,7 @@ jobs:
             build/pipe-rc/*.log
             build/tm-cpio-evidence/**/*.log
             build/tm-cpio-evidence/**/*.txt
+            build/tm-cpio-runtime-smoke/*.log
             build/tm-script-evidence/**/*.log
             build/tm-script-evidence/**/*.txt
             build/tm-elf-evidence/**/*.log

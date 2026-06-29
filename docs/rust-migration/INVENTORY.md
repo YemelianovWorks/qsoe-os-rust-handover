@@ -57,7 +57,7 @@ Issue state, labels, and metadata are the source of truth for current progress.
 | `pipe` | #139 | Retired C service; Rust `pipe-rs` is always staged as `/sbin/pipe` in NQ/LQ images. |
 | `test_msgpass` | #140 | Retired C helper; Rust `test_msgpass-rs` is always staged as `/usr/bin/test_msgpass` in test images. |
 | `tm_procfs` | #141 | Retired C provider; Rust `qsoe-tm-procfs` is mandatory in taskman. |
-| `tm_cpio` | #142 | Rust opt-in provider with C rollback; not a Rust-default RC. |
+| `tm_cpio` | #142 | Rust opt-in provider with C rollback and focused runtime smoke; not a Rust-default RC. |
 | `tm_script` | #143 | Rust opt-in provider with C rollback; not a Rust-default RC. |
 | `tm_elf` | #144 | Rust opt-in provider with C rollback; not a Rust-default RC. |
 | `tm_fdt` | #146 | Rust opt-in LQ FDT parser provider with C rollback; not a Rust-default RC. |

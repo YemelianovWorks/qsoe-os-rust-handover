@@ -24,8 +24,8 @@ gate in `docs/rust-migration/RETIREMENT.md`.
 
 ## Current Status
 
-- Rust-default release-candidate paths exist for `qrvfs-tree`, `mkfs-qrv-rs`,
-  and `qsoe-tm-procfs`.
+- Rust-default release-candidate paths exist for `qrvfs-tree` and
+  `mkfs-qrv-rs`.
 - Retired C implementations: the C `test_msgpass` helper is removed from
   tracked `quser` test-image paths, and the C `/sbin/slogger` and `/sbin/pipe`
   services and C `/sbin/devb-virtio` block driver are removed from tracked
@@ -33,6 +33,8 @@ gate in `docs/rust-migration/RETIREMENT.md`.
   `/usr/bin/test_msgpass`; normal NQ/LQ images stage Rust `slogger-rs` at
   `/sbin/slogger`, Rust `pipe-rs` at `/sbin/pipe`, and Rust
   `devb-virtio-rs` at `/sbin/devb-virtio`.
+- The C `tm_procfs` task-manager provider is retired; taskman now links Rust
+  `qsoe-tm-procfs` through the shared provider archive.
 - Rust opt-in task-manager providers exist for `qsoe-tm-cpio`,
   `qsoe-tm-cred`, `qsoe-tm-elf`, `qsoe-tm-fdt`, `qsoe-tm-pathmgr`,
   `qsoe-tm-pseudodev`, `qsoe-tm-rsrcdb`, `qsoe-tm-script`,
@@ -74,7 +76,7 @@ Detailed planning lives under `docs/rust-migration/`. Start with:
 | `test_msgpass` helper | Retired C helper | `test_msgpass-rs` links, is always staged into the qrvfs test image as `/usr/bin/test_msgpass`, and passes the existing suite `[msgpass]` section through `make rust-test-msgpass-smoke` and `make test-msgpass-rc-smoke`. The C helper source and rollback target are removed by the retirement PR. |
 | `tm_procfs` task-manager pilot | Retired C provider | `qsoe-tm-procfs` exports the existing C ABI and is mandatory in taskman through the shared `qsoe-tm-providers` archive. `make tm-procfs-evidence` verifies Rust host tests, archive audit, no `tm_procfs.o` in NQ/LQ `libtaskman.a`, retired selector rejection, and the Rust-only `/proc` smoke. |
 | Task-manager Rust provider archive | Shared opt-in link unit | `qsoe-tm-providers` packages selected taskman Rust providers into one `libqsoe_tm_providers.a` with one panic handler. `make tm-providers-evidence` selects `tm_cpio` and `tm_procfs` together, audits the soft-float archive and final taskman ELFs, verifies the selected C objects are absent, and runs a dual-provider `/proc` smoke. |
-| `tm_cpio` task-manager provider | Rust opt-in | `qsoe-tm-cpio` exports the existing `tm_cpio.h` ABI behind `QSOE_RUST_TM_CPIO=1`; `make tm-cpio-evidence` runs C/Rust host tests, audits the soft-float staticlib, and verifies NQ/LQ taskman links with C rollback and Rust-selected archives. Next gate: add boot/runtime coverage for CPIO-backed spawn and file access before any Rust-default RC decision. |
+| `tm_cpio` task-manager provider | Rust opt-in | `qsoe-tm-cpio` exports the existing `tm_cpio.h` ABI behind `QSOE_RUST_TM_CPIO=1`; `make tm-cpio-evidence` runs C/Rust host tests, audits the soft-float staticlib, and verifies NQ/LQ taskman links with C rollback and Rust-selected archives. `make tm-cpio-runtime-smoke` boots LQ with Rust `tm_cpio` selected and covers CPIO symlink readlink, `/etc` symlink file access, direct boot-CPIO file read, and `/bin/sh` symlink spawn. Next gate: separate Rust-default RC decision. |
 | `tm_cred` task-manager provider | Rust opt-in | `qsoe-tm-cred` exports the existing `tm_cred.h` ABI behind `QSOE_RUST_TM_CRED=1`; `make tm-cred-evidence` runs C/Rust host tests, audits the soft-float staticlib, and verifies NQ/LQ taskman links with C rollback and Rust-selected archives. Next gate: add a credential-specific runtime smoke before any Rust-default RC decision. |
 | `tm_elf` task-manager provider | Rust opt-in | `qsoe-tm-elf` exports the existing `tm_elf.h` ABI behind `QSOE_RUST_TM_ELF=1`; `make tm-elf-evidence` runs C/Rust host tests, audits the soft-float staticlib, and verifies NQ/LQ taskman links with C rollback and Rust-selected archives. Next gate: add loader/runtime coverage for ELF-backed spawn before any Rust-default RC decision. |
 | `tm_fdt` task-manager provider | Rust opt-in | `qsoe-tm-fdt` exports the existing LQ `tm_fdt_*` ABI behind `QSOE_RUST_TM_FDT=1`; `make tm-fdt-evidence` runs C/Rust host tests, audits the soft-float staticlib, and verifies LQ taskman links with C rollback and Rust-selected archives. Next gate: add boot/syscfg runtime coverage before any Rust-default RC decision. |
@@ -86,7 +88,7 @@ Detailed planning lives under `docs/rust-migration/`. Start with:
 | `tm_sysmap` task-manager provider | Rust opt-in | `qsoe-tm-sysmap` exports the existing LQ `tm_sysmap_*` ABI behind `QSOE_RUST_TM_SYSMAP=1`; `make tm-sysmap-evidence` runs C/Rust host tests, audits the soft-float staticlib, and verifies LQ taskman links with C rollback and Rust-selected archives. Next gate: add boot/runtime coverage for the mapped `PSYS` page before any Rust-default RC decision. |
 | `tm_sysfs` task-manager provider | Rust opt-in | `qsoe-tm-sysfs` exports the existing `tm_sysfs.h` ABI behind `QSOE_RUST_TM_SYSFS=1`; `make tm-sysfs-evidence` runs C/Rust host tests, audits the soft-float staticlib, and verifies NQ/LQ taskman links with C rollback and Rust-selected archives. Next gate: add a focused `/sys` runtime smoke before any Rust-default RC decision. |
 | Kernel Rust | Deferred | Current decision rejects near-term Rust in `nq` kernel code; only fixture/audit candidates are documented. |
-| C retirement | Four removals complete | `test_msgpass` is the first retired C helper; `slogger`, `pipe`, and `devb-virtio` are retired C production paths after their Rust-default RC evidence. Future removals still require #26's checklist and a separate removal PR. |
+| C retirement | Five removals complete | `test_msgpass` is the first retired C helper; `slogger`, `pipe`, and `devb-virtio` are retired C production paths after their Rust-default RC evidence; `tm_procfs` is the first retired task-manager provider. Future removals still require #26's checklist and a separate removal PR. |
 
 ## Current Follow-ups
 
@@ -148,6 +150,7 @@ make pipe-rc-data-smoke
 make check-tm-cpio-model
 make rust-tm-cpio-provider
 make tm-cpio-evidence
+make tm-cpio-runtime-smoke
 make check-tm-cred-model
 make rust-tm-cred-provider
 make tm-cred-evidence

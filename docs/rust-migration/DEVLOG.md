@@ -24,6 +24,38 @@ Follow-up:
 - ...
 ```
 
+## 2026-06-29 22:20 CEST - tm_cpio Runtime Smoke
+
+Scope:
+
+- Added `make tm-cpio-runtime-smoke` and container CI wiring.
+- The smoke rebuilds QSOE/L with `QSOE_RUST_TM_CPIO=1` and mandatory
+  `QSOE_RUST_TM_PROCFS=1`.
+- It injects a temporary sysinit fragment that exercises CPIO-root symlink
+  readlink output, `/etc/passwd` through the `/etc` CPIO symlink, direct
+  `/sbin/init` reads from the boot CPIO, and `/bin/sh` symlink spawn.
+- Updated `tm_cpio` status docs so the next gate is a separate Rust-default RC
+  decision rather than missing basic runtime coverage.
+
+Commands:
+
+- `bash -n scripts/tm-cpio-runtime-smoke.sh scripts/tm-cpio-evidence.sh scripts/procfs-smoke.sh`
+- `make -n tm-cpio-runtime-smoke`
+- `make -n container-tm-cpio-runtime-smoke`
+- `make tm-cpio-runtime-smoke`
+
+Result:
+
+- The first local run reached every behavior marker but expected symlink text
+  without leading slashes; the harness now matches QSOE's
+  `etc -> /usr/conf` and `home -> /usr/home` output.
+- The corrected local `make tm-cpio-runtime-smoke` run passed.
+
+Follow-up:
+
+- Keep `tm_cpio` Rust opt-in while deciding whether to open a separate
+  Rust-default RC window.
+
 ## 2026-06-29 22:05 CEST - Retired C tm_procfs Provider
 
 Scope:

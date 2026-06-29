@@ -315,6 +315,7 @@ without changing the normal taskman default:
 make check-tm-cpio-model
 make rust-tm-cpio-provider
 make tm-cpio-evidence
+make tm-cpio-runtime-smoke
 ```
 
 With the default `QSOE_RUST_TM_CPIO=0`, NQ and LQ taskman link the existing
@@ -323,6 +324,10 @@ C `cpio.o`, builds `qsoe-tm-cpio` for `riscv64imac-unknown-none-elf`, and
 links `libqsoe_tm_cpio.a` into taskman. CPIO-backed file descriptor state,
 path dispatch, spawn, ELF loading, relocation, process tables, and seL4
 invocation code remain C.
+
+`make tm-cpio-runtime-smoke` boots QSOE/L with Rust `tm_cpio` selected and
+checks CPIO-root symlink readlink output, `/etc/passwd` through the `/etc`
+symlink, direct boot-CPIO `/sbin/init` reads, and `/bin/sh` symlink spawn.
 
 ## Task Manager Shebang Parser Selection
 

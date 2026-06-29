@@ -69,7 +69,7 @@ SELECTED_PIPE_ELF ?= build/rust/selected/sbin/pipe.elf
         rust-tm-cpio-provider rust-tm-cred-provider rust-tm-elf-provider rust-tm-fdt-provider rust-tm-pathmgr-provider rust-tm-procfs-provider \
         rust-tm-rsrcdb-provider rust-tm-script-provider rust-tm-syscfg-provider rust-tm-sysmap-provider rust-tm-sysfs-provider \
         rust-tm-pseudodev-provider rust-tm-providers \
-        tm-cpio-evidence tm-cred-evidence tm-elf-evidence tm-fdt-evidence tm-pathmgr-evidence tm-procfs-evidence tm-providers-evidence tm-rsrcdb-evidence tm-script-evidence \
+        tm-cpio-evidence tm-cpio-runtime-smoke tm-cred-evidence tm-elf-evidence tm-fdt-evidence tm-pathmgr-evidence tm-procfs-evidence tm-providers-evidence tm-rsrcdb-evidence tm-script-evidence \
         tm-syscfg-evidence tm-sysmap-evidence tm-sysfs-evidence tm-pseudodev-evidence \
         rust-slogger-boot-smoke \
         rust-virtio-boot-smoke rust-virtio-file-smoke \
@@ -94,7 +94,7 @@ SELECTED_PIPE_ELF ?= build/rust/selected/sbin/pipe.elf
         container-rust-tm-elf-provider container-rust-tm-fdt-provider container-rust-tm-pathmgr-provider container-rust-tm-procfs-provider container-rust-tm-rsrcdb-provider container-rust-tm-script-provider \
         container-rust-tm-syscfg-provider container-rust-tm-sysmap-provider container-rust-tm-sysfs-provider \
         container-rust-tm-pseudodev-provider container-rust-tm-providers \
-        container-tm-cpio-evidence container-tm-cred-evidence container-tm-elf-evidence container-tm-fdt-evidence container-tm-pathmgr-evidence container-tm-procfs-evidence container-tm-providers-evidence \
+        container-tm-cpio-evidence container-tm-cpio-runtime-smoke container-tm-cred-evidence container-tm-elf-evidence container-tm-fdt-evidence container-tm-pathmgr-evidence container-tm-procfs-evidence container-tm-providers-evidence \
         container-tm-rsrcdb-evidence container-tm-script-evidence container-tm-syscfg-evidence \
         container-tm-sysmap-evidence container-tm-sysfs-evidence container-tm-pseudodev-evidence \
         container-rust-virtio-boot-smoke \
@@ -482,6 +482,9 @@ rust-tm-providers:
 tm-cpio-evidence:
 	@scripts/tm-cpio-evidence.sh
 
+tm-cpio-runtime-smoke:
+	@scripts/tm-cpio-runtime-smoke.sh
+
 tm-cred-evidence:
 	@scripts/tm-cred-evidence.sh
 
@@ -687,6 +690,9 @@ container-rust-tm-pseudodev-provider:
 
 container-tm-cpio-evidence:
 	@scripts/container-toolchain.sh run make tm-cpio-evidence
+
+container-tm-cpio-runtime-smoke:
+	@scripts/container-toolchain.sh run make tm-cpio-runtime-smoke
 
 container-tm-cred-evidence:
 	@scripts/container-toolchain.sh run make tm-cred-evidence

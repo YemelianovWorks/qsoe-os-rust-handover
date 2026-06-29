@@ -100,6 +100,19 @@ are RVC soft-float, and links both NQ and LQ taskman in C rollback and
 Rust-selected modes. The gate also verifies `cpio.o` is present for
 `QSOE_RUST_TM_CPIO=0` and absent for `QSOE_RUST_TM_CPIO=1`.
 
+The focused runtime smoke is:
+
+```sh
+make tm-cpio-runtime-smoke
+```
+
+It rebuilds QSOE/L with `QSOE_RUST_TM_CPIO=1` and mandatory
+`QSOE_RUST_TM_PROCFS=1`, injects a temporary sysinit fragment, and boots the
+image. The fragment verifies CPIO-root symlink readlink output
+(`/etc -> /usr/conf` and `/home -> /usr/home`), `/etc/passwd` access through
+the CPIO symlink into mounted `/usr`, direct `/sbin/init` reads from the boot
+CPIO, and `/bin/sh` symlink spawn.
+
 The multi-provider link gate is:
 
 ```sh
@@ -113,7 +126,8 @@ archive, single panic handler, final taskman ELF audits, and dual-provider
 ## Current State
 
 `tm_cpio` is Rust opt-in only. It is not a Rust-default release candidate and
-has no C retirement approval. Keep `libtaskman/src/cpio.c` as the rollback
-implementation until boot/runtime smokes cover CPIO-backed spawn and file
-access, the global retirement checklist is satisfied, and a separate removal
-PR is reviewed.
+has no C retirement approval. Runtime coverage now exists for the main
+CPIO-backed symlink, file-read, and spawn paths, so the next gate is a separate
+Rust-default RC decision. Keep `libtaskman/src/cpio.c` as the rollback
+implementation until that RC window is accepted, the global retirement
+checklist is satisfied, and a separate removal PR is reviewed.
