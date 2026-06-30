@@ -24,6 +24,34 @@ Follow-up:
 - ...
 ```
 
+## 2026-06-30 09:58 CEST - Graph-First Workflow Rule
+
+Scope:
+
+- Documented the Codebase Memory MCP graph as the first stop for code
+  discovery in the Rust migration workflow.
+- Added explicit fallback rules for literal/config/non-code searches and MCP
+  outage cases.
+- Updated the top-level README and migration index so the workflow entry points
+  advertise graph-first discovery.
+
+Commands:
+
+- `mcp__codebase_memory_mcp.list_projects`
+- `rg -n "Codebase|codebase|MCP|Tooling|Operating Loop|Issue-Backed" README.md docs/rust-migration docs/roadmap || true`
+
+Result:
+
+- The process now matches `AGENTS.md`: use `search_graph`, `trace_path`, and
+  `get_code_snippet` before broad local text search for code navigation.
+- Current MCP attempt failed with `Transport closed`, so this documentation
+  update used the defined fallback path.
+
+Follow-up:
+
+- Keep #200 as the automation point for enforcing roadmap and per-component
+  workflow checks.
+
 ## 2026-06-30 09:37 CEST - Issue-Backed Tooling Gates
 
 Scope:
