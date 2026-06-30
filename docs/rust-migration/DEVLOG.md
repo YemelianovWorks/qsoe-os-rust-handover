@@ -29,7 +29,7 @@ Follow-up:
 Scope:
 
 - Added non-blocking CodeQL static security scanning for trusted pull-request
-  and main contexts.
+  and main contexts using CodeQL C/C++ no-build extraction.
 - Added non-blocking dependency review for dependency manifest and lockfile
   pull requests.
 - Added warning-mode CI steps for `container-rust-deep` and
@@ -50,12 +50,16 @@ Commands:
 - `git ls-remote --tags https://github.com/actions/dependency-review-action.git`
 - `rg -n "uses: .*@(v[0-9]|main|master)" .github/workflows`
 - `make roadmap-validate`
+- `gh run view 28479551482 --repo dmytro-yemelianov/qsoe-os-rust-handover --job 84412476167 --log`
 
 Result:
 
 - #202 and #203 now render as active tooling roadmap items and match the
   checked-in warning-mode workflow shape. Roadmap metadata validates with 38
   issue-backed items.
+- The first PR CodeQL attempt proved `autobuild` was the wrong baseline for
+  this repository because it ran plain `make` before `make prepare` populated
+  the release components. The workflow now uses CodeQL `build-mode: none`.
 
 Follow-up:
 

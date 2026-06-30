@@ -343,7 +343,7 @@ GitHub Checks for CodeRabbit review context:
 | Rust ABI | `make container-rust-abi` | Requires C source build artifacts. |
 | C analysis | `QSOE_INDEX_CLEAN=1 QSOE_INDEX_DB_FLAVOR=container make index-c-compile-db` and bounded `make tidy-c` | Rebuilds under Bear, then runs the curated clang-tidy pass against container paths. |
 | Boot | `scripts/container-toolchain.sh run scripts/boot-smoke.sh -k lq -t 120` | Required before enabling any Rust service in an image. |
-| CodeQL warning gate | `.github/workflows/codeql.yml` | Non-blocking #202 C/C++ static security scan for main and trusted pull-request contexts. |
+| CodeQL warning gate | `.github/workflows/codeql.yml` | Non-blocking #202 C/C++ static security scan using CodeQL no-build extraction for main and trusted pull-request contexts. |
 | Dependency review warning gate | `.github/workflows/dependency-review.yml` | Non-blocking #202 PR dependency review for manifest and lockfile changes. |
 
 The workflow intentionally uses `runs-on: [self-hosted, X64]` to match the
