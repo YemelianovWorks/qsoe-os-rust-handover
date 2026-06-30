@@ -100,7 +100,7 @@ jobs:
         if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
         run: make container-pipe-rc-data-smoke
 
-      - name: Run tm_cpio Rust opt-in evidence
+      - name: Run tm_cpio Rust-only evidence
         if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
         run: make container-tm-cpio-evidence
 
@@ -111,10 +111,6 @@ jobs:
       - name: Run tm_cpio Rust-default RC smoke
         if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
         run: make container-tm-cpio-rc-smoke
-
-      - name: Run tm_cpio C rollback RC smoke
-        if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
-        run: make container-tm-cpio-rc-rollback-smoke
 
       - name: Run tm_cred Rust opt-in evidence
         if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository

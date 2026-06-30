@@ -1,0 +1,12 @@
+diff --git a/Makefile b/Makefile
+--- a/Makefile
++++ b/Makefile
+@@ -56,6 +56,9 @@ TM_RUST_PROVIDER_COUNT := $(words $(filter 1,$(QSOE_RUST_TM_CPIO) $(QSOE_RUST_T
+ ifneq ($(QSOE_RUST_TM_PROCFS),1)
+ $(error QSOE_RUST_TM_PROCFS must be 1 after C tm_procfs retirement)
+ endif
++ifneq ($(QSOE_RUST_TM_CPIO),1)
++$(error QSOE_RUST_TM_CPIO must be 1 after C tm_cpio retirement)
++endif
+ 
+ QEMU    := qemu-system-riscv64

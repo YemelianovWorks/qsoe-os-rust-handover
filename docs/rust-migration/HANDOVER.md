@@ -91,10 +91,9 @@ added the shared taskman Rust provider archive, and PR #182 retired the C
 
 Current open follow-ups:
 
-- #142: `tm_cpio` is now staged as a Rust-default RC with
-  `make tm-cpio-rc-smoke` and `make tm-cpio-rc-rollback-smoke`; keep C
-  rollback until #26's retirement checklist and a separate removal PR are
-  satisfied.
+- #142: `tm_cpio` has moved past its Rust-default RC into C provider
+  retirement. Rust `qsoe-tm-cpio` is mandatory in taskman, and
+  `QSOE_RUST_TM_CPIO=0` now fails fast.
 
 The #96 Rust pipe data-path gate, #97 Rust `test_msgpass` gate, and #103
 `tm_procfs` opt-in gate are satisfied by trusted `main` CI run `28102250069` at
@@ -336,12 +335,12 @@ The strict ELF audit showed:
   `make tm-pseudodev-runtime-smoke` covers live `/dev/null` and `/dev/zero`
   open, write, read, and fstat calls. C remains default and rollback until a
   separate RC decision exists.
-- `tm_cpio` is in a Rust-default RC behind `QSOE_RUST_TM_CPIO=1`. The selector
-  removes C `cpio.o` from `libtaskman.a` and links through the shared taskman
-  Rust provider archive. `QSOE_RUST_TM_CPIO=0` remains C rollback.
-  `make tm-cpio-rc-smoke` covers the default Rust archive selection and live
-  CPIO-backed symlink, file-read, and spawn paths; `make
-  tm-cpio-rc-rollback-smoke` repeats the same path with C rollback.
+- `tm_cpio` is retired to Rust behind mandatory `QSOE_RUST_TM_CPIO=1`. The C
+  `libtaskman/src/cpio.c` provider is removed, `QSOE_RUST_TM_CPIO=0` fails
+  fast, and taskman links `qsoe-tm-cpio` through the shared taskman Rust
+  provider archive. `make tm-cpio-evidence` covers retired selector rejection
+  and no `cpio.o` archive membership; `make tm-cpio-rc-smoke` covers the
+  Rust-only CPIO-backed symlink, file-read, and spawn paths.
 - `tm_script` is retired to Rust behind mandatory `QSOE_RUST_TM_SCRIPT=1`. The
   C `libtaskman/src/script.c` provider is removed, `QSOE_RUST_TM_SCRIPT=0`
   fails fast, and taskman links `qsoe-tm-script` through the shared taskman

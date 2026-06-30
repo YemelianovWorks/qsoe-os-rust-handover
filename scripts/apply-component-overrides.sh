@@ -48,7 +48,7 @@ apply_patch_if_possible_or_present() {
     local patch_path="$PATCH_DIR/$patch_file"
 
     [ -f "$patch_path" ] || fail "missing patch $patch_path"
-    if grep -Fq "$marker" "$marker_file"; then
+    if grep -Fq -- "$marker" "$marker_file"; then
         echo "apply-component-overrides.sh: $patch_file already represented"
     elif patch -d "$ROOT/$component" --forward --silent --dry-run -p1 < "$patch_path" >/dev/null 2>&1; then
         echo "apply-component-overrides.sh: applying $patch_file"
@@ -79,7 +79,7 @@ require_line() {
     local file=$1
     local needle=$2
 
-    grep -Fq "$needle" "$file" ||
+    grep -Fq -- "$needle" "$file" ||
         fail "$file is missing expected override: $needle"
 }
 
@@ -87,7 +87,7 @@ require_absent() {
     local file=$1
     local needle=$2
 
-    ! grep -Fq "$needle" "$file" ||
+    ! grep -Fq -- "$needle" "$file" ||
         fail "$file still contains retired override text: $needle"
 }
 
@@ -169,6 +169,9 @@ apply_patch_if_possible_or_present nq nq-taskman-rust-tm-shared-providers.patch 
 apply_patch_if_possible_or_present nq nq-taskman-rust-tm-procfs-retired.patch \
     "$ROOT/nq/taskman/Makefile" \
     'QSOE_RUST_TM_PROCFS must be 1 after C tm_procfs retirement'
+apply_patch_if_possible_or_present nq nq-taskman-rust-tm-cpio-retired.patch \
+    "$ROOT/nq/taskman/Makefile" \
+    'QSOE_RUST_TM_CPIO must be 1 after C tm_cpio retirement'
 apply_patch_if_possible_or_present nq nq-taskman-rust-tm-script-retired.patch \
     "$ROOT/nq/taskman/Makefile" \
     'QSOE_RUST_TM_SCRIPT must be 1 after C tm_script retirement'
@@ -181,6 +184,9 @@ apply_patch_if_possible_or_present nq nq-makefile-rust-pipe-retired.patch \
 apply_patch_if_possible_or_present nq nq-makefile-rust-virtio-retired.patch \
     "$ROOT/nq/Makefile" \
     'SELECTED_VIRTIO_ELF ?= $(abspath ../build/rust/selected/sbin/devb-virtio.elf)'
+apply_patch_if_possible_or_present nq nq-kernel-common-cpio.patch \
+    "$ROOT/nq/Makefile" \
+    '$(LIBTASKMAN_CPIO_O): ../common/cpio.c'
 apply_patch_if_possible_or_present lq lq-makefile-rust-tm-procfs.patch \
     "$ROOT/lq/Makefile" \
     'QSOE_RUST_TM_PROCFS=$(QSOE_RUST_TM_PROCFS)'
@@ -227,6 +233,9 @@ apply_optional_patch lq lq-makefile-rust-tm-shared-providers.patch
 apply_patch_if_possible_or_present lq lq-makefile-rust-tm-procfs-retired.patch \
     "$ROOT/lq/Makefile" \
     'QSOE_RUST_TM_PROCFS must be 1 after C tm_procfs retirement'
+apply_patch_if_possible_or_present lq lq-makefile-rust-tm-cpio-retired.patch \
+    "$ROOT/lq/Makefile" \
+    'QSOE_RUST_TM_CPIO must be 1 after C tm_cpio retirement'
 apply_patch_if_possible_or_present lq lq-makefile-rust-tm-script-retired.patch \
     "$ROOT/lq/Makefile" \
     'QSOE_RUST_TM_SCRIPT must be 1 after C tm_script retirement'
@@ -284,6 +293,9 @@ apply_patch_if_possible_or_present lq lq-taskman-rust-tm-shared-providers.patch 
 apply_patch_if_possible_or_present lq lq-taskman-rust-tm-procfs-retired.patch \
     "$ROOT/lq/taskman/Makefile" \
     'QSOE_RUST_TM_PROCFS must be 1 after C tm_procfs retirement'
+apply_patch_if_possible_or_present lq lq-taskman-rust-tm-cpio-retired.patch \
+    "$ROOT/lq/taskman/Makefile" \
+    'QSOE_RUST_TM_CPIO must be 1 after C tm_cpio retirement'
 apply_patch_if_possible_or_present lq lq-taskman-rust-tm-script-retired.patch \
     "$ROOT/lq/taskman/Makefile" \
     'QSOE_RUST_TM_SCRIPT must be 1 after C tm_script retirement'
@@ -371,6 +383,7 @@ apply_patch_if_possible_or_present lq lq-taskman-rust-tm-elf-rc-default.patch \
     'QSOE_RUST_TM_ELF ?= 1'
 
 require_line "$ROOT/nq/taskman/Makefile" 'QSOE_RUST_TM_CPIO ?= 1'
+require_line "$ROOT/nq/taskman/Makefile" 'QSOE_RUST_TM_CPIO must be 1 after C tm_cpio retirement'
 require_line "$ROOT/nq/taskman/Makefile" 'QSOE_RUST_TM_PROCFS ?= 1'
 require_line "$ROOT/nq/taskman/Makefile" 'QSOE_RUST_TM_PROCFS must be 1 after C tm_procfs retirement'
 require_line "$ROOT/nq/taskman/Makefile" 'QSOE_RUST_TM_SCRIPT must be 1 after C tm_script retirement'
@@ -435,8 +448,14 @@ require_line "$ROOT/nq/Makefile" '$(MAKE) -C .. virtio-artifact'
 require_line "$ROOT/nq/Makefile" 'SBIN_SLOG_ELF=$(SELECTED_SLOGGER_ELF)'
 require_line "$ROOT/nq/Makefile" 'SBIN_PIPE_ELF=$(SELECTED_PIPE_ELF)'
 require_line "$ROOT/nq/Makefile" 'SBIN_VIRTIO_ELF=$(SELECTED_VIRTIO_ELF)'
+require_line "$ROOT/nq/Makefile" '-I../common \'
+require_line "$ROOT/nq/Makefile" '$(LIBTASKMAN_CPIO_O): ../common/cpio.c'
+require_absent "$ROOT/nq/Makefile" '../libtaskman/src/cpio.c'
+require_line "$ROOT/nq/kernel/main.c" '#include <cpio.h>'
+require_line "$ROOT/nq/kernel/main.c" 'const void *taskman_data = cpio_get_file(cpio_data, cpio_size,'
 
 require_line "$ROOT/lq/Makefile" 'QSOE_RUST_TM_CPIO ?= 1'
+require_line "$ROOT/lq/Makefile" 'QSOE_RUST_TM_CPIO must be 1 after C tm_cpio retirement'
 require_line "$ROOT/lq/Makefile" 'QSOE_RUST_TM_PROCFS ?= 1'
 require_line "$ROOT/lq/Makefile" 'QSOE_RUST_TM_PROCFS must be 1 after C tm_procfs retirement'
 require_line "$ROOT/lq/Makefile" 'QSOE_RUST_TM_SCRIPT must be 1 after C tm_script retirement'
@@ -508,6 +527,7 @@ require_absent "$ROOT/lq/Makefile" 'select at most one taskman Rust provider unt
 require_line "$ROOT/lq/Makefile" '$(LIBTASKMAN_A): FORCE'
 require_line "$ROOT/lq/Makefile" 'FORCE:'
 require_line "$ROOT/lq/taskman/Makefile" 'QSOE_RUST_TM_CPIO ?= 1'
+require_line "$ROOT/lq/taskman/Makefile" 'QSOE_RUST_TM_CPIO must be 1 after C tm_cpio retirement'
 require_line "$ROOT/lq/taskman/Makefile" 'QSOE_RUST_TM_PROCFS ?= 1'
 require_line "$ROOT/lq/taskman/Makefile" 'QSOE_RUST_TM_PROCFS must be 1 after C tm_procfs retirement'
 require_line "$ROOT/lq/taskman/Makefile" 'QSOE_RUST_TM_SCRIPT must be 1 after C tm_script retirement'

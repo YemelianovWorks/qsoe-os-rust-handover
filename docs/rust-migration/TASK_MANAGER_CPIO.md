@@ -1,13 +1,14 @@
 # Task Manager CPIO Provider
 
-Captured: 2026-06-29 CEST.
+Captured: 2026-06-30 CEST.
 
 `tm_cpio` is a bounded task-manager Rust provider for the portable in-memory
-`newc` archive model:
+`newc` archive model. The C provider is retired; the remaining C header is the
+ABI consumed by task-manager C code:
 
 ```text
-libtaskman/src/cpio.c
 libtaskman/include/tm_cpio.h
+rust/crates/qsoe-tm-cpio
 ```
 
 ## Scope
@@ -48,15 +49,9 @@ itself is not 4-byte aligned.
 
 ## Selector
 
-Normal taskman builds are in a Rust-default RC window:
-
-```text
-QSOE_RUST_TM_CPIO=1  -> Rust `qsoe-tm-cpio` provider is selected (default)
-QSOE_RUST_TM_CPIO=0  -> C `libtaskman/src/cpio.c` rollback is selected
-```
-
-When Rust is selected, `libtaskman/Makefile` excludes `cpio.o` from
-`libtaskman.a`, and the NQ/LQ taskman links add the shared provider archive:
+Normal taskman builds always select the Rust provider. `QSOE_RUST_TM_CPIO=0`
+now fails fast in top-level, `libtaskman`, NQ, LQ, and provider-archive build
+paths because there is no C rollback provider left.
 
 ```text
 build/rust/tm-providers/libqsoe_tm_providers.a
@@ -65,40 +60,34 @@ build/rust/tm-providers/libqsoe_tm_providers.a
 The archive is built for `riscv64imac-unknown-none-elf` so it matches
 taskman's soft-float ABI.
 
-Multiple taskman Rust providers may be selected together. The shared
+`libtaskman/Makefile` no longer builds `cpio.o`, and the NQ/LQ taskman links
+add the shared provider archive. Multiple taskman Rust providers may be
+selected together. The shared
 `qsoe-tm-providers` archive packages the selected provider crates behind one
-no-std panic handler. Legacy targets such as `make rust-tm-cpio-provider`
-still produce the historical single-provider output path for focused evidence.
+no-std panic handler.
 
 ## Evidence
 
-The C behavior baseline is covered by:
+The Rust host model is covered by:
 
 ```sh
 make check-tm-cpio-model
 ```
 
-That fixture verifies archive iteration, exact lookup, symlink resolution,
-directory existence, directory-entry synthesis, short output buffers, missing
-paths, and malformed-archive stopping behavior.
+That target runs `qsoe-tm-cpio` host tests for archive iteration, exact lookup,
+symlink resolution, directory existence, directory-entry synthesis, short
+output buffers, missing paths, and malformed-archive stopping behavior.
 
-The Rust provider has equivalent host coverage:
-
-```sh
-cargo test --manifest-path rust/Cargo.toml -p qsoe-tm-cpio --features host-tests
-```
-
-The full opt-in evidence gate is:
+The Rust-only evidence gate is:
 
 ```sh
 make tm-cpio-evidence
 ```
 
-It runs the C fixture, Rust host tests, builds and audits the Rust staticlib,
-checks exported archive and linked taskman symbols, verifies all archive members
-are RVC soft-float, and links both NQ and LQ taskman in C rollback and
-Rust-selected modes. The gate also verifies `cpio.o` is present for
-`QSOE_RUST_TM_CPIO=0` and absent for `QSOE_RUST_TM_CPIO=1`.
+It runs the Rust host tests, builds and audits the Rust staticlib, checks
+exported archive and linked taskman symbols, verifies all archive members are
+RVC soft-float, links both NQ and LQ taskman without C `cpio.o`, and verifies
+that `QSOE_RUST_TM_CPIO=0` is rejected.
 
 The focused runtime smoke is:
 
@@ -106,24 +95,21 @@ The focused runtime smoke is:
 make tm-cpio-runtime-smoke
 ```
 
-It rebuilds QSOE/L with `QSOE_RUST_TM_CPIO=1` and mandatory
-`QSOE_RUST_TM_PROCFS=1`, injects a temporary sysinit fragment, and boots the
-image. The fragment verifies CPIO-root symlink readlink output
-(`/etc -> /usr/conf` and `/home -> /usr/home`), `/etc/passwd` access through
-the CPIO symlink into mounted `/usr`, direct `/sbin/init` reads from the boot
-CPIO, and `/bin/sh` symlink spawn.
+It rebuilds QSOE/L with mandatory Rust `tm_cpio` and `tm_procfs`, injects a
+temporary sysinit fragment, and boots the image. The fragment verifies CPIO-root
+symlink readlink output (`/etc -> /usr/conf` and `/home -> /usr/home`),
+`/etc/passwd` access through the CPIO symlink into mounted `/usr`, direct
+`/sbin/init` reads from the boot CPIO, and `/bin/sh` symlink spawn.
 
-The Rust-default RC and rollback smokes are:
+The retired compatibility smoke is:
 
 ```sh
 make tm-cpio-rc-smoke
-make tm-cpio-rc-rollback-smoke
 ```
 
-The RC smoke first builds NQ and LQ taskman in the default selector mode and
-verifies C `cpio.o` is absent from `libtaskman.a`. The rollback smoke repeats
-the same archive-membership and live runtime checks with
-`QSOE_RUST_TM_CPIO=0`, where C `cpio.o` must be present.
+It preserves the former RC smoke entry point while enforcing the retired
+Rust-only selector. `TM_CPIO_RC_ROLLBACK=1` and `QSOE_RUST_TM_CPIO=0` both fail
+fast.
 
 The multi-provider link gate is:
 
@@ -137,7 +123,5 @@ archive, single panic handler, final taskman ELF audits, and dual-provider
 
 ## Current State
 
-`tm_cpio` is a Rust-default release candidate with C rollback still available.
-It has no C retirement approval. Keep `libtaskman/src/cpio.c` as the rollback
-implementation until the global retirement checklist is satisfied and a
-separate removal PR is reviewed.
+`tm_cpio` is a retired C provider. The Rust `qsoe-tm-cpio` implementation is
+mandatory in taskman, and no C rollback target remains.

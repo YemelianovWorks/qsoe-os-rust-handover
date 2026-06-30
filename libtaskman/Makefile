@@ -50,8 +50,8 @@ CFLAGS := $(ARCHFLAGS) -std=c11 -D_XOPEN_SOURCE=700 \
           -Iinclude \
           $(EXTRA_CFLAGS)
 
-ifneq ($(filter $(QSOE_RUST_TM_CPIO),0 1),$(QSOE_RUST_TM_CPIO))
-$(error QSOE_RUST_TM_CPIO must be 0 or 1)
+ifneq ($(QSOE_RUST_TM_CPIO),1)
+$(error QSOE_RUST_TM_CPIO must be 1 after C tm_cpio retirement)
 endif
 
 ifneq ($(filter $(QSOE_RUST_TM_CRED),0 1),$(QSOE_RUST_TM_CRED))

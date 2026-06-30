@@ -75,50 +75,52 @@ Read in this order:
    `tm_procfs`, including the Rust-only taskman path and removed rollback.
 38. `TASK_MANAGER_PROVIDERS.md`: shared task-manager Rust provider archive,
    multi-provider selector model, and evidence gate.
-39. `TASK_MANAGER_CPIO.md`: Rust-default RC task-manager CPIO archive provider
+39. `TASK_MANAGER_CPIO.md`: retired Rust task-manager CPIO archive provider
    and evidence gate.
-40. `TASK_MANAGER_CPIO_RC.md`: Rust-default `tm_cpio` release-candidate note
-   and C rollback drill.
-41. `TASK_MANAGER_SCRIPT.md`: retired Rust task-manager shebang parser provider
-   and evidence gate.
-42. `TASK_MANAGER_SCRIPT_RC.md`: historical Rust-default `tm_script`
+40. `TASK_MANAGER_CPIO_RC.md`: historical Rust-default `tm_cpio`
    release-candidate note and C rollback drill.
-43. `TASK_MANAGER_SCRIPT_RETIREMENT.md`: C provider retirement note for
+41. `TASK_MANAGER_CPIO_RETIREMENT.md`: C provider retirement note for
+   `tm_cpio`, including the Rust-only taskman path and removed rollback.
+42. `TASK_MANAGER_SCRIPT.md`: retired Rust task-manager shebang parser provider
+   and evidence gate.
+43. `TASK_MANAGER_SCRIPT_RC.md`: historical Rust-default `tm_script`
+   release-candidate note and C rollback drill.
+44. `TASK_MANAGER_SCRIPT_RETIREMENT.md`: C provider retirement note for
    `tm_script`, including the Rust-only taskman path and removed rollback.
-44. `TASK_MANAGER_SYSCFG.md`: Rust-default RC task-manager syscfg TLV provider
+45. `TASK_MANAGER_SYSCFG.md`: Rust-default RC task-manager syscfg TLV provider
    and evidence gate.
-45. `TASK_MANAGER_SYSCFG_RC.md`: Rust-default `tm_syscfg` release-candidate
+46. `TASK_MANAGER_SYSCFG_RC.md`: Rust-default `tm_syscfg` release-candidate
    note and C rollback drill.
-46. `TASK_MANAGER_CRED.md`: Rust opt-in task-manager credential policy
+47. `TASK_MANAGER_CRED.md`: Rust opt-in task-manager credential policy
    provider and evidence gate.
-47. `TASK_MANAGER_PSEUDODEV.md`: Rust opt-in LQ task-manager `/dev/null` and
+48. `TASK_MANAGER_PSEUDODEV.md`: Rust opt-in LQ task-manager `/dev/null` and
    `/dev/zero` provider and evidence gate.
-48. `TASK_MANAGER_RSRCDB.md`: Rust opt-in LQ task-manager resource DB
+49. `TASK_MANAGER_RSRCDB.md`: Rust opt-in LQ task-manager resource DB
    provider and evidence gate.
-49. `TASK_MANAGER_SYSFS.md`: Rust-default RC task-manager `/sys` provider and
+50. `TASK_MANAGER_SYSFS.md`: Rust-default RC task-manager `/sys` provider and
    evidence gate.
-50. `TASK_MANAGER_SYSFS_RC.md`: Rust-default `tm_sysfs` release-candidate
+51. `TASK_MANAGER_SYSFS_RC.md`: Rust-default `tm_sysfs` release-candidate
    note and C rollback drill.
-51. `TASK_MANAGER_ELF.md`: Rust-default RC task-manager ELF view parser provider
+52. `TASK_MANAGER_ELF.md`: Rust-default RC task-manager ELF view parser provider
    and evidence gate.
-52. `TASK_MANAGER_ELF_RC.md`: Rust-default `tm_elf` release-candidate note
+53. `TASK_MANAGER_ELF_RC.md`: Rust-default `tm_elf` release-candidate note
    and C rollback drill.
-53. `TASK_MANAGER_FDT.md`: Rust opt-in LQ task-manager FDT parser provider and
+54. `TASK_MANAGER_FDT.md`: Rust opt-in LQ task-manager FDT parser provider and
    evidence gate.
-54. `TASK_MANAGER_SYSMAP.md`: Rust-default RC LQ task-manager sysmap page
+55. `TASK_MANAGER_SYSMAP.md`: Rust-default RC LQ task-manager sysmap page
    builder and evidence gate.
-55. `TASK_MANAGER_SYSMAP_RC.md`: Rust-default `tm_sysmap` release-candidate
+56. `TASK_MANAGER_SYSMAP_RC.md`: Rust-default `tm_sysmap` release-candidate
    note and C rollback drill.
-56. `TASK_MANAGER_PATHMGR.md`: Rust opt-in task-manager path registry provider
+57. `TASK_MANAGER_PATHMGR.md`: Rust opt-in task-manager path registry provider
    and evidence gate.
-57. `KERNEL_CANDIDATES.md`: Phase 10 kernel candidate inventory, explicit
+58. `KERNEL_CANDIDATES.md`: Phase 10 kernel candidate inventory, explicit
    exclusions, and fixture-only ranking.
-58. `KERNEL_ARTIFACT_AUDIT.md`: Phase 10 kernel Rust artifact audit needs.
-59. `SPEC.md`: technical constraints, allowed boundaries, runtime/linking rules,
+59. `KERNEL_ARTIFACT_AUDIT.md`: Phase 10 kernel Rust artifact audit needs.
+60. `SPEC.md`: technical constraints, allowed boundaries, runtime/linking rules,
    and acceptance standards.
-60. `PLAN.md`: phased migration plan from baseline validation through possible
+61. `PLAN.md`: phased migration plan from baseline validation through possible
    kernel reassessment.
-61. `TASKS.md`: executable backlog with acceptance criteria.
+62. `TASKS.md`: executable backlog with acceptance criteria.
 
 The first implementation milestone should not be a subsystem rewrite. It should
 be a reproducible baseline plus artifact audit, followed by a minimal Rust
