@@ -1,6 +1,6 @@
 # Task Manager Pseudo-device Provider
 
-Captured: 2026-06-29 CEST.
+Captured: 2026-06-30 CEST.
 
 `tm_pseudodev` is a bounded LQ task-manager Rust provider for the simple
 taskman-hosted character devices:
@@ -38,11 +38,11 @@ tests use an in-crate IPC buffer fixture.
 
 ## Selector
 
-Normal LQ taskman builds remain C-default:
+Normal LQ taskman builds select Rust by default during the RC window:
 
 ```text
-QSOE_RUST_TM_PSEUDODEV=0  -> C `devnull.o` and `devzero.o` remain selected
-QSOE_RUST_TM_PSEUDODEV=1  -> Rust `qsoe-tm-pseudodev` staticlib is linked instead
+QSOE_RUST_TM_PSEUDODEV=1  -> Rust `qsoe-tm-pseudodev` provider is linked
+QSOE_RUST_TM_PSEUDODEV=0  -> C `devnull.o` and `devzero.o` rollback is selected
 ```
 
 When Rust is selected, `lq/taskman/Makefile` omits:
@@ -76,31 +76,37 @@ and both `stat` records:
 cargo test --manifest-path rust/Cargo.toml -p qsoe-tm-pseudodev --features host-tests
 ```
 
-The full opt-in evidence gate is:
+The focused evidence and runtime gates are:
 
 ```sh
 make tm-pseudodev-evidence
 make tm-pseudodev-runtime-smoke
+make tm-pseudodev-rc-smoke
+make tm-pseudodev-rc-rollback-smoke
 ```
 
 It runs the Rust host tests, builds and audits the Rust staticlib, checks the
 six exported symbols, verifies all archive members are RVC soft-float, verifies
-the LQ C-default dry-run link plan includes `devnull.o` and `devzero.o`, and
-verifies the LQ Rust-selected dry-run link plan omits those objects and links
-the shared taskman Rust provider archive. It also links LQ taskman in both
-C-default and Rust-selected modes and audits the resulting ELF.
+the LQ Rust-default dry-run link plan omits `devnull.o` and `devzero.o`, and
+verifies the LQ C rollback dry-run link plan includes those objects. It also
+links LQ taskman in both Rust-default and C rollback modes and audits the
+resulting ELF.
 
 `make tm-pseudodev-runtime-smoke` boots LQ with Rust `tm_pseudodev` selected,
-verifies the selected `libtaskman.a` omits C `devnull.o` and `devzero.o`,
-verifies the shared Rust provider archive exports all six `tm_dev*` symbols,
-and runs a qrvfs-staged `/usr/bin/pseudodev_probe` helper. The helper checks
-`/dev/null` write discard, `/dev/null` EOF reads, `/dev/zero` write discard,
-`/dev/zero` zero-filled reads, and fstat metadata for both character devices.
+verifies the selected LQ taskman dry-run link plan omits C `devnull.o` and
+`devzero.o`, verifies the shared Rust provider archive exports all six
+`tm_dev*` symbols, and runs a qrvfs-staged `/usr/bin/pseudodev_probe` helper.
+The helper checks `/dev/null` write discard, `/dev/null` EOF reads,
+`/dev/zero` write discard, `/dev/zero` zero-filled reads, and fstat metadata
+for both character devices.
+
+`make tm-pseudodev-rc-rollback-smoke` sets `QSOE_RUST_TM_PSEUDODEV=0` and
+`TM_PSEUDODEV_RUNTIME_ALLOW_C=1`, verifies the C objects appear in the LQ
+taskman link plan, and runs the same live helper against the rollback path.
 
 ## Current State
 
-`tm_pseudodev` is Rust opt-in only. It is not a Rust-default release candidate
-and has no C retirement approval. Keep `lq/taskman/sys/devnull.c` and
-`lq/taskman/sys/devzero.c` as rollback implementations until a separate RC
-decision exists, and until the global retirement checklist and a separate
+`tm_pseudodev` is a Rust-default release candidate. It has no C retirement
+approval. Keep `lq/taskman/sys/devnull.c` and `lq/taskman/sys/devzero.c` as
+rollback implementations until the global retirement checklist and a separate
 removal PR are satisfied.

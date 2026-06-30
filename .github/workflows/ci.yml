@@ -228,13 +228,21 @@ jobs:
         if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
         run: make container-tm-procfs-evidence
 
-      - name: Run tm_pseudodev Rust opt-in evidence
+      - name: Run tm_pseudodev Rust-default RC evidence
         if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
         run: make container-tm-pseudodev-evidence
 
       - name: Run tm_pseudodev Rust runtime smoke
         if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
         run: make container-tm-pseudodev-runtime-smoke
+
+      - name: Run tm_pseudodev Rust-default RC smoke
+        if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+        run: make container-tm-pseudodev-rc-smoke
+
+      - name: Run tm_pseudodev C rollback RC smoke
+        if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+        run: make container-tm-pseudodev-rc-rollback-smoke
 
       - name: Run tm_sysfs Rust opt-in evidence
         if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
@@ -322,6 +330,8 @@ jobs:
             build/tm-pseudodev-evidence/**/*.txt
             build/tm-pseudodev-runtime-smoke/*.log
             build/tm-pseudodev-runtime-smoke/*.txt
+            build/tm-pseudodev-rc/*.log
+            build/tm-pseudodev-rc/*.txt
             build/tm-sysfs-evidence/**/*.log
             build/tm-sysfs-evidence/**/*.txt
             build/tm-sysfs-runtime-smoke/*.log

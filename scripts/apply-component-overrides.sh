@@ -210,7 +210,7 @@ apply_patch_if_possible_or_present lq lq-makefile-force-target.patch \
     'FORCE:'
 apply_patch_if_possible_or_present lq lq-makefile-rust-tm-pseudodev.patch \
     "$ROOT/lq/Makefile" \
-    'QSOE_RUST_TM_PSEUDODEV ?= 0'
+    'QSOE_RUST_TM_PSEUDODEV=$(QSOE_RUST_TM_PSEUDODEV)'
 apply_patch_if_possible_or_present lq lq-makefile-rust-tm-sysfs.patch \
     "$ROOT/lq/Makefile" \
     'QSOE_RUST_TM_SYSFS=$(QSOE_RUST_TM_SYSFS)'
@@ -444,6 +444,12 @@ apply_patch_if_possible_or_present lq lq-makefile-rust-tm-pathmgr-rc-default.pat
 apply_patch_if_possible_or_present lq lq-taskman-rust-tm-pathmgr-rc-default.patch \
     "$ROOT/lq/taskman/Makefile" \
     'QSOE_RUST_TM_PATHMGR ?= 1'
+apply_patch_if_possible_or_present lq lq-makefile-rust-tm-pseudodev-rc-default.patch \
+    "$ROOT/lq/Makefile" \
+    'QSOE_RUST_TM_PSEUDODEV ?= 1'
+apply_patch_if_possible_or_present lq lq-taskman-rust-tm-pseudodev-rc-default.patch \
+    "$ROOT/lq/taskman/Makefile" \
+    'QSOE_RUST_TM_PSEUDODEV ?= 1'
 
 require_line "$ROOT/nq/taskman/Makefile" 'QSOE_RUST_TM_CPIO ?= 1'
 require_line "$ROOT/nq/taskman/Makefile" 'QSOE_RUST_TM_CPIO must be 1 after C tm_cpio retirement'
@@ -533,7 +539,7 @@ require_line "$ROOT/lq/Makefile" 'QSOE_RUST_TM_CRED ?= 1'
 require_line "$ROOT/lq/Makefile" 'QSOE_RUST_TM_ELF ?= 1'
 require_line "$ROOT/lq/Makefile" 'QSOE_RUST_TM_FDT ?= 1'
 require_line "$ROOT/lq/Makefile" 'QSOE_RUST_TM_PATHMGR ?= 1'
-require_line "$ROOT/lq/Makefile" 'QSOE_RUST_TM_PSEUDODEV ?= 0'
+require_line "$ROOT/lq/Makefile" 'QSOE_RUST_TM_PSEUDODEV ?= 1'
 require_line "$ROOT/lq/Makefile" 'QSOE_RUST_TM_RSRCDB ?= 1'
 require_line "$ROOT/lq/Makefile" 'QSOE_RUST_TM_SCRIPT ?= 1'
 require_line "$ROOT/lq/Makefile" 'QSOE_RUST_TM_SYSCFG ?= 1'
@@ -609,7 +615,7 @@ require_line "$ROOT/lq/taskman/Makefile" 'QSOE_RUST_TM_CRED ?= 1'
 require_line "$ROOT/lq/taskman/Makefile" 'QSOE_RUST_TM_ELF ?= 1'
 require_line "$ROOT/lq/taskman/Makefile" 'QSOE_RUST_TM_FDT ?= 1'
 require_line "$ROOT/lq/taskman/Makefile" 'QSOE_RUST_TM_PATHMGR ?= 1'
-require_line "$ROOT/lq/taskman/Makefile" 'QSOE_RUST_TM_PSEUDODEV ?= 0'
+require_line "$ROOT/lq/taskman/Makefile" 'QSOE_RUST_TM_PSEUDODEV ?= 1'
 require_line "$ROOT/lq/taskman/Makefile" 'QSOE_RUST_TM_RSRCDB ?= 1'
 require_line "$ROOT/lq/taskman/Makefile" 'QSOE_RUST_TM_SCRIPT ?= 1'
 require_line "$ROOT/lq/taskman/Makefile" 'QSOE_RUST_TM_SYSCFG ?= 1'

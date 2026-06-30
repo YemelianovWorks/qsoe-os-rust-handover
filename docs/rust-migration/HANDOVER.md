@@ -22,7 +22,7 @@ origin git@github.com:dmytro-yemelianov/qsoe-os-rust-handover.git
 Current main tip:
 
 ```text
-9342c49a080b80632b553f1c1703ed8de451ba2b
+79dda617874be94dd640c3ff085cba799dc248dc
 ```
 
 The local tree adds:
@@ -89,14 +89,16 @@ added the shared taskman Rust provider archive, and PR #182 retired the C
 `tm_procfs` task-manager provider. Subsequent retirement PRs retired
 `tm_cpio`, `tm_script`, `tm_elf`, `tm_syscfg`, and `tm_sysmap`; PR #213
 merged the `tm_sysmap` retirement into `main` at
-`062ce1d2ba66ac12c7f63e2fddfdd88cb7e0ee78`.
+`062ce1d2ba66ac12c7f63e2fddfdd88cb7e0ee78`, and PR #218 promoted
+`tm_pathmgr` to a Rust-default RC with C rollback at
+`79dda617874be94dd640c3ff085cba799dc248dc`.
 
 Current in-flight follow-up:
 
-- #149: `tm_pathmgr` is moving from Rust opt-in into a Rust-default RC on the
-  current branch. Rust `qsoe-tm-pathmgr` is selected by default in standalone
-  `libtaskman` plus NQ/LQ taskman, and `QSOE_RUST_TM_PATHMGR=0` remains the
-  explicit C rollback path.
+- #152: `tm_pseudodev` is moving from Rust opt-in into a Rust-default RC on
+  the current branch. Rust `qsoe-tm-pseudodev` is selected by default in LQ
+  taskman, and `QSOE_RUST_TM_PSEUDODEV=0` remains the explicit C rollback
+  path.
 
 The #96 Rust pipe data-path gate, #97 Rust `test_msgpass` gate, and #103
 `tm_procfs` opt-in gate are satisfied by trusted `main` CI run `28102250069` at
@@ -330,12 +332,12 @@ The strict ELF audit showed:
   `cred.o` rollback path. `make tm-cred-rc-smoke` reuses the focused runtime
   coverage for live uid/gid mutation, cwd, umask, permission rejection, and
   spawn inheritance.
-- `tm_pseudodev` has a Rust opt-in provider behind
-  `QSOE_RUST_TM_PSEUDODEV=1`. The selector replaces only LQ `sys/devnull.o`
-  and `sys/devzero.o` with the selected Rust provider archive.
-  `make tm-pseudodev-runtime-smoke` covers live `/dev/null` and `/dev/zero`
-  open, write, read, and fstat calls. C remains default and rollback until a
-  separate RC decision exists.
+- `tm_pseudodev` is moving to a Rust-default RC behind
+  `QSOE_RUST_TM_PSEUDODEV=1`, with `QSOE_RUST_TM_PSEUDODEV=0` and
+  `make tm-pseudodev-rc-rollback-smoke` preserving the C `sys/devnull.o` and
+  `sys/devzero.o` rollback path. `make tm-pseudodev-rc-smoke` reuses the
+  focused runtime coverage for live `/dev/null` and `/dev/zero` open, write,
+  read, and fstat calls.
 - `tm_cpio` is retired to Rust behind mandatory `QSOE_RUST_TM_CPIO=1`. The C
   `libtaskman/src/cpio.c` provider is removed, `QSOE_RUST_TM_CPIO=0` fails
   fast, and taskman links `qsoe-tm-cpio` through the shared taskman Rust

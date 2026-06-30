@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Capture LQ tm_pseudodev Rust opt-in evidence without changing the default.
+# Capture LQ tm_pseudodev Rust-default RC evidence with C rollback coverage.
 
 set -eu
 
@@ -14,8 +14,8 @@ usage() {
     cat <<'EOF'
 usage: scripts/tm-pseudodev-evidence.sh
 
-Builds and audits the Rust LQ taskman pseudo-device opt-in path and verifies
-that C remains the default rollback provider for /dev/null and /dev/zero.
+Builds and audits the Rust LQ taskman pseudo-device default path and verifies
+that C remains the rollback provider for /dev/null and /dev/zero.
 
 Environment:
   TM_PSEUDODEV_EVIDENCE_WORKDIR  output directory, default build/tm-pseudodev-evidence
@@ -136,9 +136,18 @@ capture_lq_taskman_plan() {
     "$MAKE" -C "$ROOT/lq/taskman" --no-print-directory -B -n all \
         LIBTASKMAN_A="$ROOT/lq/build/libtaskman/libtaskman.a" \
         LIBTASKMAN_INC="$ROOT/libtaskman/include" \
-        QSOE_RUST_TM_CRED=0 \
+        QSOE_RUST_TM_CPIO=1 \
+        QSOE_RUST_TM_CRED=1 \
+        QSOE_RUST_TM_ELF=1 \
+        QSOE_RUST_TM_FDT=1 \
+        QSOE_RUST_TM_PATHMGR=1 \
         QSOE_RUST_TM_PROCFS=1 \
         QSOE_RUST_TM_PSEUDODEV="$rust_selected" \
+        QSOE_RUST_TM_RSRCDB=1 \
+        QSOE_RUST_TM_SCRIPT=1 \
+        QSOE_RUST_TM_SYSCFG=1 \
+        QSOE_RUST_TM_SYSMAP=1 \
+        QSOE_RUST_TM_SYSFS=1 \
         > "$log"
 }
 
@@ -167,9 +176,18 @@ build_lq_taskman() {
 
     rm -f "$ROOT/lq/build/taskman.elf"
     "$MAKE" -C "$ROOT/lq" --no-print-directory \
-        QSOE_RUST_TM_CRED=0 \
+        QSOE_RUST_TM_CPIO=1 \
+        QSOE_RUST_TM_CRED=1 \
+        QSOE_RUST_TM_ELF=1 \
+        QSOE_RUST_TM_FDT=1 \
+        QSOE_RUST_TM_PATHMGR=1 \
         QSOE_RUST_TM_PROCFS=1 \
         QSOE_RUST_TM_PSEUDODEV="$rust_selected" \
+        QSOE_RUST_TM_RSRCDB=1 \
+        QSOE_RUST_TM_SCRIPT=1 \
+        QSOE_RUST_TM_SYSCFG=1 \
+        QSOE_RUST_TM_SYSMAP=1 \
+        QSOE_RUST_TM_SYSFS=1 \
         taskman
     audit_flags "$label-taskman" "$ROOT/lq/build/taskman.elf"
 }
@@ -181,24 +199,24 @@ echo "tm-pseudodev-evidence.sh: building Rust provider archive"
 "$MAKE" -C "$ROOT" --no-print-directory rust-tm-pseudodev-provider
 audit_provider_archive
 
-echo "tm-pseudodev-evidence.sh: verifying LQ C-default link plan"
-capture_lq_taskman_plan lq-c-default 0
-require_plan_contains lq-c-default '/sys/devnull.o'
-require_plan_contains lq-c-default '/sys/devzero.o'
-require_plan_omits lq-c-default 'libqsoe_tm_pseudodev.a'
-require_plan_contains lq-c-default 'libqsoe_tm_providers.a'
+echo "tm-pseudodev-evidence.sh: verifying LQ Rust-default link plan"
+capture_lq_taskman_plan lq-rust-default 1
+require_plan_omits lq-rust-default '/sys/devnull.o'
+require_plan_omits lq-rust-default '/sys/devzero.o'
+require_plan_omits lq-rust-default 'libqsoe_tm_pseudodev.a'
+require_plan_contains lq-rust-default 'libqsoe_tm_providers.a'
 
-echo "tm-pseudodev-evidence.sh: verifying LQ C-default taskman link"
-build_lq_taskman lq-c-default 0
+echo "tm-pseudodev-evidence.sh: verifying LQ Rust-default taskman link"
+build_lq_taskman lq-rust-default 1
 
-echo "tm-pseudodev-evidence.sh: verifying LQ Rust-selected link plan"
-capture_lq_taskman_plan lq-rust-selected 1
-require_plan_omits lq-rust-selected '/sys/devnull.o'
-require_plan_omits lq-rust-selected '/sys/devzero.o'
-require_plan_omits lq-rust-selected 'libqsoe_tm_pseudodev.a'
-require_plan_contains lq-rust-selected 'libqsoe_tm_providers.a'
+echo "tm-pseudodev-evidence.sh: verifying LQ C rollback link plan"
+capture_lq_taskman_plan lq-c-rollback 0
+require_plan_contains lq-c-rollback '/sys/devnull.o'
+require_plan_contains lq-c-rollback '/sys/devzero.o'
+require_plan_omits lq-c-rollback 'libqsoe_tm_pseudodev.a'
+require_plan_contains lq-c-rollback 'libqsoe_tm_providers.a'
 
-echo "tm-pseudodev-evidence.sh: verifying LQ Rust-selected taskman link"
-build_lq_taskman lq-rust-selected 1
+echo "tm-pseudodev-evidence.sh: verifying LQ C rollback taskman link"
+build_lq_taskman lq-c-rollback 0
 
 echo "tm-pseudodev-evidence.sh: evidence captured in $WORKDIR"
