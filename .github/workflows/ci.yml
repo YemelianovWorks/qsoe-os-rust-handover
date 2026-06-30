@@ -108,6 +108,14 @@ jobs:
         if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
         run: make container-tm-script-runtime-smoke
 
+      - name: Run tm_script Rust-default RC smoke
+        if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+        run: make container-tm-script-rc-smoke
+
+      - name: Run tm_script C rollback RC smoke
+        if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+        run: make container-tm-script-rc-rollback-smoke
+
       - name: Run tm_elf Rust opt-in evidence
         if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
         run: make container-tm-elf-evidence
@@ -201,6 +209,8 @@ jobs:
             build/tm-script-evidence/**/*.log
             build/tm-script-evidence/**/*.txt
             build/tm-script-runtime-smoke/*.log
+            build/tm-script-rc/*.log
+            build/tm-script-rc/*.txt
             build/tm-elf-evidence/**/*.log
             build/tm-elf-evidence/**/*.txt
             build/tm-elf-runtime-smoke/*.log

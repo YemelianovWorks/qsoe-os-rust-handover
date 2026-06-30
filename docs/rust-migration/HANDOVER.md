@@ -342,11 +342,12 @@ The strict ELF audit showed:
   `make tm-cpio-rc-smoke` covers the default Rust archive selection and live
   CPIO-backed symlink, file-read, and spawn paths; `make
   tm-cpio-rc-rollback-smoke` repeats the same path with C rollback.
-- `tm_script` has a Rust opt-in provider behind `QSOE_RUST_TM_SCRIPT=1`. The
+- `tm_script` is in a Rust-default RC behind `QSOE_RUST_TM_SCRIPT=1`. The
   selector removes C `script.o` from `libtaskman.a` and links through the
-  shared taskman Rust provider archive. `make tm-script-runtime-smoke` covers
-  direct shebang-backed script spawn. C remains default and rollback until a
-  separate RC decision exists.
+  shared taskman Rust provider archive. `QSOE_RUST_TM_SCRIPT=0` remains C
+  rollback. `make tm-script-rc-smoke` covers the default Rust archive selection
+  and direct shebang-backed script spawn; `make tm-script-rc-rollback-smoke`
+  repeats the same path with C rollback.
 - `tm_syscfg` has a Rust opt-in provider behind `QSOE_RUST_TM_SYSCFG=1`. The
   selector removes C `syscfg.o` from `libtaskman.a` and links through the
   shared taskman Rust provider archive. `make tm-syscfg-runtime-smoke` boots
