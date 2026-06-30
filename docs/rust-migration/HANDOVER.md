@@ -347,13 +347,13 @@ The strict ELF audit showed:
   Rust provider archive. `make tm-script-evidence` covers retired selector
   rejection and no `script.o` archive membership; `make tm-script-rc-smoke`
   covers the Rust-only direct shebang-backed script spawn path.
-- `tm_syscfg` is in a Rust-default RC behind `QSOE_RUST_TM_SYSCFG=1`. The
-  selector removes C `syscfg.o` from `libtaskman.a` and links through the
-  shared taskman Rust provider archive. `QSOE_RUST_TM_SYSCFG=0` remains C
-  rollback. `make tm-syscfg-rc-smoke` covers default Rust archive selection
-  plus `/sys` and `sysinfo` consumers while LQ's private runtime syscfg builder
-  remains C; `make tm-syscfg-rc-rollback-smoke` repeats the same path with C
-  rollback.
+- `tm_syscfg` is retired to Rust behind mandatory `QSOE_RUST_TM_SYSCFG=1`. The
+  C `libtaskman/src/syscfg.c` provider is removed, `QSOE_RUST_TM_SYSCFG=0`
+  fails fast, and taskman links `qsoe-tm-syscfg` through the shared taskman
+  Rust provider archive. `make tm-syscfg-evidence` covers retired selector
+  rejection and no `syscfg.o` archive membership; `make tm-syscfg-rc-smoke`
+  covers the Rust-only `/sys` and `sysinfo` consumer path while LQ's private
+  FDT-backed runtime syscfg builder remains C.
 - `tm_sysmap` is in a Rust-default RC behind `QSOE_RUST_TM_SYSMAP=1`. The
   selector removes LQ C `sys/sysmap.o` and links through the shared taskman
   Rust provider archive. `QSOE_RUST_TM_SYSMAP=0` remains C rollback.

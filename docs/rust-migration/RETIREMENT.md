@@ -5,15 +5,13 @@ Captured: 2026-06-29 CEST.
 This document turns the Phase 8 retirement rule into an explicit gate. The
 first removal was the in-guest test helper `test_msgpass`, which had a
 Rust-default release-candidate path and C rollback drill before its retirement
-PR removed the C helper. The second removal is the production `/sbin/slogger`
-service after its own Rust-default release-candidate evidence. The third
-removal is the production `/sbin/pipe` service after its Rust-default data-path
-RC. The fourth removal is the production `/sbin/devb-virtio` block driver after
-its Rust-default file-read RC. The next removals are task-manager providers:
-`tm_procfs`, `tm_script`, and `tm_cpio` after their own Rust-default RC
-evidence. All remaining Rust pilots stay either opt-in or Rust-default RC
-paths, and each non-retired C implementation remains the rollback path until
-the release-candidate evidence below exists.
+PR removed the C helper. The next removals were production services
+`/sbin/slogger`, `/sbin/pipe`, and `/sbin/devb-virtio` after their own
+Rust-default RC evidence. The current retired task-manager providers are
+`tm_procfs`, `tm_cpio`, `tm_script`, `tm_elf`, and `tm_syscfg` after their own
+Rust-default RC evidence and rollback drills. All remaining Rust pilots stay
+either opt-in or Rust-default RC paths, and each non-retired C implementation
+remains the rollback path until the release-candidate evidence below exists.
 
 ## State Model
 
@@ -54,14 +52,13 @@ it must include evidence for all of these items:
 The live status matrix is `STATUS.md`. It records C default, Rust opt-in, Rust
 default, and retired status for every tracked migration component. At this
 capture, `test_msgpass`, `slogger`, `pipe`, `devb-virtio`, `tm_procfs`,
-`tm_cpio`, `tm_script`, and `tm_elf` are the tracked components in `Retired`
-status.
+`tm_cpio`, `tm_script`, `tm_elf`, and `tm_syscfg` are the tracked components
+in `Retired` status.
 `test_msgpass` is the first retired helper; `slogger`, `pipe`, and
 `devb-virtio` are retired production paths. `tm_procfs` is the first retired
-task-manager provider, followed by `tm_cpio`, `tm_script`, and `tm_elf`. Remaining
-production services and task-manager
-providers still require their own separate removal PRs after RC evidence and
-rollback drills.
+task-manager provider, followed by `tm_cpio`, `tm_script`, `tm_elf`, and
+`tm_syscfg`. Remaining production services and task-manager providers still
+require their own separate removal PRs after RC evidence and rollback drills.
 
 ## Retired Components
 
@@ -75,6 +72,7 @@ rollback drills.
 | `tm_cpio` | `TASK_MANAGER_CPIO_RETIREMENT.md` | `TASK_MANAGER_CPIO_RC.md`, `make tm-cpio-rc-smoke`, previous `make tm-cpio-rc-rollback-smoke` evidence | No C rollback target remains; Rust `qsoe-tm-cpio` is mandatory in taskman through the shared provider archive. |
 | `tm_script` | `TASK_MANAGER_SCRIPT_RETIREMENT.md` | `TASK_MANAGER_SCRIPT_RC.md`, `make tm-script-rc-smoke`, previous `make tm-script-rc-rollback-smoke` evidence | No C rollback target remains; Rust `qsoe-tm-script` is mandatory in taskman through the shared provider archive. |
 | `tm_elf` | `TASK_MANAGER_ELF_RETIREMENT.md` | `TASK_MANAGER_ELF_RC.md`, `make tm-elf-rc-smoke`, previous `make tm-elf-rc-rollback-smoke` evidence | No C rollback target remains; Rust `qsoe-tm-elf` is mandatory in taskman through the shared provider archive. |
+| `tm_syscfg` | `TASK_MANAGER_SYSCFG_RETIREMENT.md` | `TASK_MANAGER_SYSCFG_RC.md`, `make tm-syscfg-rc-smoke`, previous `make tm-syscfg-rc-rollback-smoke` evidence | No C rollback target remains for the portable `libtaskman` provider; Rust `qsoe-tm-syscfg` is mandatory in taskman through the shared provider archive. |
 
 ## Removal PR Checklist
 

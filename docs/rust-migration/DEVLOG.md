@@ -24,6 +24,73 @@ Follow-up:
 - ...
 ```
 
+## 2026-06-30 15:44 CEST - `tm_syscfg` C Provider Retirement
+
+Scope:
+
+- Removed the C `tm_syscfg` provider implementation from
+  `libtaskman/src/syscfg.c`.
+- Removed the C host model fixture `tests/tm_syscfg_model_test.c`; the Rust
+  `qsoe-tm-syscfg` host tests are now the canonical taskman syscfg model
+  evidence.
+- Made `QSOE_RUST_TM_SYSCFG=1` mandatory in the top-level, `libtaskman`, NQ/LQ
+  component makefiles, Rust provider archive builder, and syscfg smoke/evidence
+  scripts.
+- Removed the tm_syscfg C rollback smoke target and converted rollback selector
+  attempts into fail-fast configuration errors.
+- Updated adjacent taskman evidence (`tm_fdt`, `tm_pathmgr`, `tm_rsrcdb`) so
+  their link-plan setup uses the retired Rust syscfg provider.
+- Updated docs, inventory/status summaries, and component patch overlays to
+  mark `tm_syscfg` as a retired C provider.
+
+Commands:
+
+- `mcp__codebase_memory_mcp.list_projects`
+- `mcp__codebase_memory_mcp.index_status`
+- `mcp__codebase_memory_mcp.query_graph`
+- `bash -n scripts/build-rust-tm-providers.sh scripts/check-tm-syscfg-model.sh scripts/tm-syscfg-evidence.sh scripts/tm-syscfg-runtime-smoke.sh scripts/tm-syscfg-rc-smoke.sh scripts/apply-component-overrides.sh scripts/tm-fdt-evidence.sh scripts/tm-pathmgr-evidence.sh scripts/tm-rsrcdb-evidence.sh`
+- `QSOE_RUST_TM_SYSCFG=0 scripts/build-rust-tm-providers.sh /tmp/should-not-build-tm-syscfg.a`
+- `TM_SYSCFG_RC_ROLLBACK=1 scripts/tm-syscfg-rc-smoke.sh`
+- `QSOE_RUST_TM_SYSCFG=0 scripts/tm-syscfg-rc-smoke.sh`
+- `QSOE_RUST_TM_SYSCFG=0 scripts/tm-syscfg-runtime-smoke.sh`
+- `make check-tm-syscfg-model`
+- `make tm-syscfg-evidence`
+- `timeout 300 make tm-syscfg-rc-smoke`
+- `make tm-fdt-evidence`
+- `make tm-pathmgr-evidence`
+- `make tm-rsrcdb-evidence`
+- `scripts/c-index.sh files`
+- `make prepare` in a fresh worktree rooted at the PR base plus the current
+  patch.
+- `make roadmap-validate`
+- `git diff --check`
+- `make rust-quality`
+
+Result:
+
+- C index now reports 809 tracked C/asm/linker files after removing the retired
+  syscfg implementation and C fixture.
+- `qsoe-tm-syscfg` host tests pass and cover finalized blob construction,
+  bounded find/get behavior, malformed payload lengths, empty ASCIZ handling,
+  raw NUL payload preservation, and typed length rejection.
+- Rust provider archives still build with the required `tm-syscfg` feature, and
+  explicit `QSOE_RUST_TM_SYSCFG=0` use is rejected before archive builds or
+  smoke execution.
+- NQ and LQ taskman builds no longer include `libtaskman` `syscfg.o`; the LQ
+  private FDT-backed runtime syscfg builder remains C and out of scope for this
+  portable provider retirement.
+- The retired RC smoke boots the Rust-only syscfg path and reaches `/sys/board`,
+  `/sys/cmdline`, and `/usr/bin/sysinfo` syscfg consumer milestones.
+- Clean release-tag component patch application passes in a fresh worktree.
+- Adjacent taskman evidence paths (`tm-fdt`, `tm-pathmgr`, `tm-rsrcdb`) pass
+  after switching their link-plan setup to mandatory Rust tm_syscfg.
+- Roadmap metadata validates with 38 issue-backed items.
+
+Follow-up:
+
+- Keep `tm_sysmap` and `tm_sysfs` as the remaining Rust-default RC providers
+  until their own separate retirement PRs.
+
 ## 2026-06-30 15:07 CEST - `tm_elf` C Provider Retirement
 
 Scope:

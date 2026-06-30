@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Validate the tm_syscfg Rust-default RC selector and the C rollback path.
+# Validate the retired tm_syscfg Rust selector.
 
 set -eu
 
@@ -8,13 +8,12 @@ usage() {
     cat <<'EOF'
 usage: scripts/tm-syscfg-rc-smoke.sh [-t seconds] [-o log] [--keep-running] [-- <emu args>]
 
-Builds NQ and LQ taskman in the selected tm_syscfg RC mode, verifies the
-expected syscfg.o archive membership, then reuses the live tm_syscfg runtime
-smoke.
+Builds NQ and LQ taskman with the retired Rust tm_syscfg provider, verifies
+that C syscfg.o is absent, then reuses the live tm_syscfg runtime smoke.
 
 Environment:
-  TM_SYSCFG_RC_ROLLBACK  set 1 to select C tm_syscfg rollback
-  QSOE_RUST_TM_SYSCFG    defaults to the Rust RC path; may be 0 or 1
+  TM_SYSCFG_RC_ROLLBACK  unsupported after C tm_syscfg retirement
+  QSOE_RUST_TM_SYSCFG    must remain 1 after C tm_syscfg retirement
   TM_SYSCFG_RC_WORKDIR   output directory, default build/tm-syscfg-rc
 EOF
 }
@@ -83,74 +82,51 @@ require_syscfg_count() {
         fail "$label expected $expected syscfg.o members, got $count"
 }
 
-normalize_selector() {
-    case "$1" in
-        1|true|TRUE|yes|YES)
-            printf '1'
-            ;;
-        0|false|FALSE|no|NO)
-            printf '0'
-            ;;
-        *)
-            fail "QSOE_RUST_TM_SYSCFG must be 0 or 1"
-            ;;
-    esac
-}
-
 mkdir -p "$workdir"
 "$ROOT/scripts/apply-component-overrides.sh"
 
-case "$rollback" in
-    0|false|FALSE|no|NO)
-        if [ "${QSOE_RUST_TM_SYSCFG+x}" ]; then
-            selected=$(normalize_selector "$QSOE_RUST_TM_SYSCFG")
-            if [ "$selected" -eq 1 ]; then
-                mode=rust-selected
-                expected_syscfg_count=0
-            else
-                mode=c-selected
-                expected_syscfg_count=1
-            fi
-        else
-            selected=1
-            mode=rust-default
-            expected_syscfg_count=0
-        fi
-        ;;
+case "${QSOE_RUST_TM_SYSCFG:-1}" in
     1|true|TRUE|yes|YES)
-        selected=0
-        mode=c-rollback
-        expected_syscfg_count=1
+        selected=1
+        ;;
+    0|false|FALSE|no|NO)
+        echo "tm-syscfg-rc-smoke.sh: C tm_syscfg is retired; QSOE_RUST_TM_SYSCFG must be 1" >&2
+        exit 2
         ;;
     *)
-        fail "TM_SYSCFG_RC_ROLLBACK must be 0 or 1"
+        echo "tm-syscfg-rc-smoke.sh: QSOE_RUST_TM_SYSCFG must be 1 after C retirement" >&2
+        exit 2
+        ;;
+esac
+
+case "$rollback" in
+    0|false|FALSE|no|NO)
+        mode=rust-retired
+        expected_syscfg_count=0
+        ;;
+    1|true|TRUE|yes|YES)
+        echo "tm-syscfg-rc-smoke.sh: C tm_syscfg rollback is retired" >&2
+        exit 2
+        ;;
+    *)
+        echo "tm-syscfg-rc-smoke.sh: TM_SYSCFG_RC_ROLLBACK must be 0 after C retirement" >&2
+        exit 2
         ;;
 esac
 
 echo "tm-syscfg-rc-smoke.sh: mode=$mode rollback=$rollback"
 
 echo "tm-syscfg-rc-smoke.sh: verifying NQ taskman selector"
-if [ "$mode" = rust-default ]; then
-    env -u QSOE_RUST_TM_SYSCFG "$MAKE" -C "$ROOT/nq/taskman" --no-print-directory \
-        QSOE_RUST_TM_PROCFS=1
-else
-    "$MAKE" -C "$ROOT/nq/taskman" --no-print-directory \
-        QSOE_RUST_TM_SYSCFG="$selected" \
-        QSOE_RUST_TM_PROCFS=1
-fi
+"$MAKE" -C "$ROOT/nq/taskman" --no-print-directory \
+    QSOE_RUST_TM_SYSCFG=1 \
+    QSOE_RUST_TM_PROCFS=1
 require_syscfg_count "nq-$mode" "$ROOT/nq/build/libtaskman/libtaskman.a" "$expected_syscfg_count"
 
 echo "tm-syscfg-rc-smoke.sh: verifying LQ taskman selector"
-if [ "$mode" = rust-default ]; then
-    env -u QSOE_RUST_TM_SYSCFG "$MAKE" -C "$ROOT/lq" --no-print-directory \
-        QSOE_RUST_TM_PROCFS=1 \
-        taskman
-else
-    "$MAKE" -C "$ROOT/lq" --no-print-directory \
-        QSOE_RUST_TM_SYSCFG="$selected" \
-        QSOE_RUST_TM_PROCFS=1 \
-        taskman
-fi
+"$MAKE" -C "$ROOT/lq" --no-print-directory \
+    QSOE_RUST_TM_SYSCFG=1 \
+    QSOE_RUST_TM_PROCFS=1 \
+    taskman
 require_syscfg_count "lq-$mode" "$ROOT/lq/build/libtaskman/libtaskman.a" "$expected_syscfg_count"
 
 runtime_args=("$@")
@@ -161,8 +137,5 @@ fi
 export QSOE_RUST_TM_SYSCFG="$selected"
 export QSOE_RUST_TM_PROCFS=1
 export TM_SYSCFG_RUNTIME_SMOKE_WORKDIR="$workdir"
-if [ "$selected" -eq 0 ]; then
-    export TM_SYSCFG_RUNTIME_ALLOW_C=1
-fi
 
 exec "$ROOT/scripts/tm-syscfg-runtime-smoke.sh" "${runtime_args[@]}"

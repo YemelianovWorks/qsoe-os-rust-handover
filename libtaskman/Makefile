@@ -74,8 +74,8 @@ ifneq ($(QSOE_RUST_TM_SCRIPT),1)
 $(error QSOE_RUST_TM_SCRIPT must be 1 after C tm_script retirement)
 endif
 
-ifneq ($(filter $(QSOE_RUST_TM_SYSCFG),0 1),$(QSOE_RUST_TM_SYSCFG))
-$(error QSOE_RUST_TM_SYSCFG must be 0 or 1)
+ifneq ($(QSOE_RUST_TM_SYSCFG),1)
+$(error QSOE_RUST_TM_SYSCFG must be 1 after C tm_syscfg retirement)
 endif
 
 ifneq ($(filter $(QSOE_RUST_TM_SYSFS),0 1),$(QSOE_RUST_TM_SYSFS))

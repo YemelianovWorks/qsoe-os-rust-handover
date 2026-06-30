@@ -410,7 +410,7 @@ booted FDT consumers through `/chosen` bootargs, syscfg/sysmap construction,
 
 ## Task Manager Syscfg Selection
 
-The Rust `tm_syscfg` provider is the Rust-default RC implementation for the
+The Rust `tm_syscfg` provider is the retired Rust-only implementation for the
 portable taskman syscfg TLV helpers:
 
 ```sh
@@ -419,13 +419,12 @@ make rust-tm-syscfg-provider
 make tm-syscfg-evidence
 make tm-syscfg-runtime-smoke
 make tm-syscfg-rc-smoke
-make tm-syscfg-rc-rollback-smoke
 ```
 
-With the default `QSOE_RUST_TM_SYSCFG=1`, NQ and LQ taskman omit C
+With mandatory `QSOE_RUST_TM_SYSCFG=1`, NQ and LQ taskman omit C
 `syscfg.o`, build `qsoe-tm-syscfg` for `riscv64imac-unknown-none-elf`, and
-link it through the shared `qsoe-tm-providers` archive. With
-`QSOE_RUST_TM_SYSCFG=0`, taskman links the existing C `syscfg.o` as rollback.
+link it through the shared `qsoe-tm-providers` archive.
+`QSOE_RUST_TM_SYSCFG=0` now fails fast because the C provider is retired.
 LQ's private FDT-backed `lq/taskman/sys/syscfg.c`, sysmap construction, boot
 platform-data policy, `/sys` serving, process tables, and seL4 invocation code
 remain C.
@@ -434,10 +433,8 @@ remain C.
 verifies the C `syscfg.o` is absent from the selected `libtaskman.a`, and
 checks syscfg-backed runtime consumers through `/sys/board`, `/sys/cmdline`,
 and `/usr/bin/sysinfo`. `make tm-syscfg-rc-smoke` verifies the default Rust
-archive membership plus the same runtime path, and
-`make tm-syscfg-rc-rollback-smoke` repeats it with C `syscfg.o` selected. This
-is a boot-consumer compatibility smoke; the LQ private runtime syscfg builder
-remains C.
+archive membership plus the same runtime path. This is a boot-consumer
+compatibility smoke; the LQ private runtime syscfg builder remains C.
 
 ## Task Manager Path Registry Selection
 

@@ -1,23 +1,11 @@
 #!/usr/bin/env bash
 #
-# Build and run the host-side fixture for libtaskman's portable tm_syscfg model.
+# Run the Rust host-side model for libtaskman's portable tm_syscfg ABI.
 
 set -eu
 
 ROOT=$(cd "$(dirname "$0")/.." && pwd)
-BUILD="$ROOT/build/fixtures/tm-syscfg"
-CC=${CC:-cc}
 
-mkdir -p "$BUILD"
-
-"$CC" -std=c11 -O2 -Wall -Wextra -Werror \
-    -I "$ROOT/libtaskman/include" \
-    -I "$ROOT/libc/include" \
-    -o "$BUILD/tm_syscfg_model_test" \
-    "$ROOT/tests/tm_syscfg_model_test.c" \
-    "$ROOT/libtaskman/src/syscfg.c"
-
-"$BUILD/tm_syscfg_model_test"
+cargo test --manifest-path "$ROOT/rust/Cargo.toml" -p qsoe-tm-syscfg --features host-tests --lib
 
 echo "check-tm-syscfg-model.sh: ok"
-echo "  binary: $BUILD/tm_syscfg_model_test"

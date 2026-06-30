@@ -24,13 +24,13 @@ excluded unless `QSOE_INDEX_SEL4=1` is set.
 | `common` | 2 | 359 | Shared CPIO helper code. Rust CPIO parsing exists, but C remains for existing callers. |
 | `host_tools` | 2 | 781 | `qrvfs-tree` and `mkfs-qrv-rs` have Rust-default RC paths with C rollback. Tracked by #136. |
 | `libc` | 447 | 43,080 | Broad runtime, syscall, stdio, allocator, string, rtld, and QSOE wrapper surface. Not a wholesale Rust target. |
-| `libtaskman` | 19 | 2,311 | Best source of host-testable task-manager modules. `tm_procfs`, `tm_cpio`, `tm_script`, and `tm_elf` are retired to Rust through the shared provider archive; `tm_syscfg` and `tm_sysfs` are Rust-default RCs with C rollback; `tm_cred` and `tm_pathmgr` are Rust opt-in; remaining candidates are tracked in #153. |
+| `libtaskman` | 18 | 2,166 | Best source of host-testable task-manager modules. `tm_procfs`, `tm_cpio`, `tm_script`, `tm_elf`, and `tm_syscfg` are retired to Rust through the shared provider archive; `tm_sysfs` is a Rust-default RC with C rollback; `tm_cred` and `tm_pathmgr` are Rust opt-in; remaining candidates are tracked in #153. |
 | `lq` | 90 | 17,853 | seL4 task manager, LQ libc wrappers, process, capability, path, memory, syscall, and boot glue. Pure/diagnostic slices only are candidates; LQ sysmap is Rust-default RC, while FDT, pseudo-devices, and resource DB accounting remain Rust opt-in. |
 | `nq` | 125 | 25,053 | Kernel, NQ libc, and NQ taskman surface. Near-term linked Rust is deferred by policy; fixture-only candidates are tracked in #155. |
 | `quser` | 125 | 40,818 | Userland services, drivers, resource-server support, shell, tests, and utilities. `test_msgpass` is the first retired C helper; `slogger`, `pipe`, and `devb-virtio` are retired C production paths; several services have Rust pilots; many remain C. |
-| **Total** | **810** | **130,255** | QSOE-owned C/asm/linker surface in this checkout, excluding generated build outputs and vendor seL4. |
+| **Total** | **809** | **130,113** | QSOE-owned C/asm/linker surface in this checkout, excluding generated build outputs and vendor seL4. |
 
-By file type: `518` C files, `280` headers, `10` assembly files, and `2` linker
+By file type: `517` C files, `280` headers, `10` assembly files, and `2` linker
 scripts.
 
 ## Issue-backed Migration Ledger
@@ -62,7 +62,7 @@ Issue state, labels, and metadata are the source of truth for current progress.
 | `tm_script` | #143 | Retired C provider; Rust `qsoe-tm-script` is mandatory in taskman. |
 | `tm_elf` | #144 | Retired C provider; Rust `qsoe-tm-elf` is mandatory in taskman and dynamic ELF spawn smoke covers the Rust-only path. |
 | `tm_fdt` | #146 | Rust opt-in LQ FDT parser provider with C rollback and focused `/chosen`/syscfg runtime smoke; not a Rust-default RC. |
-| `tm_syscfg` | #145 | Rust-default RC provider with C rollback, focused `/sys`/`sysinfo` runtime smoke, and explicit RC rollback smoke. |
+| `tm_syscfg` | #145 | Retired C provider; Rust `qsoe-tm-syscfg` is mandatory in taskman while LQ's private runtime syscfg builder remains C. |
 | `tm_sysmap` | #147 | Rust-default RC LQ sysmap page builder provider with C rollback, focused spawned-child `PSYS` runtime smoke, and explicit RC rollback smoke. |
 | `tm_pathmgr` | #149 | Rust opt-in path registry provider with C rollback and focused runtime smoke; not a Rust-default RC. |
 | `tm_rsrcdb` | #151 | Rust opt-in LQ resource DB provider with C rollback and focused `rsrcdbmgr_*` runtime smoke; not a Rust-default RC. |

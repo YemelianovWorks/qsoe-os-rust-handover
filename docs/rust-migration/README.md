@@ -87,21 +87,23 @@ Read in this order:
    release-candidate note and C rollback drill.
 44. `TASK_MANAGER_SCRIPT_RETIREMENT.md`: C provider retirement note for
    `tm_script`, including the Rust-only taskman path and removed rollback.
-45. `TASK_MANAGER_SYSCFG.md`: Rust-default RC task-manager syscfg TLV provider
+45. `TASK_MANAGER_SYSCFG.md`: retired Rust task-manager syscfg TLV provider
    and evidence gate.
-46. `TASK_MANAGER_SYSCFG_RC.md`: Rust-default `tm_syscfg` release-candidate
-   note and C rollback drill.
-47. `TASK_MANAGER_CRED.md`: Rust opt-in task-manager credential policy
+46. `TASK_MANAGER_SYSCFG_RC.md`: historical Rust-default `tm_syscfg`
+   release-candidate note and C rollback drill.
+47. `TASK_MANAGER_SYSCFG_RETIREMENT.md`: C provider retirement note for
+   `tm_syscfg`, including the Rust-only taskman path and removed rollback.
+48. `TASK_MANAGER_CRED.md`: Rust opt-in task-manager credential policy
    provider and evidence gate.
-48. `TASK_MANAGER_PSEUDODEV.md`: Rust opt-in LQ task-manager `/dev/null` and
+49. `TASK_MANAGER_PSEUDODEV.md`: Rust opt-in LQ task-manager `/dev/null` and
    `/dev/zero` provider and evidence gate.
-49. `TASK_MANAGER_RSRCDB.md`: Rust opt-in LQ task-manager resource DB
+50. `TASK_MANAGER_RSRCDB.md`: Rust opt-in LQ task-manager resource DB
    provider and evidence gate.
-50. `TASK_MANAGER_SYSFS.md`: Rust-default RC task-manager `/sys` provider and
+51. `TASK_MANAGER_SYSFS.md`: Rust-default RC task-manager `/sys` provider and
    evidence gate.
-51. `TASK_MANAGER_SYSFS_RC.md`: Rust-default `tm_sysfs` release-candidate
+52. `TASK_MANAGER_SYSFS_RC.md`: Rust-default `tm_sysfs` release-candidate
    note and C rollback drill.
-52. `TASK_MANAGER_ELF.md`: retired C task-manager ELF view parser provider and
+53. `TASK_MANAGER_ELF.md`: retired C task-manager ELF view parser provider and
    evidence gate.
 53. `TASK_MANAGER_ELF_RC.md`: historical Rust-default `tm_elf`
    release-candidate note.
