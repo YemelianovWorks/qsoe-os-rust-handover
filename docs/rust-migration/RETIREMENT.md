@@ -54,10 +54,11 @@ it must include evidence for all of these items:
 The live status matrix is `STATUS.md`. It records C default, Rust opt-in, Rust
 default, and retired status for every tracked migration component. At this
 capture, `test_msgpass`, `slogger`, `pipe`, `devb-virtio`, `tm_procfs`,
-`tm_cpio`, and `tm_script` are the tracked components in `Retired` status.
+`tm_cpio`, `tm_script`, and `tm_elf` are the tracked components in `Retired`
+status.
 `test_msgpass` is the first retired helper; `slogger`, `pipe`, and
 `devb-virtio` are retired production paths. `tm_procfs` is the first retired
-task-manager provider, followed by `tm_cpio` and `tm_script`. Remaining
+task-manager provider, followed by `tm_cpio`, `tm_script`, and `tm_elf`. Remaining
 production services and task-manager
 providers still require their own separate removal PRs after RC evidence and
 rollback drills.
@@ -73,6 +74,7 @@ rollback drills.
 | `tm_procfs` | `TASK_MANAGER_PROCFS_RETIREMENT.md` | `TASK_MANAGER_PROCFS_RC.md`, `make tm-procfs-rc-smoke`, previous `make tm-procfs-rc-rollback-smoke` evidence | No C rollback target remains; Rust `qsoe-tm-procfs` is mandatory in taskman through the shared provider archive. |
 | `tm_cpio` | `TASK_MANAGER_CPIO_RETIREMENT.md` | `TASK_MANAGER_CPIO_RC.md`, `make tm-cpio-rc-smoke`, previous `make tm-cpio-rc-rollback-smoke` evidence | No C rollback target remains; Rust `qsoe-tm-cpio` is mandatory in taskman through the shared provider archive. |
 | `tm_script` | `TASK_MANAGER_SCRIPT_RETIREMENT.md` | `TASK_MANAGER_SCRIPT_RC.md`, `make tm-script-rc-smoke`, previous `make tm-script-rc-rollback-smoke` evidence | No C rollback target remains; Rust `qsoe-tm-script` is mandatory in taskman through the shared provider archive. |
+| `tm_elf` | `TASK_MANAGER_ELF_RETIREMENT.md` | `TASK_MANAGER_ELF_RC.md`, `make tm-elf-rc-smoke`, previous `make tm-elf-rc-rollback-smoke` evidence | No C rollback target remains; Rust `qsoe-tm-elf` is mandatory in taskman through the shared provider archive. |
 
 ## Removal PR Checklist
 

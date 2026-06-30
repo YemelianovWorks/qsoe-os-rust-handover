@@ -25,7 +25,7 @@ no direct seL4 object manipulation, not automatically low risk.
 | --- | --- | --- | --- |
 | CPIO archive model | `rust/crates/qsoe-tm-cpio`, `libtaskman/include/tm_cpio.h` | Pure `newc` walking, symlink resolution, directory iteration, and existence checks over caller-owned bytes. The C provider is retired; Rust `qsoe-tm-cpio` is mandatory and `QSOE_RUST_TM_CPIO=0` fails fast. See `TASK_MANAGER_CPIO.md`. | Medium: boot archive lookup is spawn-adjacent. |
 | Shebang parser | `rust/crates/qsoe-tm-script`, `libtaskman/include/tm_script.h` | Single bounded parser used by `tm_spawn` when scripts are executed. The C provider is retired; Rust `qsoe-tm-script` is mandatory and `QSOE_RUST_TM_SCRIPT=0` fails fast. See `TASK_MANAGER_SCRIPT.md`. | Medium: pure parser but affects spawn fallback. |
-| ELF view parser | `libtaskman/src/elf.c`, `libtaskman/include/tm_elf.h` | Read-only ELF64 program-header and interpreter parser. Rust-default RC provider exists behind `QSOE_RUST_TM_ELF=1`; C rollback remains `QSOE_RUST_TM_ELF=0`; see `TASK_MANAGER_ELF.md`. | High: pure parser, but used by relocation and loader flow. |
+| ELF view parser | `rust/crates/qsoe-tm-elf`, `libtaskman/include/tm_elf.h` | Read-only ELF64 program-header and interpreter parser. The C provider is retired; Rust `qsoe-tm-elf` is mandatory and `QSOE_RUST_TM_ELF=0` fails fast. See `TASK_MANAGER_ELF.md`. | High: pure parser, but used by relocation and loader flow. |
 | Syscfg TLV helpers | `libtaskman/src/syscfg.c`, `libtaskman/include/tm_syscfg.h` | Caller-owned TLV builder and walker. Rust-default RC provider exists behind `QSOE_RUST_TM_SYSCFG=1`; C rollback remains `QSOE_RUST_TM_SYSCFG=0`; see `TASK_MANAGER_SYSCFG.md`. | Medium: platform data reaches early boot decisions. |
 | FDT parser | `lq/taskman/sys/fdt.c`, `lq/taskman/sys/fdt.h` | Minimal big-endian device-tree scanner for `/chosen`, compatible strings, and properties. Rust opt-in provider exists behind `QSOE_RUST_TM_FDT=1`; see `TASK_MANAGER_FDT.md`. | Medium: boot config source. |
 | Sysmap builder | `lq/taskman/sys/sysmap.c`, `lq/taskman/sys/sysmap.h` | Builds the read-only `PSYS` page mapped into children. Rust-default RC provider exists behind `QSOE_RUST_TM_SYSMAP=1`; C rollback remains `QSOE_RUST_TM_SYSMAP=0`; see `TASK_MANAGER_SYSMAP.md`. | Medium: child runtime metadata. |
@@ -44,10 +44,11 @@ evidence required before implementation.
 
 Subsequent bounded providers now exist for `tm_cpio`, `tm_cred`, `tm_elf`,
 `tm_fdt`, `tm_pathmgr`, LQ pseudo-devices, `tm_rsrcdb`, `tm_script`,
-`tm_syscfg`, `tm_sysmap`, and `tm_sysfs`. `tm_cpio` and `tm_script` are retired
-to Rust; `tm_syscfg`, `tm_sysmap`, `tm_sysfs`, and `tm_elf` are Rust-default
-RCs; the rest remain Rust opt-in only. Keep the `tm_elf` C rollback while its
-output continues to feed spawn, relocation, and loader admission.
+`tm_syscfg`, `tm_sysmap`, and `tm_sysfs`. `tm_cpio`, `tm_script`, and
+`tm_elf` are retired to Rust; `tm_syscfg`, `tm_sysmap`, and `tm_sysfs` are
+Rust-default RCs; the rest remain Rust opt-in only. Keep broader loader and
+relocation changes separate from the retired `tm_elf` parser provider because
+its output still feeds spawn, relocation, and loader admission.
 
 Multiple task-manager Rust providers can now be selected together. NQ/LQ
 taskman links one shared `qsoe-tm-providers` static archive when any
@@ -99,8 +100,8 @@ userland startup and should not be changed before broader loader evidence:
 
 - `libtaskman/src/reloc.c` and `libtaskman/include/tm_reloc.h`: RV64 dynamic
   relocation walker, resolver setup, and callback-driven write path.
-- `libtaskman/src/elf.c` and `libtaskman/include/tm_elf.h`: parser consumed by
-  relocation setup in `tm_spawn`.
+- `rust/crates/qsoe-tm-elf` and `libtaskman/include/tm_elf.h`: parser consumed
+  by relocation setup in `tm_spawn`.
 - `lq/taskman/proc/spawn.c`: `reloc_write_cb`, scratch mapping, libc/rtld/main
   relocation ordering, skipped-symbol logging, and RELRO tracking.
 

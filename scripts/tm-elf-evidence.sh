@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Capture tm_elf Rust-default RC evidence and the C rollback path.
+# Capture tm_elf Rust-only retirement evidence.
 
 set -eu
 
@@ -8,14 +8,14 @@ ROOT=$(cd "$(dirname "$0")/.." && pwd)
 MAKE=${MAKE:-make}
 WORKDIR=${TM_ELF_EVIDENCE_WORKDIR:-"$ROOT/build/tm-elf-evidence"}
 RUST_PROVIDER_A=${RUST_PROVIDER_A:-"$ROOT/build/rust/tm-elf/libqsoe_tm_elf.a"}
-MANIFEST="$ROOT/rust/Cargo.toml"
 
 usage() {
     cat <<'EOF'
 usage: scripts/tm-elf-evidence.sh
 
-Builds and audits the Rust tm_elf default path and verifies C rollback archive
-membership for NQ and LQ taskman links.
+Builds and audits the retired Rust tm_elf path, verifies that taskman archives
+no longer contain C elf.o, and checks retired selector rejection for NQ and LQ
+taskman links.
 
 Environment:
   TM_ELF_EVIDENCE_WORKDIR  output directory, default build/tm-elf-evidence
@@ -92,6 +92,18 @@ require_elf_count() {
         fail "$label expected $expected elf.o members, got $count"
 }
 
+require_retired_selector_rejected() {
+    local label=$1
+    shift
+    local log="$WORKDIR/$label-retired-selector-rejection.txt"
+
+    if "$@" > "$log" 2>&1; then
+        fail "$label unexpectedly accepted QSOE_RUST_TM_ELF=0"
+    fi
+    grep -Fq 'QSOE_RUST_TM_ELF must be 1 after C tm_elf retirement' "$log" ||
+        fail "$label rejection did not mention retired tm_elf selector"
+}
+
 audit_flags() {
     local label=$1
     local elf=$2
@@ -112,6 +124,18 @@ audit_flags() {
     if grep -Fq 'Dynamic section at offset' "$dynamic"; then
         fail "$label unexpectedly has a dynamic section"
     fi
+}
+
+audit_linked_symbols() {
+    local label=$1
+    local elf=$2
+    local symbols="$WORKDIR/$label-symbols.txt"
+
+    [ -f "$elf" ] || fail "missing ELF for $label: $elf"
+    "$NM" -g --defined-only "$elf" > "$symbols"
+
+    grep -Eq '[[:space:]]tm_elf_parse$' "$symbols" ||
+        fail "$label is missing linked symbol tm_elf_parse"
 }
 
 audit_provider_archive() {
@@ -145,51 +169,27 @@ audit_provider_archive() {
         tee -a "$WORKDIR/rust-provider-summary.txt"
 }
 
-echo "tm-elf-evidence.sh: running C host model fixture"
+echo "tm-elf-evidence.sh: running Rust host model tests"
 "$MAKE" -C "$ROOT" --no-print-directory check-tm-elf-model
-
-echo "tm-elf-evidence.sh: running Rust host tests"
-cargo test --manifest-path "$MANIFEST" -p qsoe-tm-elf --features host-tests
 
 echo "tm-elf-evidence.sh: building Rust provider archive"
 "$MAKE" -C "$ROOT" --no-print-directory rust-tm-elf-provider
 audit_provider_archive
 
-echo "tm-elf-evidence.sh: verifying NQ C rollback membership"
-"$MAKE" -C "$ROOT/nq/taskman" --no-print-directory \
-    QSOE_RUST_TM_CPIO=1 QSOE_RUST_TM_CRED=0 QSOE_RUST_TM_ELF=0 \
-    QSOE_RUST_TM_PROCFS=1 QSOE_RUST_TM_SCRIPT=1 QSOE_RUST_TM_SYSCFG=1 \
-    QSOE_RUST_TM_SYSFS=1
-require_elf_count nq-c-rollback "$ROOT/nq/build/libtaskman/libtaskman.a" 1
-audit_flags nq-c-rollback-taskman "$ROOT/nq/build/taskman/taskman.elf"
-
-echo "tm-elf-evidence.sh: verifying NQ Rust-selected membership"
+echo "tm-elf-evidence.sh: verifying NQ Rust-only membership"
 "$MAKE" -C "$ROOT/nq/taskman" --no-print-directory \
     QSOE_RUST_TM_CPIO=1 QSOE_RUST_TM_CRED=0 QSOE_RUST_TM_ELF=1 \
     QSOE_RUST_TM_PROCFS=1 QSOE_RUST_TM_SCRIPT=1 QSOE_RUST_TM_SYSCFG=1 \
     QSOE_RUST_TM_SYSFS=1
-require_elf_count nq-rust-selected "$ROOT/nq/build/libtaskman/libtaskman.a" 0
-audit_flags nq-rust-selected-taskman "$ROOT/nq/build/taskman/taskman.elf"
+require_elf_count nq-rust-retired "$ROOT/nq/build/libtaskman/libtaskman.a" 0
+audit_flags nq-rust-retired-taskman "$ROOT/nq/build/taskman/taskman.elf"
+audit_linked_symbols nq-rust-retired-taskman "$ROOT/nq/build/taskman/taskman.elf"
 
-echo "tm-elf-evidence.sh: verifying LQ C rollback membership"
-"$MAKE" -C "$ROOT/lq" --no-print-directory \
-    QSOE_RUST_TM_CPIO=1 \
-    QSOE_RUST_TM_CRED=0 \
-    QSOE_RUST_TM_ELF=0 \
-    QSOE_RUST_TM_FDT=0 \
-    QSOE_RUST_TM_PATHMGR=0 \
-    QSOE_RUST_TM_PROCFS=1 \
-    QSOE_RUST_TM_PSEUDODEV=0 \
-    QSOE_RUST_TM_RSRCDB=0 \
-    QSOE_RUST_TM_SCRIPT=1 \
-    QSOE_RUST_TM_SYSCFG=1 \
-    QSOE_RUST_TM_SYSMAP=1 \
-    QSOE_RUST_TM_SYSFS=1 \
-    taskman
-require_elf_count lq-c-rollback "$ROOT/lq/build/libtaskman/libtaskman.a" 1
-audit_flags lq-c-rollback-taskman "$ROOT/lq/build/taskman.elf"
+echo "tm-elf-evidence.sh: verifying NQ retired selector rejection"
+require_retired_selector_rejected nq \
+    "$MAKE" -C "$ROOT/nq/taskman" --no-print-directory QSOE_RUST_TM_ELF=0
 
-echo "tm-elf-evidence.sh: verifying LQ Rust-selected membership"
+echo "tm-elf-evidence.sh: verifying LQ Rust-only membership"
 "$MAKE" -C "$ROOT/lq" --no-print-directory \
     QSOE_RUST_TM_CPIO=1 \
     QSOE_RUST_TM_CRED=0 \
@@ -204,7 +204,12 @@ echo "tm-elf-evidence.sh: verifying LQ Rust-selected membership"
     QSOE_RUST_TM_SYSMAP=1 \
     QSOE_RUST_TM_SYSFS=1 \
     taskman
-require_elf_count lq-rust-selected "$ROOT/lq/build/libtaskman/libtaskman.a" 0
-audit_flags lq-rust-selected-taskman "$ROOT/lq/build/taskman.elf"
+require_elf_count lq-rust-retired "$ROOT/lq/build/libtaskman/libtaskman.a" 0
+audit_flags lq-rust-retired-taskman "$ROOT/lq/build/taskman.elf"
+audit_linked_symbols lq-rust-retired-taskman "$ROOT/lq/build/taskman.elf"
+
+echo "tm-elf-evidence.sh: verifying LQ retired selector rejection"
+require_retired_selector_rejected lq \
+    "$MAKE" -C "$ROOT/lq" --no-print-directory QSOE_RUST_TM_ELF=0 taskman
 
 echo "tm-elf-evidence.sh: evidence captured in $WORKDIR"

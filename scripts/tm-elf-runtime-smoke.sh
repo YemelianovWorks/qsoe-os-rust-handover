@@ -15,9 +15,8 @@ rtld, and libc before process start.
 
 Environment:
   TM_ELF_RUNTIME_SMOKE_WORKDIR  output directory, default build/tm-elf-runtime-smoke
-  QSOE_RUST_TM_ELF              defaults to 1; set 0 only with rollback escape hatch
+  QSOE_RUST_TM_ELF              must remain 1 after C tm_elf retirement
   QSOE_RUST_TM_PROCFS           must remain 1 after C tm_procfs retirement
-  TM_ELF_RUNTIME_ALLOW_C        internal RC rollback escape hatch
 EOF
 }
 
@@ -82,19 +81,11 @@ case "${QSOE_RUST_TM_ELF:-1}" in
         tm_elf_mode=rust-selected
         ;;
     0|false|FALSE|no|NO)
-        case "${TM_ELF_RUNTIME_ALLOW_C:-0}" in
-            1|true|TRUE|yes|YES)
-                export QSOE_RUST_TM_ELF=0
-                tm_elf_mode=c-rollback
-                ;;
-            *)
-                echo "tm-elf-runtime-smoke.sh: this smoke validates QSOE_RUST_TM_ELF=1" >&2
-                exit 2
-                ;;
-        esac
+        echo "tm-elf-runtime-smoke.sh: C tm_elf is retired; QSOE_RUST_TM_ELF must be 1" >&2
+        exit 2
         ;;
     *)
-        echo "tm-elf-runtime-smoke.sh: QSOE_RUST_TM_ELF must be 0 or 1" >&2
+        echo "tm-elf-runtime-smoke.sh: QSOE_RUST_TM_ELF must be 1 after C retirement" >&2
         exit 2
         ;;
 esac
@@ -212,25 +203,15 @@ echo "tm-elf-runtime-smoke.sh: rebuilding QSOE/L image with $tm_elf_mode tm_elf"
     QSOE_RUST_TM_PROCFS=1
 
 "$AR" t "$ROOT/lq/build/libtaskman/libtaskman.a" > "$members_log"
-case "$QSOE_RUST_TM_ELF" in
-    1)
-        if grep -Fxq elf.o "$members_log"; then
-            echo "tm-elf-runtime-smoke.sh: Rust-selected libtaskman still contains elf.o" >&2
-            exit 1
-        fi
-        if ! "$NM" -g --defined-only "$ROOT/build/rust/tm-providers/libqsoe_tm_providers.a" |
-            grep -Eq '[[:space:]]tm_elf_parse$'; then
-            echo "tm-elf-runtime-smoke.sh: Rust provider archive is missing tm_elf_parse" >&2
-            exit 1
-        fi
-        ;;
-    0)
-        if ! grep -Fxq elf.o "$members_log"; then
-            echo "tm-elf-runtime-smoke.sh: C rollback libtaskman is missing elf.o" >&2
-            exit 1
-        fi
-        ;;
-esac
+if grep -Fxq elf.o "$members_log"; then
+    echo "tm-elf-runtime-smoke.sh: Rust-selected libtaskman still contains elf.o" >&2
+    exit 1
+fi
+if ! "$NM" -g --defined-only "$ROOT/build/rust/tm-providers/libqsoe_tm_providers.a" |
+    grep -Eq '[[:space:]]tm_elf_parse$'; then
+    echo "tm-elf-runtime-smoke.sh: Rust provider archive is missing tm_elf_parse" >&2
+    exit 1
+fi
 
 boot_args=(-k lq -t "$timeout_s" -o "$log")
 if [ "$keep_running" -eq 1 ]; then
