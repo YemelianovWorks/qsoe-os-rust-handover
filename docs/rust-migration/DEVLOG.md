@@ -24,6 +24,57 @@ Follow-up:
 - ...
 ```
 
+## 2026-06-30 20:50 CEST - tm_pseudodev Rust-Default RC
+
+Scope:
+
+- Promoted `tm_pseudodev` from Rust opt-in to Rust-default RC for QSOE/L while
+  preserving C rollback through `QSOE_RUST_TM_PSEUDODEV=0`.
+- Changed the umbrella and tracked LQ component override defaults to
+  `QSOE_RUST_TM_PSEUDODEV ?= 1`.
+- Added `tm-pseudodev-rc-smoke` and `tm-pseudodev-rc-rollback-smoke` targets
+  plus CI hooks and artifact upload coverage.
+- Updated `tm-pseudodev-runtime-smoke` so the Rust path remains default but the
+  RC rollback path can explicitly reuse the live `/dev/null` and `/dev/zero`
+  probe with `TM_PSEUDODEV_RUNTIME_ALLOW_C=1`.
+- Updated shared provider evidence so `tm_pseudodev` is audited with the
+  default LQ provider set.
+- Added `TASK_MANAGER_PSEUDODEV_RC.md`, updated status/docs/readmes, and moved
+  issue #152 to open `status:rc` / `rust-default-rc`.
+
+Commands:
+
+- `bash -n scripts/tm-pseudodev-evidence.sh scripts/tm-pseudodev-runtime-smoke.sh scripts/tm-pseudodev-rc-smoke.sh scripts/tm-providers-evidence.sh scripts/apply-component-overrides.sh`
+- `scripts/apply-component-overrides.sh`
+- `make -n tm-pseudodev-rc-smoke`
+- `make -n tm-pseudodev-rc-rollback-smoke`
+- `make tm-pseudodev-evidence`
+- `make tm-pseudodev-runtime-smoke`
+- `make tm-pseudodev-rc-smoke`
+- `make tm-pseudodev-rc-rollback-smoke`
+- `make tm-providers-evidence`
+- `make rust-quality`
+- `make roadmap-validate`
+- `make roadmap-component-gate COMPONENT=tm-pseudodev`
+
+Result:
+
+- Rust-default LQ links omit C `sys/devnull.o` and `sys/devzero.o`; C rollback
+  links include both objects.
+- Rust-default and C rollback boot smokes both reached `/dev/null` write,
+  stat, read-EOF and `/dev/zero` write, stat, zero-fill read, and
+  `pseudodev_probe` markers.
+- Shared provider evidence exports the pseudo-device handlers from the
+  combined archive and links the LQ taskman with `tm_pseudodev` selected.
+- C `lq/taskman/sys/devnull.c` and `lq/taskman/sys/devzero.c` remain present as
+  rollback; no C source was retired.
+
+Follow-up:
+
+- Keep #152 open as `rust-default-rc` until trusted PR and main CI evidence is
+  recorded. C removal still requires #26, the global retirement checklist, and
+  a separate removal PR.
+
 ## 2026-06-30 20:17 CEST - tm_pathmgr Rust-Default RC
 
 Scope:

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Boot QSOE/L with Rust tm_pseudodev selected and exercise /dev/null+/dev/zero.
+# Boot QSOE/L with tm_pseudodev selected and exercise /dev/null+/dev/zero.
 
 set -eu
 
@@ -10,14 +10,16 @@ usage: scripts/tm-pseudodev-runtime-smoke.sh [-t seconds] [-o log] [--keep-runni
 
 Injects a temporary sysinit fragment that runs /usr/bin/pseudodev_probe,
 rebuilds the virtio qrvfs image with that helper staged, and boots QSOE/L with
-QSOE_RUST_TM_PSEUDODEV=1.
+the selected tm_pseudodev provider. Rust is the default; C is accepted only
+when explicitly allowed for rollback validation.
 
 The helper exercises live /dev/null and /dev/zero open, write, read, and fstat
-calls through the Rust-selected taskman pseudo-device provider.
+calls through the selected taskman pseudo-device provider.
 
 Environment:
   TM_PSEUDODEV_RUNTIME_SMOKE_WORKDIR  output directory, default build/tm-pseudodev-runtime-smoke
-  QSOE_RUST_TM_PSEUDODEV              set to 1; this smoke validates the Rust selection
+  QSOE_RUST_TM_PSEUDODEV              defaults to 1; set 0 only with TM_PSEUDODEV_RUNTIME_ALLOW_C=1
+  TM_PSEUDODEV_RUNTIME_ALLOW_C        set to 1 to permit C rollback validation
   QSOE_RUST_TM_PROCFS                 must remain 1 after C tm_procfs retirement
 EOF
 }
@@ -76,16 +78,28 @@ if [ "$timeout_s" -le 0 ]; then
     exit 2
 fi
 
+allow_c=${TM_PSEUDODEV_RUNTIME_ALLOW_C:-0}
 case "${QSOE_RUST_TM_PSEUDODEV:-1}" in
     1|true|TRUE|yes|YES)
         export QSOE_RUST_TM_PSEUDODEV=1
+        selected=1
+        mode=rust-selected
         ;;
     0|false|FALSE|no|NO)
-        echo "tm-pseudodev-runtime-smoke.sh: this smoke validates QSOE_RUST_TM_PSEUDODEV=1" >&2
-        exit 2
+        case "$allow_c" in
+            1|true|TRUE|yes|YES)
+                export QSOE_RUST_TM_PSEUDODEV=0
+                selected=0
+                mode=c-rollback
+                ;;
+            *)
+                echo "tm-pseudodev-runtime-smoke.sh: QSOE_RUST_TM_PSEUDODEV=0 requires TM_PSEUDODEV_RUNTIME_ALLOW_C=1" >&2
+                exit 2
+                ;;
+        esac
         ;;
     *)
-        echo "tm-pseudodev-runtime-smoke.sh: QSOE_RUST_TM_PSEUDODEV must be 1" >&2
+        echo "tm-pseudodev-runtime-smoke.sh: QSOE_RUST_TM_PSEUDODEV must be 0 or 1" >&2
         exit 2
         ;;
 esac
@@ -109,7 +123,7 @@ source_conf="$ROOT/quser/conf"
 source_sysinit="$source_conf/sysinit"
 fragment=
 lq_libc="$ROOT/lq/build/libc/libc.so"
-members_log="$workdir/lq-rust-selected-libtaskman-members.txt"
+plan_log="$workdir/lq-$mode-taskman-dry-run.txt"
 pseudodev_probe_staged="$ROOT/build/fsqrv-root/bin/pseudodev_probe"
 selected_msgpass="$ROOT/build/rust/selected/usr/bin/test_msgpass.elf"
 
@@ -147,10 +161,6 @@ find_tool() {
     return 1
 }
 
-AR=$(find_tool riscv64-linux-gnu-ar ar llvm-ar) || {
-    echo "tm-pseudodev-runtime-smoke.sh: no ar tool found" >&2
-    exit 127
-}
 NM=$(find_tool riscv64-linux-gnu-nm nm llvm-nm) || {
     echo "tm-pseudodev-runtime-smoke.sh: no nm tool found" >&2
     exit 127
@@ -163,7 +173,51 @@ log_has_marker() {
         tr -d '\r\n' < "$log" | grep -Fq "$marker"
 }
 
+capture_lq_taskman_plan() {
+    "$MAKE" -C "$ROOT/lq/taskman" --no-print-directory -B -n all \
+        LIBTASKMAN_A="$ROOT/lq/build/libtaskman/libtaskman.a" \
+        LIBTASKMAN_INC="$ROOT/libtaskman/include" \
+        QSOE_RUST_TM_CPIO=1 \
+        QSOE_RUST_TM_CRED=1 \
+        QSOE_RUST_TM_ELF=1 \
+        QSOE_RUST_TM_FDT=1 \
+        QSOE_RUST_TM_PATHMGR=1 \
+        QSOE_RUST_TM_PROCFS=1 \
+        QSOE_RUST_TM_PSEUDODEV="$selected" \
+        QSOE_RUST_TM_RSRCDB=1 \
+        QSOE_RUST_TM_SCRIPT=1 \
+        QSOE_RUST_TM_SYSCFG=1 \
+        QSOE_RUST_TM_SYSMAP=1 \
+        QSOE_RUST_TM_SYSFS=1 \
+        > "$plan_log"
+}
+
+require_plan_contains() {
+    local needle=$1
+
+    grep -Fq "$needle" "$plan_log" ||
+        { echo "tm-pseudodev-runtime-smoke.sh: $mode dry-run link plan is missing $needle" >&2; exit 1; }
+}
+
+require_plan_omits() {
+    local needle=$1
+
+    if grep -Fq "$needle" "$plan_log"; then
+        echo "tm-pseudodev-runtime-smoke.sh: $mode dry-run link plan unexpectedly contains $needle" >&2
+        exit 1
+    fi
+}
+
 "$ROOT/scripts/apply-component-overrides.sh"
+capture_lq_taskman_plan
+if [ "$selected" -eq 1 ]; then
+    require_plan_omits '/sys/devnull.o'
+    require_plan_omits '/sys/devzero.o'
+    require_plan_contains 'libqsoe_tm_providers.a'
+else
+    require_plan_contains '/sys/devnull.o'
+    require_plan_contains '/sys/devzero.o'
+fi
 
 cleanup() {
     if [ -n "$fragment" ]; then
@@ -207,31 +261,27 @@ if [ ! -x "$pseudodev_probe_staged" ]; then
     exit 1
 fi
 
-echo "tm-pseudodev-runtime-smoke.sh: rebuilding QSOE/L image with Rust tm_pseudodev"
+echo "tm-pseudodev-runtime-smoke.sh: rebuilding QSOE/L image with mode=$mode"
 "$MAKE" -C "$ROOT/lq" --no-print-directory \
     QSOE_RUST_TM_PROCFS=1 \
-    QSOE_RUST_TM_PSEUDODEV=1
+    QSOE_RUST_TM_PSEUDODEV="$selected"
 
-"$AR" t "$ROOT/lq/build/libtaskman/libtaskman.a" > "$members_log"
-if grep -Eq '(^|/)(devnull|devzero)\.o$' "$members_log"; then
-    echo "tm-pseudodev-runtime-smoke.sh: Rust-selected libtaskman still contains devnull.o/devzero.o" >&2
-    exit 1
+if [ "$selected" -eq 1 ]; then
+    for symbol in \
+        tm_devnull_write \
+        tm_devnull_read \
+        tm_devnull_stat \
+        tm_devzero_write \
+        tm_devzero_read \
+        tm_devzero_stat
+    do
+        if ! "$NM" -g --defined-only "$ROOT/build/rust/tm-providers/libqsoe_tm_providers.a" |
+            grep -Eq "[[:space:]]$symbol$"; then
+            echo "tm-pseudodev-runtime-smoke.sh: Rust provider archive is missing $symbol" >&2
+            exit 1
+        fi
+    done
 fi
-
-for symbol in \
-    tm_devnull_write \
-    tm_devnull_read \
-    tm_devnull_stat \
-    tm_devzero_write \
-    tm_devzero_read \
-    tm_devzero_stat
-do
-    if ! "$NM" -g --defined-only "$ROOT/build/rust/tm-providers/libqsoe_tm_providers.a" |
-        grep -Eq "[[:space:]]$symbol$"; then
-        echo "tm-pseudodev-runtime-smoke.sh: Rust provider archive is missing $symbol" >&2
-        exit 1
-    fi
-done
 
 boot_args=(-k lq -t "$timeout_s" -o "$log")
 if [ "$keep_running" -eq 1 ]; then
@@ -254,7 +304,7 @@ expected_markers=(
 )
 boot_extra_patterns=$(printf '%s\n' "${expected_markers[@]}")
 
-echo "tm-pseudodev-runtime-smoke.sh: booting Rust tm_pseudodev runtime smoke"
+echo "tm-pseudodev-runtime-smoke.sh: booting tm_pseudodev runtime smoke mode=$mode"
 FSQRV_BINS="$fsqrv_bins" \
     QSOE_BOOT_VIRTIO_PATTERN="/dev/vblk0 ready" \
     QSOE_BOOT_EXTRA_PATTERNS="$boot_extra_patterns" \

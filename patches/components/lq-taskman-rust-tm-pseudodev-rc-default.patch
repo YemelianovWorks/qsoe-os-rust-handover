@@ -1,0 +1,5 @@
+--- a/taskman/Makefile
++++ b/taskman/Makefile
+@@ -49,1 +49,1 @@
+-QSOE_RUST_TM_PSEUDODEV ?= 0
++QSOE_RUST_TM_PSEUDODEV ?= 1

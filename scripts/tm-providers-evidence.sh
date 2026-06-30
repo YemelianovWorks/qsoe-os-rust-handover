@@ -14,9 +14,10 @@ usage() {
     cat <<'EOF'
 usage: scripts/tm-providers-evidence.sh
 
-Builds Rust tm_cpio + tm_cred + tm_fdt + tm_pathmgr + tm_procfs + tm_rsrcdb
-into one taskman provider archive, links NQ and LQ taskman with their default
-shared-provider selections, audits the ELFs, and runs the /proc smoke.
+Builds Rust tm_cpio + tm_cred + tm_fdt + tm_pathmgr + tm_procfs +
+tm_pseudodev + tm_rsrcdb into one taskman provider archive, links NQ and LQ
+taskman with their default shared-provider selections, audits the ELFs, and
+runs the /proc smoke.
 
 Environment:
   TM_PROVIDERS_EVIDENCE_WORKDIR  output directory, default build/tm-providers-evidence
@@ -95,6 +96,7 @@ audit_elf() {
     local elf=$2
     local require_fdt=${3:-0}
     local require_rsrcdb=${4:-0}
+    local require_pseudodev=${5:-0}
     local header="$WORKDIR/$label-readelf-header.txt"
     local sections="$WORKDIR/$label-readelf-sections.txt"
     local dynamic="$WORKDIR/$label-readelf-dynamic.txt"
@@ -139,9 +141,52 @@ audit_elf() {
                 fail "$label is missing linked symbol $symbol"
         done
     fi
+    if [ "$require_pseudodev" -eq 1 ]; then
+        for symbol in \
+            tm_devnull_write \
+            tm_devnull_read \
+            tm_devnull_stat \
+            tm_devzero_write \
+            tm_devzero_read \
+            tm_devzero_stat
+        do
+            grep -Eq "[[:space:]]$symbol$" "$symbols" ||
+                fail "$label is missing linked symbol $symbol"
+        done
+    fi
 
     awk '/rust_begin_unwind/ { n++ } END { print n + 0 }' "$symbols" |
         tee "$WORKDIR/$label-rust-panic-symbol-count.txt"
+}
+
+capture_lq_taskman_plan() {
+    local log="$WORKDIR/lq-shared-taskman-dry-run.txt"
+
+    "$MAKE" -C "$ROOT/lq/taskman" --no-print-directory -B -n all \
+        LIBTASKMAN_A="$ROOT/lq/build/libtaskman/libtaskman.a" \
+        LIBTASKMAN_INC="$ROOT/libtaskman/include" \
+        QSOE_RUST_TM_CPIO=1 \
+        QSOE_RUST_TM_CRED=1 \
+        QSOE_RUST_TM_ELF=1 \
+        QSOE_RUST_TM_FDT=1 \
+        QSOE_RUST_TM_PATHMGR=1 \
+        QSOE_RUST_TM_PROCFS=1 \
+        QSOE_RUST_TM_PSEUDODEV=1 \
+        QSOE_RUST_TM_RSRCDB=1 \
+        QSOE_RUST_TM_SCRIPT=1 \
+        QSOE_RUST_TM_SYSCFG=1 \
+        QSOE_RUST_TM_SYSMAP=1 \
+        QSOE_RUST_TM_SYSFS=1 \
+        > "$log"
+}
+
+require_lq_plan_omits() {
+    local needle=$1
+    local log="$WORKDIR/lq-shared-taskman-dry-run.txt"
+
+    if grep -Fq "$needle" "$log"; then
+        fail "lq-shared dry-run link plan unexpectedly contains $needle"
+    fi
 }
 
 audit_provider_archive() {
@@ -169,6 +214,12 @@ audit_provider_archive() {
         tm_cred_init \
         tm_fdt_check \
         tm_pathmgr_resolve \
+        tm_devnull_write \
+        tm_devnull_read \
+        tm_devnull_stat \
+        tm_devzero_write \
+        tm_devzero_read \
+        tm_devzero_stat \
         tm_procfs_init \
         tm_procfs_resolve \
         tm_rsrc_init \
@@ -202,6 +253,7 @@ QSOE_RUST_TM_CRED=1 \
 QSOE_RUST_TM_FDT=1 \
 QSOE_RUST_TM_PATHMGR=1 \
 QSOE_RUST_TM_PROCFS=1 \
+QSOE_RUST_TM_PSEUDODEV=1 \
 QSOE_RUST_TM_RSRCDB=1 \
     "$MAKE" -C "$ROOT" --no-print-directory rust-tm-providers
 audit_provider_archive
@@ -218,20 +270,24 @@ require_absent_object nq-shared "$ROOT/nq/build/libtaskman/libtaskman.a" pathmgr
 require_absent_object nq-shared "$ROOT/nq/build/libtaskman/libtaskman.a" tm_procfs.o
 audit_elf nq-shared-taskman "$ROOT/nq/build/taskman/taskman.elf"
 
-echo "tm-providers-evidence.sh: linking LQ taskman with tm_cpio + tm_cred + tm_fdt + tm_pathmgr + tm_procfs + tm_rsrcdb"
+echo "tm-providers-evidence.sh: linking LQ taskman with tm_cpio + tm_cred + tm_fdt + tm_pathmgr + tm_procfs + tm_pseudodev + tm_rsrcdb"
 "$MAKE" -C "$ROOT/lq" --no-print-directory \
     QSOE_RUST_TM_CPIO=1 \
     QSOE_RUST_TM_CRED=1 \
     QSOE_RUST_TM_FDT=1 \
     QSOE_RUST_TM_PATHMGR=1 \
     QSOE_RUST_TM_PROCFS=1 \
+    QSOE_RUST_TM_PSEUDODEV=1 \
     QSOE_RUST_TM_RSRCDB=1 \
     taskman
+capture_lq_taskman_plan
+require_lq_plan_omits '/sys/devnull.o'
+require_lq_plan_omits '/sys/devzero.o'
 require_absent_object lq-shared "$ROOT/lq/build/libtaskman/libtaskman.a" cpio.o
 require_absent_object lq-shared "$ROOT/lq/build/libtaskman/libtaskman.a" cred.o
 require_absent_object lq-shared "$ROOT/lq/build/libtaskman/libtaskman.a" pathmgr.o
 require_absent_object lq-shared "$ROOT/lq/build/libtaskman/libtaskman.a" tm_procfs.o
-audit_elf lq-shared-taskman "$ROOT/lq/build/taskman.elf" 1 1
+audit_elf lq-shared-taskman "$ROOT/lq/build/taskman.elf" 1 1 1
 
 echo "tm-providers-evidence.sh: running shared-provider /proc smoke"
 QSOE_RUST_TM_CPIO=1 \
@@ -239,6 +295,7 @@ QSOE_RUST_TM_CRED=1 \
 QSOE_RUST_TM_FDT=1 \
 QSOE_RUST_TM_PATHMGR=1 \
 QSOE_RUST_TM_PROCFS=1 \
+QSOE_RUST_TM_PSEUDODEV=1 \
 QSOE_RUST_TM_RSRCDB=1 \
 PROCFS_SMOKE_WORKDIR="$WORKDIR/procfs-smoke" \
     "$MAKE" -C "$ROOT" --no-print-directory procfs-smoke

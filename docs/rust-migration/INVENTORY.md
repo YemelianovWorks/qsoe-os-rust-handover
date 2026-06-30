@@ -25,7 +25,7 @@ excluded unless `QSOE_INDEX_SEL4=1` is set.
 | `host_tools` | 2 | 781 | `qrvfs-tree` and `mkfs-qrv-rs` have Rust-default RC paths with C rollback. Tracked by #136. |
 | `libc` | 447 | 43,080 | Broad runtime, syscall, stdio, allocator, string, rtld, and QSOE wrapper surface. Not a wholesale Rust target. |
 | `libtaskman` | 17 | 2,037 | Best source of host-testable task-manager modules. `tm_procfs`, `tm_cpio`, `tm_script`, `tm_elf`, `tm_syscfg`, and `tm_sysfs` are retired to Rust through the shared provider archive; `tm_cred` and `tm_pathmgr` are Rust-default RCs with C rollback; remaining candidates are tracked in #153. |
-| `lq` | 89 | 17,686 | seL4 task manager, LQ libc wrappers, process, capability, path, memory, syscall, and boot glue. Pure/diagnostic slices only are candidates; LQ sysmap is retired to Rust, FDT and resource DB accounting are Rust-default RCs with C rollback, and pseudo-devices remain Rust opt-in. |
+| `lq` | 89 | 17,686 | seL4 task manager, LQ libc wrappers, process, capability, path, memory, syscall, and boot glue. Pure/diagnostic slices only are candidates; LQ sysmap is retired to Rust, and FDT, pseudo-devices, and resource DB accounting are Rust-default RCs with C rollback. |
 | `nq` | 125 | 25,056 | Kernel, NQ libc, and NQ taskman surface. Near-term linked Rust is deferred by policy; fixture-only candidates are tracked in #155. |
 | `quser` | 125 | 40,818 | Userland services, drivers, resource-server support, shell, tests, and utilities. `test_msgpass` is the first retired C helper; `slogger`, `pipe`, and `devb-virtio` are retired C production paths; several services have Rust pilots; many remain C. |
 | **Total** | **807** | **129,817** | QSOE-owned C/asm/linker surface in this checkout, excluding generated build outputs and vendor seL4. |
@@ -67,15 +67,15 @@ Issue state, labels, and metadata are the source of truth for current progress.
 | `tm_pathmgr` | #149 | Rust-default RC path registry provider with C rollback, explicit RC/rollback smokes, and focused runtime namespace smoke. |
 | `tm_rsrcdb` | #151 | Rust-default RC LQ resource DB provider with C rollback, explicit RC/rollback smokes, and focused `rsrcdbmgr_*` runtime smoke. |
 | `tm_cred` | #150 | Rust-default RC provider with C rollback, focused credential runtime smoke, and explicit rollback smoke. |
-| `tm_pseudodev` | #152 | Rust opt-in LQ pseudo-device provider with C rollback and focused `/dev/null` plus `/dev/zero` runtime smoke; not a Rust-default RC. |
+| `tm_pseudodev` | #152 | Rust-default RC LQ pseudo-device provider with C rollback, explicit RC/rollback smokes, and focused `/dev/null` plus `/dev/zero` runtime smoke. |
 | `tm_sysfs` | #148 | Retired C provider; Rust `qsoe-tm-sysfs` is mandatory in taskman and the `/sys` runtime smoke covers the Rust-only path. |
 
 `test_msgpass` is the first tracked C implementation retired after an RC window
 and rollback drill. `slogger` is the first retired production service, followed
 by `pipe` and `devb-virtio`. `tm_procfs` is the first retired task-manager
 provider, followed by `tm_script`, `tm_cpio`, `tm_elf`, `tm_syscfg`,
-`tm_sysmap`, and `tm_sysfs`. `tm_cred`, `tm_fdt`, `tm_pathmgr`, and
-`tm_rsrcdb` are current Rust-default RCs with C rollback. Future retirements remain governed by #26 and
+`tm_sysmap`, and `tm_sysfs`. `tm_cred`, `tm_fdt`, `tm_pathmgr`,
+`tm_pseudodev`, and `tm_rsrcdb` are current Rust-default RCs with C rollback. Future retirements remain governed by #26 and
 must be separate removal PRs after their own RC evidence.
 
 ## Remaining Candidate Buckets

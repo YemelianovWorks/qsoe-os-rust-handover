@@ -1,0 +1,5 @@
+--- a/Makefile
++++ b/Makefile
+@@ -48,1 +48,1 @@
+-QSOE_RUST_TM_PSEUDODEV ?= 0
++QSOE_RUST_TM_PSEUDODEV ?= 1
