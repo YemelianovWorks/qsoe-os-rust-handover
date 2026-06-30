@@ -1,19 +1,20 @@
-# Task Manager ELF Rust-Default RC Provider
+# Task Manager ELF Retired C Provider
 
 Captured: 2026-06-30 CEST.
 
 ## Scope
 
-`qsoe-tm-elf` is the Rust-default release-candidate provider for the portable
-task-manager ELF view parser in:
+`qsoe-tm-elf` is the mandatory Rust provider for the portable task-manager ELF
+view parser in:
 
 ```text
-libtaskman/src/elf.c
 libtaskman/include/tm_elf.h
+rust/crates/qsoe-tm-elf/src/lib.rs
 ```
 
-It exports the existing `tm_elf_parse` ABI and preserves the C parser's view
-shape for ELF64 little-endian RISC-V images.
+It exports the existing `tm_elf_parse` ABI and preserves the retired C parser's
+view shape for ELF64 little-endian RISC-V images. The C provider body
+`libtaskman/src/elf.c` is removed.
 
 It covers:
 
@@ -51,7 +52,7 @@ make -C nq/taskman
 make -C lq taskman
 ```
 
-C rollback remains available:
+C rollback is retired and now fails fast:
 
 ```sh
 QSOE_RUST_TM_ELF=0 make -C nq/taskman
@@ -64,7 +65,6 @@ The top-level evidence target is:
 make tm-elf-evidence
 make tm-elf-runtime-smoke
 make tm-elf-rc-smoke
-make tm-elf-rc-rollback-smoke
 ```
 
 Multiple taskman Rust providers may be selected together. The shared
@@ -81,29 +81,24 @@ make check-tm-elf-model
 cargo test --manifest-path rust/Cargo.toml -p qsoe-tm-elf --features host-tests --lib
 cargo clippy --manifest-path rust/Cargo.toml -p qsoe-tm-elf --features host-tests -- -D warnings
 bash -n scripts/check-tm-elf-model.sh scripts/build-rust-tm-elf-provider.sh scripts/tm-elf-evidence.sh scripts/tm-elf-runtime-smoke.sh scripts/tm-elf-rc-smoke.sh scripts/apply-component-overrides.sh scripts/boot-smoke.sh
-make -n tm-elf-rc-smoke tm-elf-rc-rollback-smoke container-tm-elf-rc-smoke container-tm-elf-rc-rollback-smoke
+make -n tm-elf-rc-smoke container-tm-elf-rc-smoke
 make rust-tm-elf-provider
 make tm-elf-evidence
 make tm-elf-runtime-smoke
 make tm-elf-rc-smoke
-make tm-elf-rc-rollback-smoke
 ```
 
 `make tm-elf-evidence` verified:
 
-- C host fixture passes against `libtaskman/src/elf.c`;
 - Rust host tests pass for layout, valid parses, malformed inputs, too many
   load segments, zero-file-size loads, and wrapped segment ends;
 - Rust staticlib builds for `riscv64imac-unknown-none-elf`;
 - Rust provider archive members report RVC soft-float ABI;
 - Rust provider archive exports `tm_elf_parse`;
-- NQ C-rollback `libtaskman.a` contains one `elf.o`;
-- NQ Rust-default `libtaskman.a` contains zero `elf.o`;
-- LQ C-rollback `libtaskman.a` contains one `elf.o`;
-- LQ Rust-default `libtaskman.a` contains zero `elf.o`;
-- NQ and LQ taskman links complete in both C-rollback and Rust-default modes,
-  and the linked taskman ELFs pass the evidence script's ELF flag and section
-  audit.
+- NQ and LQ Rust-only `libtaskman.a` contain zero `elf.o`;
+- NQ and LQ reject `QSOE_RUST_TM_ELF=0`;
+- NQ and LQ taskman links complete in Rust-only mode, export `tm_elf_parse`,
+  and pass the evidence script's ELF flag and section audit.
 
 `make tm-elf-runtime-smoke` verified the Rust-selected parser in a booted LQ
 image. The smoke injects a sysinit fragment, verifies the staged
@@ -116,22 +111,23 @@ tm-elf-runtime-smoke: /usr/bin/sysinfo dynamic ELF spawn ok
 
 `/usr/bin/sysinfo` is a dynamic ELF, so successful spawn exercises
 `tm_elf_parse` for the main image plus the loader path for `rtld` and `libc`.
-This evidence proves ABI compatibility, archive selection, rollback, linked
-artifact shape, and focused dynamic ELF spawn behavior under the Rust ELF
-parser.
+This evidence proves ABI compatibility, archive selection, linked artifact
+shape, and focused dynamic ELF spawn behavior under the Rust ELF parser.
 
 `make tm-elf-rc-smoke` verifies the same dynamic ELF spawn path in the default
 selector mode and requires C `elf.o` to be absent from NQ and LQ
-`libtaskman.a`. `make tm-elf-rc-rollback-smoke` repeats the path with
-`QSOE_RUST_TM_ELF=0` and requires C `elf.o` to be present.
+`libtaskman.a`. Attempts to use `QSOE_RUST_TM_ELF=0` or
+`TM_ELF_RC_ROLLBACK=1` fail fast after retirement.
 
-## C Rollback
+## C Retirement
 
-C remains the rollback path:
+C rollback no longer exists:
 
-- `QSOE_RUST_TM_ELF=1` is the default and excludes `elf.o`;
-- `QSOE_RUST_TM_ELF=0` keeps `libtaskman/src/elf.c` and C `elf.o`;
+- `QSOE_RUST_TM_ELF=1` is mandatory and excludes `elf.o`;
+- `QSOE_RUST_TM_ELF=0` is rejected;
+- `libtaskman/src/elf.c` is removed;
 - the Rust path links
   the shared taskman Rust provider archive.
 
-Do not retire C until #26 is satisfied in a separate removal PR.
+Do not reintroduce C rollback without a new issue, explicit rollback
+justification, and fresh PR evidence.

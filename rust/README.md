@@ -361,8 +361,8 @@ fails fast after retirement.
 
 ## Task Manager ELF View Parser Selection
 
-The Rust `tm_elf` provider is the Rust-default release-candidate provider for
-the portable taskman ELF view parser:
+The C `tm_elf` provider is retired. The Rust provider remains buildable as the
+mandatory portable taskman ELF view parser:
 
 ```sh
 make check-tm-elf-model
@@ -370,22 +370,20 @@ make rust-tm-elf-provider
 make tm-elf-evidence
 make tm-elf-runtime-smoke
 make tm-elf-rc-smoke
-make tm-elf-rc-rollback-smoke
 ```
 
 With the default `QSOE_RUST_TM_ELF=1`, NQ and LQ taskman omit C `elf.o`, build
 `qsoe-tm-elf` for `riscv64imac-unknown-none-elf`, and link it through the
-shared `libqsoe_tm_providers.a` taskman provider archive. With
-`QSOE_RUST_TM_ELF=0`, NQ and LQ taskman restore C `elf.o` as rollback.
-Segment mapping, dynamic-linker handling, relocation, process tables, and seL4
+shared `libqsoe_tm_providers.a` taskman provider archive. `QSOE_RUST_TM_ELF=0`
+now fails fast because the C `elf.o` rollback provider is retired. Segment
+mapping, dynamic-linker handling, relocation, process tables, and seL4
 invocation code remain C.
 
 `make tm-elf-rc-smoke` first audits default Rust archive selection, then boots
 QSOE/L, verifies the staged `/usr/bin/sysinfo` has a program interpreter, and
 runs it from sysinit. Because `sysinfo` is a dynamic ELF, the smoke covers
 Rust `tm_elf_parse` in the dynamic spawn path while the loader and relocation
-logic remain C. `make tm-elf-rc-rollback-smoke` repeats the same path with C
-rollback.
+logic remain C.
 
 ## Task Manager FDT Parser Selection
 

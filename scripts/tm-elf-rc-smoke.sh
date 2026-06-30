@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Validate the tm_elf Rust-default RC selector and the C rollback path.
+# Validate the retired tm_elf Rust selector.
 
 set -eu
 
@@ -8,12 +8,12 @@ usage() {
     cat <<'EOF'
 usage: scripts/tm-elf-rc-smoke.sh [-t seconds] [-o log] [--keep-running] [-- <emu args>]
 
-Builds NQ and LQ taskman in the selected tm_elf RC mode, verifies the expected
-elf.o archive membership, then reuses the live tm_elf runtime smoke.
+Builds NQ and LQ taskman with the retired Rust tm_elf provider, verifies that
+C elf.o is absent, then reuses the live tm_elf runtime smoke.
 
 Environment:
-  TM_ELF_RC_ROLLBACK  set 1 to select C tm_elf rollback
-  QSOE_RUST_TM_ELF    defaults to the Rust RC path; may be 0 or 1
+  TM_ELF_RC_ROLLBACK  unsupported after C tm_elf retirement
+  QSOE_RUST_TM_ELF    must remain 1 after C tm_elf retirement
   TM_ELF_RC_WORKDIR   output directory, default build/tm-elf-rc
 EOF
 }
@@ -82,74 +82,51 @@ require_elf_count() {
         fail "$label expected $expected elf.o members, got $count"
 }
 
-normalize_selector() {
-    case "$1" in
-        1|true|TRUE|yes|YES)
-            printf '1'
-            ;;
-        0|false|FALSE|no|NO)
-            printf '0'
-            ;;
-        *)
-            fail "QSOE_RUST_TM_ELF must be 0 or 1"
-            ;;
-    esac
-}
-
 mkdir -p "$workdir"
 "$ROOT/scripts/apply-component-overrides.sh"
 
-case "$rollback" in
-    0|false|FALSE|no|NO)
-        if [ "${QSOE_RUST_TM_ELF+x}" ]; then
-            selected=$(normalize_selector "$QSOE_RUST_TM_ELF")
-            if [ "$selected" -eq 1 ]; then
-                mode=rust-selected
-                expected_elf_count=0
-            else
-                mode=c-selected
-                expected_elf_count=1
-            fi
-        else
-            selected=1
-            mode=rust-default
-            expected_elf_count=0
-        fi
-        ;;
+case "${QSOE_RUST_TM_ELF:-1}" in
     1|true|TRUE|yes|YES)
-        selected=0
-        mode=c-rollback
-        expected_elf_count=1
+        selected=1
+        ;;
+    0|false|FALSE|no|NO)
+        echo "tm-elf-rc-smoke.sh: C tm_elf is retired; QSOE_RUST_TM_ELF must be 1" >&2
+        exit 2
         ;;
     *)
-        fail "TM_ELF_RC_ROLLBACK must be 0 or 1"
+        echo "tm-elf-rc-smoke.sh: QSOE_RUST_TM_ELF must be 1 after C retirement" >&2
+        exit 2
+        ;;
+esac
+
+case "$rollback" in
+    0|false|FALSE|no|NO)
+        mode=rust-retired
+        expected_elf_count=0
+        ;;
+    1|true|TRUE|yes|YES)
+        echo "tm-elf-rc-smoke.sh: C tm_elf rollback is retired" >&2
+        exit 2
+        ;;
+    *)
+        echo "tm-elf-rc-smoke.sh: TM_ELF_RC_ROLLBACK must be 0 after C retirement" >&2
+        exit 2
         ;;
 esac
 
 echo "tm-elf-rc-smoke.sh: mode=$mode rollback=$rollback"
 
 echo "tm-elf-rc-smoke.sh: verifying NQ taskman selector"
-if [ "$mode" = rust-default ]; then
-    env -u QSOE_RUST_TM_ELF "$MAKE" -C "$ROOT/nq/taskman" --no-print-directory \
-        QSOE_RUST_TM_PROCFS=1
-else
-    "$MAKE" -C "$ROOT/nq/taskman" --no-print-directory \
-        QSOE_RUST_TM_ELF="$selected" \
-        QSOE_RUST_TM_PROCFS=1
-fi
+"$MAKE" -C "$ROOT/nq/taskman" --no-print-directory \
+    QSOE_RUST_TM_ELF=1 \
+    QSOE_RUST_TM_PROCFS=1
 require_elf_count "nq-$mode" "$ROOT/nq/build/libtaskman/libtaskman.a" "$expected_elf_count"
 
 echo "tm-elf-rc-smoke.sh: verifying LQ taskman selector"
-if [ "$mode" = rust-default ]; then
-    env -u QSOE_RUST_TM_ELF "$MAKE" -C "$ROOT/lq" --no-print-directory \
-        QSOE_RUST_TM_PROCFS=1 \
-        taskman
-else
-    "$MAKE" -C "$ROOT/lq" --no-print-directory \
-        QSOE_RUST_TM_ELF="$selected" \
-        QSOE_RUST_TM_PROCFS=1 \
-        taskman
-fi
+"$MAKE" -C "$ROOT/lq" --no-print-directory \
+    QSOE_RUST_TM_ELF=1 \
+    QSOE_RUST_TM_PROCFS=1 \
+    taskman
 require_elf_count "lq-$mode" "$ROOT/lq/build/libtaskman/libtaskman.a" "$expected_elf_count"
 
 runtime_args=("$@")
@@ -160,8 +137,5 @@ fi
 export QSOE_RUST_TM_ELF="$selected"
 export QSOE_RUST_TM_PROCFS=1
 export TM_ELF_RUNTIME_SMOKE_WORKDIR="$workdir"
-if [ "$selected" -eq 0 ]; then
-    export TM_ELF_RUNTIME_ALLOW_C=1
-fi
 
 exec "$ROOT/scripts/tm-elf-runtime-smoke.sh" "${runtime_args[@]}"

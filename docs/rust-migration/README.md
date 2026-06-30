@@ -101,15 +101,16 @@ Read in this order:
    evidence gate.
 51. `TASK_MANAGER_SYSFS_RC.md`: Rust-default `tm_sysfs` release-candidate
    note and C rollback drill.
-52. `TASK_MANAGER_ELF.md`: Rust-default RC task-manager ELF view parser provider
-   and evidence gate.
-53. `TASK_MANAGER_ELF_RC.md`: Rust-default `tm_elf` release-candidate note
-   and C rollback drill.
-54. `TASK_MANAGER_FDT.md`: Rust opt-in LQ task-manager FDT parser provider and
+52. `TASK_MANAGER_ELF.md`: retired C task-manager ELF view parser provider and
    evidence gate.
-55. `TASK_MANAGER_SYSMAP.md`: Rust-default RC LQ task-manager sysmap page
+53. `TASK_MANAGER_ELF_RC.md`: historical Rust-default `tm_elf`
+   release-candidate note.
+54. `TASK_MANAGER_ELF_RETIREMENT.md`: `tm_elf` C retirement evidence.
+55. `TASK_MANAGER_FDT.md`: Rust opt-in LQ task-manager FDT parser provider and
+   evidence gate.
+56. `TASK_MANAGER_SYSMAP.md`: Rust-default RC LQ task-manager sysmap page
    builder and evidence gate.
-56. `TASK_MANAGER_SYSMAP_RC.md`: Rust-default `tm_sysmap` release-candidate
+57. `TASK_MANAGER_SYSMAP_RC.md`: Rust-default `tm_sysmap` release-candidate
    note and C rollback drill.
 57. `TASK_MANAGER_PATHMGR.md`: Rust opt-in task-manager path registry provider
    and evidence gate.

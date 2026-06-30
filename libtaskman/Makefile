@@ -20,7 +20,7 @@ CC       := $(CROSS)gcc
 AR       := $(CROSS)ar
 QSOE_RUST_TM_CPIO ?= 1
 QSOE_RUST_TM_CRED ?= 0
-QSOE_RUST_TM_ELF ?= 0
+QSOE_RUST_TM_ELF ?= 1
 QSOE_RUST_TM_PATHMGR ?= 0
 QSOE_RUST_TM_PROCFS ?= 1
 QSOE_RUST_TM_SCRIPT ?= 1
@@ -58,8 +58,8 @@ ifneq ($(filter $(QSOE_RUST_TM_CRED),0 1),$(QSOE_RUST_TM_CRED))
 $(error QSOE_RUST_TM_CRED must be 0 or 1)
 endif
 
-ifneq ($(filter $(QSOE_RUST_TM_ELF),0 1),$(QSOE_RUST_TM_ELF))
-$(error QSOE_RUST_TM_ELF must be 0 or 1)
+ifneq ($(QSOE_RUST_TM_ELF),1)
+$(error QSOE_RUST_TM_ELF must be 1 after C tm_elf retirement)
 endif
 
 ifneq ($(filter $(QSOE_RUST_TM_PATHMGR),0 1),$(QSOE_RUST_TM_PATHMGR))

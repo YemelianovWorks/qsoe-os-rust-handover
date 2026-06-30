@@ -172,6 +172,9 @@ apply_patch_if_possible_or_present nq nq-taskman-rust-tm-procfs-retired.patch \
 apply_patch_if_possible_or_present nq nq-taskman-rust-tm-cpio-retired.patch \
     "$ROOT/nq/taskman/Makefile" \
     'QSOE_RUST_TM_CPIO must be 1 after C tm_cpio retirement'
+apply_patch_if_possible_or_present nq nq-taskman-rust-tm-elf-retired.patch \
+    "$ROOT/nq/taskman/Makefile" \
+    'QSOE_RUST_TM_ELF must be 1 after C tm_elf retirement'
 apply_patch_if_possible_or_present nq nq-taskman-rust-tm-script-retired.patch \
     "$ROOT/nq/taskman/Makefile" \
     'QSOE_RUST_TM_SCRIPT must be 1 after C tm_script retirement'
@@ -236,6 +239,9 @@ apply_patch_if_possible_or_present lq lq-makefile-rust-tm-procfs-retired.patch \
 apply_patch_if_possible_or_present lq lq-makefile-rust-tm-cpio-retired.patch \
     "$ROOT/lq/Makefile" \
     'QSOE_RUST_TM_CPIO must be 1 after C tm_cpio retirement'
+apply_patch_if_possible_or_present lq lq-makefile-rust-tm-elf-retired.patch \
+    "$ROOT/lq/Makefile" \
+    'QSOE_RUST_TM_ELF must be 1 after C tm_elf retirement'
 apply_patch_if_possible_or_present lq lq-makefile-rust-tm-script-retired.patch \
     "$ROOT/lq/Makefile" \
     'QSOE_RUST_TM_SCRIPT must be 1 after C tm_script retirement'
@@ -296,6 +302,9 @@ apply_patch_if_possible_or_present lq lq-taskman-rust-tm-procfs-retired.patch \
 apply_patch_if_possible_or_present lq lq-taskman-rust-tm-cpio-retired.patch \
     "$ROOT/lq/taskman/Makefile" \
     'QSOE_RUST_TM_CPIO must be 1 after C tm_cpio retirement'
+apply_patch_if_possible_or_present lq lq-taskman-rust-tm-elf-retired.patch \
+    "$ROOT/lq/taskman/Makefile" \
+    'QSOE_RUST_TM_ELF must be 1 after C tm_elf retirement'
 apply_patch_if_possible_or_present lq lq-taskman-rust-tm-script-retired.patch \
     "$ROOT/lq/taskman/Makefile" \
     'QSOE_RUST_TM_SCRIPT must be 1 after C tm_script retirement'
@@ -386,6 +395,7 @@ require_line "$ROOT/nq/taskman/Makefile" 'QSOE_RUST_TM_CPIO ?= 1'
 require_line "$ROOT/nq/taskman/Makefile" 'QSOE_RUST_TM_CPIO must be 1 after C tm_cpio retirement'
 require_line "$ROOT/nq/taskman/Makefile" 'QSOE_RUST_TM_PROCFS ?= 1'
 require_line "$ROOT/nq/taskman/Makefile" 'QSOE_RUST_TM_PROCFS must be 1 after C tm_procfs retirement'
+require_line "$ROOT/nq/taskman/Makefile" 'QSOE_RUST_TM_ELF must be 1 after C tm_elf retirement'
 require_line "$ROOT/nq/taskman/Makefile" 'QSOE_RUST_TM_SCRIPT must be 1 after C tm_script retirement'
 require_line "$ROOT/nq/taskman/Makefile" 'QSOE_RUST_TM_CRED ?= 0'
 require_line "$ROOT/nq/taskman/Makefile" 'QSOE_RUST_TM_ELF ?= 1'
@@ -458,6 +468,7 @@ require_line "$ROOT/lq/Makefile" 'QSOE_RUST_TM_CPIO ?= 1'
 require_line "$ROOT/lq/Makefile" 'QSOE_RUST_TM_CPIO must be 1 after C tm_cpio retirement'
 require_line "$ROOT/lq/Makefile" 'QSOE_RUST_TM_PROCFS ?= 1'
 require_line "$ROOT/lq/Makefile" 'QSOE_RUST_TM_PROCFS must be 1 after C tm_procfs retirement'
+require_line "$ROOT/lq/Makefile" 'QSOE_RUST_TM_ELF must be 1 after C tm_elf retirement'
 require_line "$ROOT/lq/Makefile" 'QSOE_RUST_TM_SCRIPT must be 1 after C tm_script retirement'
 require_line "$ROOT/lq/Makefile" 'QSOE_RUST_TM_CRED ?= 0'
 require_line "$ROOT/lq/Makefile" 'QSOE_RUST_TM_ELF ?= 1'
@@ -530,6 +541,7 @@ require_line "$ROOT/lq/taskman/Makefile" 'QSOE_RUST_TM_CPIO ?= 1'
 require_line "$ROOT/lq/taskman/Makefile" 'QSOE_RUST_TM_CPIO must be 1 after C tm_cpio retirement'
 require_line "$ROOT/lq/taskman/Makefile" 'QSOE_RUST_TM_PROCFS ?= 1'
 require_line "$ROOT/lq/taskman/Makefile" 'QSOE_RUST_TM_PROCFS must be 1 after C tm_procfs retirement'
+require_line "$ROOT/lq/taskman/Makefile" 'QSOE_RUST_TM_ELF must be 1 after C tm_elf retirement'
 require_line "$ROOT/lq/taskman/Makefile" 'QSOE_RUST_TM_SCRIPT must be 1 after C tm_script retirement'
 require_line "$ROOT/lq/taskman/Makefile" 'QSOE_RUST_TM_CRED ?= 0'
 require_line "$ROOT/lq/taskman/Makefile" 'QSOE_RUST_TM_ELF ?= 1'

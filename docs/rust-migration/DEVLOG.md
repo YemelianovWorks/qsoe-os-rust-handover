@@ -24,6 +24,66 @@ Follow-up:
 - ...
 ```
 
+## 2026-06-30 15:07 CEST - `tm_elf` C Provider Retirement
+
+Scope:
+
+- Removed the C `tm_elf` provider implementation from `libtaskman/src/elf.c`.
+- Removed the C host model fixture `tests/tm_elf_model_test.c`; the Rust
+  `qsoe-tm-elf` host tests are now the canonical taskman ELF parser evidence.
+- Made `QSOE_RUST_TM_ELF=1` mandatory in the top-level, `libtaskman`, NQ/LQ
+  component makefiles, the Rust provider archive builder, and tm_elf
+  smoke/evidence scripts.
+- Removed the tm_elf C rollback smoke target and converted rollback selector
+  attempts into fail-fast configuration errors.
+- Updated docs, inventory/status summaries, and component patch overlays to
+  mark `tm_elf` as a retired C provider.
+
+Commands:
+
+- `mcp__codebase_memory_mcp.index_status`
+- `mcp__codebase_memory_mcp.search_graph`
+- `bash -n scripts/build-rust-tm-providers.sh scripts/check-tm-elf-model.sh scripts/tm-elf-evidence.sh scripts/tm-elf-runtime-smoke.sh scripts/tm-elf-rc-smoke.sh scripts/apply-component-overrides.sh scripts/tm-fdt-evidence.sh scripts/tm-pathmgr-evidence.sh scripts/tm-sysmap-evidence.sh`
+- `scripts/c-index.sh files`
+- `scripts/apply-component-overrides.sh`
+- `make prepare` in a fresh worktree rooted at the PR commit
+- `make check-tm-elf-model`
+- `QSOE_RUST_TM_ELF=0 scripts/build-rust-tm-providers.sh /tmp/should-not-build-tm-elf.a`
+- `make tm-elf-evidence`
+- `TM_ELF_RC_ROLLBACK=1 scripts/tm-elf-rc-smoke.sh`
+- `QSOE_RUST_TM_ELF=0 scripts/tm-elf-rc-smoke.sh`
+- `QSOE_RUST_TM_ELF=0 scripts/tm-elf-runtime-smoke.sh`
+- `timeout 300 make tm-elf-rc-smoke`
+- `make tm-fdt-evidence`
+- `make tm-pathmgr-evidence`
+- `make tm-sysmap-evidence`
+- `make roadmap-validate`
+- `git diff --check`
+- `make rust-quality`
+
+Result:
+
+- C index now reports 810 tracked C/asm/linker files after removing the retired
+  ELF implementation and C fixture.
+- `qsoe-tm-elf` host tests pass and cover C ABI layout, load/interpreter range
+  parsing, zero-file-size loads, malformed input rejection, wrapped span
+  rejection, and load-count bounds.
+- Rust provider archives still build with the required `tm-elf` feature, and
+  explicit `QSOE_RUST_TM_ELF=0` use is rejected before archive builds.
+- NQ and LQ taskman builds no longer include `libtaskman` `elf.o`; final
+  taskman symbols resolve to the Rust `tm_elf_parse` provider.
+- Clean release-tag component patch application passes in a fresh worktree.
+- The retired RC smoke still boots the dynamic `/usr/bin/sysinfo` ELF spawn
+  probe in Rust-retired mode.
+- Adjacent taskman evidence paths (`tm-fdt`, `tm-pathmgr`, `tm-sysmap`) pass
+  after switching their link-plan setup to mandatory Rust tm_elf.
+- Roadmap metadata validates with 38 issue-backed items.
+
+Follow-up:
+
+- Open the retirement PR, watch QSOE CI, merge after green, then close issue
+  #144 with the PR and main-branch CI evidence.
+
 ## 2026-06-30 14:16 CEST - `tm_cpio` C Provider Retirement
 
 Scope:

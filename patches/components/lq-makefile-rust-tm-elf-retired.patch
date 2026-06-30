@@ -1,0 +1,11 @@
+diff --git a/Makefile b/Makefile
+--- a/Makefile
++++ b/Makefile
+@@ -60,6 +60,9 @@ ifneq ($(QSOE_RUST_TM_CPIO),1)
+ $(error QSOE_RUST_TM_CPIO must be 1 after C tm_cpio retirement)
+ endif
++ifneq ($(QSOE_RUST_TM_ELF),1)
++$(error QSOE_RUST_TM_ELF must be 1 after C tm_elf retirement)
++endif
+ 
+ QEMU    := qemu-system-riscv64
