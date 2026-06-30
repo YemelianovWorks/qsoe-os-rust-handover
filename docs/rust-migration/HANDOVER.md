@@ -381,11 +381,12 @@ The strict ELF audit showed:
   `rsrcdbmgr_*` create, attach, query, detach, and destroy calls with Rust
   `tm_rsrcdb` selected. C remains default and rollback until a separate RC
   decision exists.
-- `tm_elf` has a Rust opt-in provider behind `QSOE_RUST_TM_ELF=1`. The selector
-  removes C `elf.o` from `libtaskman.a` and links through the shared taskman
-  Rust provider archive. `make tm-elf-runtime-smoke` covers dynamic
-  ELF-backed `/usr/bin/sysinfo` spawn with Rust `tm_elf` selected. C remains
-  default and rollback until a separate RC decision exists.
+- `tm_elf` is a Rust-default RC provider with `QSOE_RUST_TM_ELF=1` as the
+  normal selector and `QSOE_RUST_TM_ELF=0` as C rollback. The selector removes
+  C `elf.o` from `libtaskman.a` and links through the shared taskman Rust
+  provider archive. `make tm-elf-rc-smoke` covers default Rust archive
+  selection plus dynamic ELF-backed `/usr/bin/sysinfo` spawn; `make
+  tm-elf-rc-rollback-smoke` repeats the same path with C rollback.
 - `tm_fdt` has a Rust opt-in provider behind `QSOE_RUST_TM_FDT=1`. The
   selector removes LQ C `sys/fdt.o` and links through the shared taskman Rust
   provider archive. `make tm-fdt-runtime-smoke` covers `/chosen` bootargs,

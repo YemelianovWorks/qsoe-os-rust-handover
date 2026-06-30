@@ -124,6 +124,14 @@ jobs:
         if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
         run: make container-tm-elf-runtime-smoke
 
+      - name: Run tm_elf Rust-default RC smoke
+        if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+        run: make container-tm-elf-rc-smoke
+
+      - name: Run tm_elf C rollback RC smoke
+        if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+        run: make container-tm-elf-rc-rollback-smoke
+
       - name: Run tm_fdt Rust opt-in evidence
         if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
         run: make container-tm-fdt-evidence
@@ -238,6 +246,8 @@ jobs:
             build/tm-elf-evidence/**/*.log
             build/tm-elf-evidence/**/*.txt
             build/tm-elf-runtime-smoke/*.log
+            build/tm-elf-rc/*.log
+            build/tm-elf-rc/*.txt
             build/tm-fdt-evidence/**/*.log
             build/tm-fdt-evidence/**/*.txt
             build/tm-fdt-runtime-smoke/*.log

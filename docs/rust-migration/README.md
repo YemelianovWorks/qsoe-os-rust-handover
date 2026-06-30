@@ -95,24 +95,26 @@ Read in this order:
    evidence gate.
 49. `TASK_MANAGER_SYSFS_RC.md`: Rust-default `tm_sysfs` release-candidate
    note and C rollback drill.
-50. `TASK_MANAGER_ELF.md`: Rust opt-in task-manager ELF view parser provider
+50. `TASK_MANAGER_ELF.md`: Rust-default RC task-manager ELF view parser provider
    and evidence gate.
-51. `TASK_MANAGER_FDT.md`: Rust opt-in LQ task-manager FDT parser provider and
+51. `TASK_MANAGER_ELF_RC.md`: Rust-default `tm_elf` release-candidate note
+   and C rollback drill.
+52. `TASK_MANAGER_FDT.md`: Rust opt-in LQ task-manager FDT parser provider and
    evidence gate.
-52. `TASK_MANAGER_SYSMAP.md`: Rust-default RC LQ task-manager sysmap page
+53. `TASK_MANAGER_SYSMAP.md`: Rust-default RC LQ task-manager sysmap page
    builder and evidence gate.
-53. `TASK_MANAGER_SYSMAP_RC.md`: Rust-default `tm_sysmap` release-candidate
+54. `TASK_MANAGER_SYSMAP_RC.md`: Rust-default `tm_sysmap` release-candidate
    note and C rollback drill.
-54. `TASK_MANAGER_PATHMGR.md`: Rust opt-in task-manager path registry provider
+55. `TASK_MANAGER_PATHMGR.md`: Rust opt-in task-manager path registry provider
    and evidence gate.
-55. `KERNEL_CANDIDATES.md`: Phase 10 kernel candidate inventory, explicit
+56. `KERNEL_CANDIDATES.md`: Phase 10 kernel candidate inventory, explicit
    exclusions, and fixture-only ranking.
-56. `KERNEL_ARTIFACT_AUDIT.md`: Phase 10 kernel Rust artifact audit needs.
-57. `SPEC.md`: technical constraints, allowed boundaries, runtime/linking rules,
+57. `KERNEL_ARTIFACT_AUDIT.md`: Phase 10 kernel Rust artifact audit needs.
+58. `SPEC.md`: technical constraints, allowed boundaries, runtime/linking rules,
    and acceptance standards.
-58. `PLAN.md`: phased migration plan from baseline validation through possible
+59. `PLAN.md`: phased migration plan from baseline validation through possible
    kernel reassessment.
-59. `TASKS.md`: executable backlog with acceptance criteria.
+60. `TASKS.md`: executable backlog with acceptance criteria.
 
 The first implementation milestone should not be a subsystem rewrite. It should
 be a reproducible baseline plus artifact audit, followed by a minimal Rust
