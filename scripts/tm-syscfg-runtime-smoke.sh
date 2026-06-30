@@ -19,9 +19,8 @@ remains C and is intentionally not replaced by this provider.
 
 Environment:
   TM_SYSCFG_RUNTIME_SMOKE_WORKDIR  output directory, default build/tm-syscfg-runtime-smoke
-  QSOE_RUST_TM_SYSCFG              defaults to 1; set 0 only with rollback escape hatch
+  QSOE_RUST_TM_SYSCFG              must remain 1 after C tm_syscfg retirement
   QSOE_RUST_TM_PROCFS              must remain 1 after C tm_procfs retirement
-  TM_SYSCFG_RUNTIME_ALLOW_C        internal RC rollback escape hatch
 EOF
 }
 
@@ -86,19 +85,11 @@ case "${QSOE_RUST_TM_SYSCFG:-1}" in
         tm_syscfg_mode=rust-selected
         ;;
     0|false|FALSE|no|NO)
-        case "${TM_SYSCFG_RUNTIME_ALLOW_C:-0}" in
-            1|true|TRUE|yes|YES)
-                export QSOE_RUST_TM_SYSCFG=0
-                tm_syscfg_mode=c-rollback
-                ;;
-            *)
-                echo "tm-syscfg-runtime-smoke.sh: this smoke validates QSOE_RUST_TM_SYSCFG=1" >&2
-                exit 2
-                ;;
-        esac
+        echo "tm-syscfg-runtime-smoke.sh: C tm_syscfg is retired; QSOE_RUST_TM_SYSCFG must be 1" >&2
+        exit 2
         ;;
     *)
-        echo "tm-syscfg-runtime-smoke.sh: QSOE_RUST_TM_SYSCFG must be 0 or 1" >&2
+        echo "tm-syscfg-runtime-smoke.sh: QSOE_RUST_TM_SYSCFG must be 1 after C retirement" >&2
         exit 2
         ;;
 esac
@@ -228,25 +219,15 @@ echo "tm-syscfg-runtime-smoke.sh: rebuilding QSOE/L image with $tm_syscfg_mode t
     QSOE_RUST_TM_SYSCFG="$QSOE_RUST_TM_SYSCFG"
 
 "$AR" t "$ROOT/lq/build/libtaskman/libtaskman.a" > "$members_log"
-case "$QSOE_RUST_TM_SYSCFG" in
-    1)
-        if grep -Fxq syscfg.o "$members_log"; then
-            echo "tm-syscfg-runtime-smoke.sh: Rust-selected libtaskman still contains syscfg.o" >&2
-            exit 1
-        fi
-        if ! "$NM" -g --defined-only "$ROOT/build/rust/tm-providers/libqsoe_tm_providers.a" |
-            grep -Eq '[[:space:]]tm_syscfg_init$'; then
-            echo "tm-syscfg-runtime-smoke.sh: Rust provider archive is missing tm_syscfg_init" >&2
-            exit 1
-        fi
-        ;;
-    0)
-        if ! grep -Fxq syscfg.o "$members_log"; then
-            echo "tm-syscfg-runtime-smoke.sh: C rollback libtaskman is missing syscfg.o" >&2
-            exit 1
-        fi
-        ;;
-esac
+if grep -Fxq syscfg.o "$members_log"; then
+    echo "tm-syscfg-runtime-smoke.sh: Rust-selected libtaskman still contains syscfg.o" >&2
+    exit 1
+fi
+if ! "$NM" -g --defined-only "$ROOT/build/rust/tm-providers/libqsoe_tm_providers.a" |
+    grep -Eq '[[:space:]]tm_syscfg_init$'; then
+    echo "tm-syscfg-runtime-smoke.sh: Rust provider archive is missing tm_syscfg_init" >&2
+    exit 1
+fi
 
 boot_args=(-k lq -t "$timeout_s" -o "$log")
 if [ "$keep_running" -eq 1 ]; then

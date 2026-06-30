@@ -1,0 +1,11 @@
+diff --git a/taskman/Makefile b/taskman/Makefile
+--- a/taskman/Makefile
++++ b/taskman/Makefile
+@@ -66,6 +66,9 @@ ifneq ($(QSOE_RUST_TM_SCRIPT),1)
+ $(error QSOE_RUST_TM_SCRIPT must be 1 after C tm_script retirement)
+ endif
++ifneq ($(QSOE_RUST_TM_SYSCFG),1)
++$(error QSOE_RUST_TM_SYSCFG must be 1 after C tm_syscfg retirement)
++endif
+ 
+ TASKMAN_DIR := $(TOP)/taskman
