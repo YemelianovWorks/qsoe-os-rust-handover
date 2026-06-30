@@ -22,7 +22,7 @@ origin git@github.com:dmytro-yemelianov/qsoe-os-rust-handover.git
 Current main tip:
 
 ```text
-34b96e8d8663378eff856904b8ea021820acfda8
+062ce1d2ba66ac12c7f63e2fddfdd88cb7e0ee78
 ```
 
 The local tree adds:
@@ -87,14 +87,16 @@ dashboard. PR #177 retired the C `slogger` service, PR #178 retired the C
 `pipe` service, PR #180 retired the C `devb-virtio` block driver, PR #181
 added the shared taskman Rust provider archive, and PR #182 retired the C
 `tm_procfs` task-manager provider. Subsequent retirement PRs retired
-`tm_cpio`, `tm_script`, `tm_elf`, and `tm_syscfg`. The current `main` tip is
-`34b96e8d8663378eff856904b8ea021820acfda8`.
+`tm_cpio`, `tm_script`, `tm_elf`, `tm_syscfg`, and `tm_sysmap`; PR #213
+merged the `tm_sysmap` retirement into `main` at
+`062ce1d2ba66ac12c7f63e2fddfdd88cb7e0ee78`.
 
 Current in-flight follow-up:
 
-- #147: `tm_sysmap` has moved past its Rust-default RC into C provider
-  retirement on the current branch. Rust `qsoe-tm-sysmap` is mandatory in LQ
-  taskman, and `QSOE_RUST_TM_SYSMAP=0` now fails fast.
+- #148: `tm_sysfs` has moved past its Rust-default RC into C provider
+  retirement on the current branch. Rust `qsoe-tm-sysfs` is mandatory in
+  NQ/LQ taskman and standalone `libtaskman`, and `QSOE_RUST_TM_SYSFS=0` now
+  fails fast.
 
 The #96 Rust pipe data-path gate, #97 Rust `test_msgpass` gate, and #103
 `tm_procfs` opt-in gate are satisfied by trusted `main` CI run `28102250069` at
@@ -361,6 +363,13 @@ The strict ELF audit showed:
   rejection and no `sys/sysmap.o` link-plan membership; `make
   tm-sysmap-rc-smoke` covers the Rust-only spawned-child `sysinfo` path for
   nonzero timebase, PLIC, and PCI data from the mapped `PSYS` page.
+- `tm_sysfs` is retired to Rust behind mandatory `QSOE_RUST_TM_SYSFS=1`. The
+  C `libtaskman/src/tm_sysfs.c` provider is removed,
+  `QSOE_RUST_TM_SYSFS=0` fails fast, and taskman links `qsoe-tm-sysfs`
+  through the shared taskman Rust provider archive. `make tm-sysfs-evidence`
+  covers retired selector rejection and no `tm_sysfs.o` archive membership;
+  `make tm-sysfs-rc-smoke` covers the Rust-only `/sys` readdir plus all five
+  portable `/sys` file reads.
 - `tm_pathmgr` has a Rust opt-in provider behind `QSOE_RUST_TM_PATHMGR=1`. The
   selector removes C `pathmgr.o` from `libtaskman.a` and links through the
   shared taskman Rust provider archive. `make tm-pathmgr-runtime-smoke` covers
@@ -368,12 +377,6 @@ The strict ELF audit showed:
   repath, dynamic helper registration, duplicate rejection, MsgSend through
   the resolved binding, and unregister-on-exit cleanup. C remains default and
   rollback until a separate RC decision exists.
-- `tm_sysfs` is in a Rust-default RC behind `QSOE_RUST_TM_SYSFS=1`. The
-  selector removes C `tm_sysfs.o` from `libtaskman.a` and links through the
-  shared taskman Rust provider archive. `QSOE_RUST_TM_SYSFS=0` remains C
-  rollback. `make tm-sysfs-rc-smoke` covers the default Rust archive selection
-  and `/sys` readdir plus all five portable `/sys` file reads; `make
-  tm-sysfs-rc-rollback-smoke` repeats the same path with C rollback.
 - `tm_rsrcdb` has a Rust opt-in provider behind `QSOE_RUST_TM_RSRCDB=1`. The
   selector removes LQ C `sys/rsrcdb.o` and links through the shared taskman
   Rust provider archive. `make tm-rsrcdb-runtime-smoke` covers live

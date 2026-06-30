@@ -78,8 +78,8 @@ ifneq ($(QSOE_RUST_TM_SYSCFG),1)
 $(error QSOE_RUST_TM_SYSCFG must be 1 after C tm_syscfg retirement)
 endif
 
-ifneq ($(filter $(QSOE_RUST_TM_SYSFS),0 1),$(QSOE_RUST_TM_SYSFS))
-$(error QSOE_RUST_TM_SYSFS must be 0 or 1)
+ifneq ($(QSOE_RUST_TM_SYSFS),1)
+$(error QSOE_RUST_TM_SYSFS must be 1 after C tm_sysfs retirement)
 endif
 
 SRCS_ALL := $(wildcard src/*.c)

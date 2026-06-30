@@ -24,8 +24,8 @@ gate in `docs/rust-migration/RETIREMENT.md`.
 
 ## Current Status
 
-- Rust-default release-candidate paths exist for `qrvfs-tree`, `mkfs-qrv-rs`,
-  and the task-manager `tm_sysfs` provider.
+- Rust-default release-candidate paths exist for `qrvfs-tree` and
+  `mkfs-qrv-rs`.
 - Retired C implementations: the C `test_msgpass` helper is removed from
   tracked `quser` test-image paths, and the C `/sbin/slogger` and `/sbin/pipe`
   services and C `/sbin/devb-virtio` block driver are removed from tracked
@@ -33,19 +33,18 @@ gate in `docs/rust-migration/RETIREMENT.md`.
   `/usr/bin/test_msgpass`; normal NQ/LQ images stage Rust `slogger-rs` at
   `/sbin/slogger`, Rust `pipe-rs` at `/sbin/pipe`, and Rust
   `devb-virtio-rs` at `/sbin/devb-virtio`.
-- The C `tm_procfs`, `tm_cpio`, `tm_script`, `tm_elf`, `tm_syscfg`, and
-  `tm_sysmap` task-manager providers are retired; taskman now links Rust
+- The C `tm_procfs`, `tm_cpio`, `tm_script`, `tm_elf`, `tm_syscfg`,
+  `tm_sysmap`, and `tm_sysfs` task-manager providers are retired; taskman now
+  links Rust
   `qsoe-tm-procfs`, `qsoe-tm-cpio`, `qsoe-tm-script`, `qsoe-tm-elf`,
-  `qsoe-tm-syscfg`, and `qsoe-tm-sysmap` through the shared provider archive.
+  `qsoe-tm-syscfg`, `qsoe-tm-sysmap`, and `qsoe-tm-sysfs` through the shared
+  provider archive.
 - Rust opt-in task-manager providers exist for `qsoe-tm-cred`,
   `qsoe-tm-fdt`, `qsoe-tm-pathmgr`, `qsoe-tm-pseudodev`, and
   `qsoe-tm-rsrcdb`. Selected task-manager Rust providers are packaged through
   the shared `qsoe-tm-providers` archive so multiple providers can link behind
   one panic handler; C remains the normal taskman default for each opt-in
   provider.
-- `tm_sysfs` is in a Rust-default RC window: normal NQ/LQ taskman builds select
-  Rust `qsoe-tm-sysfs` by default, and `QSOE_RUST_TM_SYSFS=0` remains the C
-  rollback selector.
 - Rust `mkfs-qrv-rs` has fixture, production-root, target-initialization,
   bounded triple-indirect allocator, live virtio `/usr`, and C rollback smoke
   evidence.
@@ -94,9 +93,9 @@ Detailed planning lives under `docs/rust-migration/`. Start with:
 | `tm_script` task-manager provider | Retired C provider | `qsoe-tm-script` exports the existing `tm_script.h` ABI and is mandatory in normal NQ/LQ taskman builds. `QSOE_RUST_TM_SCRIPT=0` fails fast, `libtaskman/src/script.c` is removed, and `make tm-script-evidence` verifies Rust host tests, soft-float archive audit, no C `script.o` in NQ/LQ taskman links, retired selector rejection, and exported symbols. `make tm-script-rc-smoke` boots LQ through direct shebang-backed script spawn on the Rust-only path. |
 | `tm_syscfg` task-manager provider | Retired C provider | `qsoe-tm-syscfg` exports the existing `tm_syscfg.h` ABI and is mandatory in normal NQ/LQ taskman builds. `QSOE_RUST_TM_SYSCFG=0` fails fast, `libtaskman/src/syscfg.c` is removed, and `make tm-syscfg-evidence` verifies Rust host tests, soft-float archive audit, no C `syscfg.o` in NQ/LQ `libtaskman.a`, and retired selector rejection. `make tm-syscfg-rc-smoke` boots LQ through syscfg-backed `/sys` and `sysinfo` consumers while LQ's private runtime syscfg builder remains C. |
 | `tm_sysmap` task-manager provider | Retired C provider | `qsoe-tm-sysmap` exports the existing LQ `tm_sysmap_*` ABI and is mandatory in normal LQ taskman builds. `QSOE_RUST_TM_SYSMAP=0` fails fast, `lq/taskman/sys/sysmap.c` is removed by the component override, and `make tm-sysmap-evidence` verifies Rust host tests, soft-float archive audit, no C `sys/sysmap.o` in LQ taskman links, retired selector rejection, and exported symbols. `make tm-sysmap-rc-smoke` boots LQ through spawned-child `sysinfo` consumers of the mapped `PSYS` page on the Rust-only path. |
-| `tm_sysfs` task-manager provider | Rust default RC | `qsoe-tm-sysfs` exports the existing `tm_sysfs.h` ABI and is selected by default in normal NQ/LQ taskman builds; `QSOE_RUST_TM_SYSFS=0` keeps C `tm_sysfs.o` as rollback. `make tm-sysfs-evidence` runs C/Rust host tests, audits the soft-float staticlib, and verifies NQ/LQ taskman links with C rollback and Rust-selected archives. `make tm-sysfs-rc-smoke` proves default Rust selection and boots LQ through `/sys` readdir plus all five portable `/sys` file reads; `make tm-sysfs-rc-rollback-smoke` repeats the runtime path with C rollback. |
+| `tm_sysfs` task-manager provider | Retired C provider | `qsoe-tm-sysfs` exports the existing `tm_sysfs.h` ABI and is mandatory in normal NQ/LQ taskman builds. `QSOE_RUST_TM_SYSFS=0` fails fast, `libtaskman/src/tm_sysfs.c` is removed, and `make tm-sysfs-evidence` verifies Rust host tests, soft-float archive audit, no C `tm_sysfs.o` in NQ/LQ taskman links, retired selector rejection, and exported symbols. `make tm-sysfs-rc-smoke` boots LQ through `/sys` readdir plus all five portable `/sys` file reads on the Rust-only path. |
 | Kernel Rust | Deferred | Current decision rejects near-term Rust in `nq` kernel code; only fixture/audit candidates are documented. |
-| C retirement | Ten removals complete | `test_msgpass` is the first retired C helper; `slogger`, `pipe`, and `devb-virtio` are retired C production paths after their Rust-default RC evidence; `tm_procfs` is the first retired task-manager provider, followed by `tm_cpio`, `tm_script`, `tm_elf`, `tm_syscfg`, and `tm_sysmap`. Future removals still require #26's checklist and a separate removal PR. |
+| C retirement | Eleven removals complete | `test_msgpass` is the first retired C helper; `slogger`, `pipe`, and `devb-virtio` are retired C production paths after their Rust-default RC evidence; `tm_procfs` is the first retired task-manager provider, followed by `tm_cpio`, `tm_script`, `tm_elf`, `tm_syscfg`, `tm_sysmap`, and `tm_sysfs`. Future removals still require #26's checklist and a separate removal PR. |
 
 ## Current Follow-ups
 
@@ -121,14 +120,14 @@ Detailed planning lives under `docs/rust-migration/`. Start with:
 - `devb-virtio-rs` has moved past its Rust-default release-candidate path into
   C driver retirement. The old C rollback flags now fail fast; normal NQ/LQ
   images stage Rust `devb-virtio-rs` as `/sbin/devb-virtio`.
-- `tm_procfs`, `tm_script`, `tm_cpio`, `tm_elf`, `tm_syscfg`, and `tm_sysmap`
+- `tm_procfs`, `tm_script`, `tm_cpio`, `tm_elf`, `tm_syscfg`, `tm_sysmap`,
+  and `tm_sysfs`
   have moved past their
   Rust-default release-candidate paths into C provider retirement. The old C
   rollback selectors now fail fast; normal NQ/LQ taskman builds link Rust
   `qsoe-tm-procfs`, `qsoe-tm-script`, `qsoe-tm-cpio`, `qsoe-tm-elf`,
-  `qsoe-tm-syscfg`, and `qsoe-tm-sysmap` through the shared provider archive.
-- `tm_sysfs` is a non-retired task-manager Rust-default RC with C rollback
-  still available through `QSOE_RUST_TM_SYSFS=0`.
+  `qsoe-tm-syscfg`, `qsoe-tm-sysmap`, and `qsoe-tm-sysfs` through the shared
+  provider archive.
 - `tm_cred`, `tm_fdt`, `tm_pathmgr`, `tm_pseudodev`,
   and `tm_rsrcdb` are Rust
   opt-in task-manager providers only.
@@ -213,7 +212,6 @@ make rust-tm-sysfs-provider
 make tm-sysfs-evidence
 make tm-sysfs-runtime-smoke
 make tm-sysfs-rc-smoke
-make tm-sysfs-rc-rollback-smoke
 make tm-procfs-rc-smoke
 QSOE_RUST_TM_PROCFS=1 make procfs-smoke
 make procfs-smoke

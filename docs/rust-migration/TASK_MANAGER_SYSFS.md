@@ -1,12 +1,12 @@
 # Task Manager `/sys` Provider
 
-Captured: 2026-06-29 CEST.
+Captured: 2026-06-30 CEST.
 
 `tm_sysfs` is a bounded task-manager Rust provider for the portable read-only
 `/sys` model:
 
 ```text
-libtaskman/src/tm_sysfs.c
+rust/crates/qsoe-tm-sysfs
 libtaskman/include/tm_sysfs.h
 ```
 
@@ -41,17 +41,18 @@ selection, open/read/readdir dispatch, connection state, IPC decoding, or any
 seL4 object manipulation. NQ and LQ taskman still gather the source strings in
 C and still serve `/sys` through their existing C path layers.
 
-## Selector
+## Selector State
 
-Normal taskman builds are in a Rust-default RC window:
+Normal taskman builds are Rust-only for the portable `/sys` provider:
 
 ```text
-QSOE_RUST_TM_SYSFS=1  -> Rust `qsoe-tm-sysfs` provider is selected (default)
-QSOE_RUST_TM_SYSFS=0  -> C `libtaskman/src/tm_sysfs.c` rollback is selected
+QSOE_RUST_TM_SYSFS=1  -> Rust `qsoe-tm-sysfs` provider is selected
+QSOE_RUST_TM_SYSFS=0  -> rejected after C tm_sysfs retirement
 ```
 
-When Rust is selected, `libtaskman/Makefile` excludes `tm_sysfs.o` from
-`libtaskman.a`, and the NQ/LQ taskman links add the shared provider archive:
+`libtaskman/src/tm_sysfs.c` is removed. `libtaskman/Makefile` excludes
+`tm_sysfs.o` from `libtaskman.a`, and the NQ/LQ taskman links add the shared
+provider archive:
 
 ```text
 build/rust/tm-providers/libqsoe_tm_providers.a
@@ -67,36 +68,26 @@ still produce the historical single-provider output path for focused evidence.
 
 ## Evidence
 
-The C behavior baseline is covered by:
+The Rust provider has host coverage for newline and NUL snapshot behavior, null
+or empty source fallback, truncation, `/sys` path resolution, entry order,
+content lookup, and out-of-range behavior:
 
 ```sh
 make check-tm-sysfs-model
 ```
 
-That fixture verifies newline and NUL snapshot behavior, null or empty source
-fallback, truncation, `/sys` path resolution, entry order, content lookup, and
-out-of-range behavior.
-
-The Rust provider has equivalent host coverage:
-
-```sh
-cargo test --manifest-path rust/Cargo.toml -p qsoe-tm-sysfs --features host-tests
-```
-
-The full opt-in evidence gate is:
+The full retirement evidence gate is:
 
 ```sh
 make tm-sysfs-evidence
 make tm-sysfs-runtime-smoke
 make tm-sysfs-rc-smoke
-make tm-sysfs-rc-rollback-smoke
 ```
 
-It runs the C fixture, Rust host tests, builds and audits the Rust staticlib,
-checks exported symbols, verifies all archive members are RVC soft-float, and
-links both NQ and LQ taskman in C rollback and Rust-selected modes. The gate
-also verifies `tm_sysfs.o` is present for `QSOE_RUST_TM_SYSFS=0` and absent for
-`QSOE_RUST_TM_SYSFS=1`.
+It runs Rust host tests, builds and audits the Rust staticlib, checks exported
+symbols, verifies all archive members are RVC soft-float, links both NQ and LQ
+taskman in the Rust-only mode, verifies `tm_sysfs.o` is absent, and checks that
+`QSOE_RUST_TM_SYSFS=0` is rejected.
 
 `make tm-sysfs-runtime-smoke` verifies the Rust-selected provider in a booted
 LQ image. The smoke:
@@ -125,14 +116,15 @@ tm-sysfs-runtime-smoke: /sys/osname ok
 tm-sysfs-runtime-smoke: /sys/version ok
 ```
 
-The RC smoke first builds NQ and LQ taskman in the default selector mode and
-verifies C `tm_sysfs.o` is absent from `libtaskman.a`. The rollback smoke
-repeats the same archive-membership and live runtime checks with
-`QSOE_RUST_TM_SYSFS=0`, where C `tm_sysfs.o` must be present.
+The RC smoke now validates the retired/default path. It builds NQ and LQ
+taskman with `QSOE_RUST_TM_SYSFS=1`, verifies C `tm_sysfs.o` is absent from
+`libtaskman.a`, and boots the same live `/sys` runtime path. The old rollback
+smoke target has been removed.
 
 ## Current State
 
-`tm_sysfs` is a Rust-default release candidate with C rollback still
-available. It has no C retirement approval. Keep `libtaskman/src/tm_sysfs.c`
-as the rollback implementation until the global retirement checklist is
-satisfied and a separate removal PR is reviewed.
+`tm_sysfs` is a retired C task-manager provider. The public
+`libtaskman/include/tm_sysfs.h` ABI remains for C taskman glue, but the
+implementation is Rust-only through `qsoe-tm-sysfs`. Do not reintroduce the C
+rollback without a new issue, explicit rollback justification, and fresh PR
+evidence.

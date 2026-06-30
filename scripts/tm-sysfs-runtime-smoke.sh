@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Boot QSOE/L with the selected tm_sysfs provider and exercise /sys consumers.
+# Boot QSOE/L with the retired Rust tm_sysfs provider and exercise /sys consumers.
 
 set -eu
 
@@ -18,9 +18,8 @@ IPC, and seL4 object manipulation remain C.
 
 Environment:
   TM_SYSFS_RUNTIME_SMOKE_WORKDIR  output directory, default build/tm-sysfs-runtime-smoke
-  QSOE_RUST_TM_SYSFS              defaults to 1; set 0 only with rollback escape hatch
+  QSOE_RUST_TM_SYSFS              must remain 1 after C tm_sysfs retirement
   QSOE_RUST_TM_PROCFS             must remain 1 after C tm_procfs retirement
-  TM_SYSFS_RUNTIME_ALLOW_C        internal RC rollback escape hatch
 EOF
 }
 
@@ -85,19 +84,11 @@ case "${QSOE_RUST_TM_SYSFS:-1}" in
         tm_sysfs_mode=rust-selected
         ;;
     0|false|FALSE|no|NO)
-        case "${TM_SYSFS_RUNTIME_ALLOW_C:-0}" in
-            1|true|TRUE|yes|YES)
-                export QSOE_RUST_TM_SYSFS=0
-                tm_sysfs_mode=c-rollback
-                ;;
-            *)
-                echo "tm-sysfs-runtime-smoke.sh: this smoke validates QSOE_RUST_TM_SYSFS=1" >&2
-                exit 2
-                ;;
-        esac
+        echo "tm-sysfs-runtime-smoke.sh: C tm_sysfs is retired; QSOE_RUST_TM_SYSFS must be 1" >&2
+        exit 2
         ;;
     *)
-        echo "tm-sysfs-runtime-smoke.sh: QSOE_RUST_TM_SYSFS must be 1" >&2
+        echo "tm-sysfs-runtime-smoke.sh: QSOE_RUST_TM_SYSFS must be 1 after C retirement" >&2
         exit 2
         ;;
 esac
@@ -241,35 +232,25 @@ echo "tm-sysfs-runtime-smoke.sh: rebuilding QSOE/L image with $tm_sysfs_mode tm_
     QSOE_RUST_TM_SYSFS="$QSOE_RUST_TM_SYSFS"
 
 "$AR" t "$ROOT/lq/build/libtaskman/libtaskman.a" > "$members_log"
-case "$QSOE_RUST_TM_SYSFS" in
-    1)
-        if grep -Fxq tm_sysfs.o "$members_log"; then
-            echo "tm-sysfs-runtime-smoke.sh: Rust-selected libtaskman still contains tm_sysfs.o" >&2
-            exit 1
-        fi
+if grep -Fxq tm_sysfs.o "$members_log"; then
+    echo "tm-sysfs-runtime-smoke.sh: Rust-selected libtaskman still contains tm_sysfs.o" >&2
+    exit 1
+fi
 
-        for symbol in \
-            tm_sysfs_init \
-            tm_sysfs_resolve \
-            tm_sysfs_path_exists \
-            tm_sysfs_content \
-            tm_sysfs_nentries \
-            tm_sysfs_entry_name
-        do
-            if ! "$NM" -g --defined-only "$ROOT/build/rust/tm-providers/libqsoe_tm_providers.a" |
-                grep -Eq "[[:space:]]$symbol$"; then
-                echo "tm-sysfs-runtime-smoke.sh: Rust provider archive is missing $symbol" >&2
-                exit 1
-            fi
-        done
-        ;;
-    0)
-        if ! grep -Fxq tm_sysfs.o "$members_log"; then
-            echo "tm-sysfs-runtime-smoke.sh: C rollback libtaskman is missing tm_sysfs.o" >&2
-            exit 1
-        fi
-        ;;
-esac
+for symbol in \
+    tm_sysfs_init \
+    tm_sysfs_resolve \
+    tm_sysfs_path_exists \
+    tm_sysfs_content \
+    tm_sysfs_nentries \
+    tm_sysfs_entry_name
+do
+    if ! "$NM" -g --defined-only "$ROOT/build/rust/tm-providers/libqsoe_tm_providers.a" |
+        grep -Eq "[[:space:]]$symbol$"; then
+        echo "tm-sysfs-runtime-smoke.sh: Rust provider archive is missing $symbol" >&2
+        exit 1
+    fi
+done
 
 boot_args=(-k lq -t "$timeout_s" -o "$log")
 if [ "$keep_running" -eq 1 ]; then

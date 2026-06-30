@@ -148,7 +148,7 @@ capture_lq_taskman_plan() {
         QSOE_RUST_TM_RSRCDB=0 \
         QSOE_RUST_TM_SCRIPT=1 \
         QSOE_RUST_TM_SYSCFG=1 \
-        QSOE_RUST_TM_SYSFS=0 \
+        QSOE_RUST_TM_SYSFS=1 \
         > "$log"
 }
 
@@ -186,7 +186,7 @@ build_lq_taskman() {
         QSOE_RUST_TM_RSRCDB=0 \
         QSOE_RUST_TM_SCRIPT=1 \
         QSOE_RUST_TM_SYSCFG=1 \
-        QSOE_RUST_TM_SYSFS=0 \
+        QSOE_RUST_TM_SYSFS=1 \
         taskman
     audit_flags "$label-taskman" "$ROOT/lq/build/taskman.elf"
 }

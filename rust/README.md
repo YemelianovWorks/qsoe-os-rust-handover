@@ -556,8 +556,7 @@ query, detach, and destroy calls.
 
 ## Task Manager `/sys` Selection
 
-The Rust `tm_sysfs` provider is in a Rust-default RC window and can still be
-rolled back to the C taskman provider:
+The Rust `tm_sysfs` provider is mandatory after C provider retirement:
 
 ```sh
 make check-tm-sysfs-model
@@ -565,24 +564,20 @@ make rust-tm-sysfs-provider
 make tm-sysfs-evidence
 make tm-sysfs-runtime-smoke
 make tm-sysfs-rc-smoke
-make tm-sysfs-rc-rollback-smoke
 ```
 
-With the default `QSOE_RUST_TM_SYSFS=1`, NQ and LQ taskman omit C
-`tm_sysfs.o`, build `qsoe-tm-sysfs` for `riscv64imac-unknown-none-elf`, and
-link the shared `qsoe-tm-providers` archive into taskman. With
-`QSOE_RUST_TM_SYSFS=0`, NQ and LQ taskman restore the existing C `tm_sysfs.o`
-rollback provider. Sysmap/syscfg discovery, init path selection,
-open/read/readdir dispatch, IPC decoding, process tables, and seL4 invocation
-code remain C.
+With mandatory `QSOE_RUST_TM_SYSFS=1`, NQ and LQ taskman omit C `tm_sysfs.o`,
+build `qsoe-tm-sysfs` for `riscv64imac-unknown-none-elf`, and link the shared
+`qsoe-tm-providers` archive into taskman. `QSOE_RUST_TM_SYSFS=0` now fails
+fast. Sysmap/syscfg discovery, init path selection, open/read/readdir
+dispatch, IPC decoding, process tables, and seL4 invocation code remain C.
 
 `make tm-sysfs-runtime-smoke` boots QSOE/L with Rust `tm_sysfs` selected,
 verifies the Rust-selected `libtaskman.a` omits C `tm_sysfs.o`, and checks a
 sysinit child can enumerate `/sys` plus read `board`, `builddate`, `cmdline`,
 `osname`, and `version`.
 `make tm-sysfs-rc-smoke` first audits default Rust archive selection, then
-runs the same live path; `make tm-sysfs-rc-rollback-smoke` repeats it with C
-rollback.
+runs the same live path.
 
 ## Parser Fuzzing
 
