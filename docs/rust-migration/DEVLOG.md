@@ -24,6 +24,58 @@ Follow-up:
 - ...
 ```
 
+## 2026-06-30 09:00 CEST - tm_elf Rust-Default RC
+
+Scope:
+
+- Promoted the portable task-manager `tm_elf` view parser to a Rust-default
+  release-candidate selector: `QSOE_RUST_TM_ELF ?= 1` in the umbrella and
+  applied NQ/LQ component Makefiles.
+- Added component override patches that flip ignored NQ/LQ checkouts to the
+  new default while preserving `QSOE_RUST_TM_ELF=0` as C rollback.
+- Added `make tm-elf-rc-smoke` and `make tm-elf-rc-rollback-smoke`; both verify
+  NQ/LQ taskman link-plan membership before booting the live dynamic
+  `/usr/bin/sysinfo` spawn probe.
+- Added CI wiring and `TASK_MANAGER_ELF_RC.md` to record the RC window and
+  rollback drill. Segment mapping, dynamic-linker admission, relocation,
+  process tables, CPIO/script handling, capability ownership, and seL4 object
+  code remain C.
+
+Commands:
+
+- `bash -n scripts/tm-elf-rc-smoke.sh scripts/tm-elf-runtime-smoke.sh scripts/tm-elf-evidence.sh scripts/apply-component-overrides.sh scripts/boot-smoke.sh`
+- `make -n tm-elf-rc-smoke tm-elf-rc-rollback-smoke container-tm-elf-rc-smoke container-tm-elf-rc-rollback-smoke`
+- `patch -d nq --dry-run --fuzz=0 -p1 < patches/components/nq-taskman-rust-tm-elf-rc-default.patch`
+- `patch -d lq --dry-run --fuzz=0 -p1 < patches/components/lq-makefile-rust-tm-elf-rc-default.patch`
+- `patch -d lq --dry-run --fuzz=0 -p1 < patches/components/lq-taskman-rust-tm-elf-rc-default.patch`
+- `./scripts/apply-component-overrides.sh`
+- `patch -d nq --dry-run --fuzz=0 -R -p1 < patches/components/nq-taskman-rust-tm-elf-rc-default.patch`
+- `patch -d lq --dry-run --fuzz=0 -R -p1 < patches/components/lq-makefile-rust-tm-elf-rc-default.patch`
+- `patch -d lq --dry-run --fuzz=0 -R -p1 < patches/components/lq-taskman-rust-tm-elf-rc-default.patch`
+- `make tm-elf-rc-smoke`
+- `make tm-elf-rc-rollback-smoke`
+- `make tm-elf-evidence`
+- `make tm-elf-runtime-smoke`
+
+Result:
+
+- The component override stack applies cleanly and leaves NQ/LQ selectors at
+  `QSOE_RUST_TM_ELF ?= 1`.
+- Default RC builds omit C `elf.o` from both NQ and LQ `libtaskman.a`; rollback
+  builds restore exactly one C `elf.o` in each archive.
+- Both default and rollback RC smokes boot QSOE/L and reach
+  `tm-elf-runtime-smoke: /usr/bin/sysinfo dynamic ELF spawn ok`.
+- `make tm-elf-evidence` passes the C host fixture, Rust host tests, soft-float
+  archive audit, exported-symbol audit, and C-rollback/Rust-default link-plan
+  checks.
+
+Follow-up:
+
+- Keep `libtaskman/src/elf.c` as rollback until #26's retirement checklist and
+  a separate removal PR are satisfied.
+- `tm_fdt` remains the only open Rust opt-in provider with enough runtime
+  evidence for the next small RC candidate.
+
 ## 2026-06-30 08:36 CEST - tm_sysmap Rust-Default RC
 
 Scope:

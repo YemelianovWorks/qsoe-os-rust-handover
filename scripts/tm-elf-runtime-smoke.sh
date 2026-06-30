@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Boot QSOE/L with Rust tm_elf selected and exercise dynamic ELF spawn.
+# Boot QSOE/L with the selected tm_elf provider and exercise dynamic ELF spawn.
 
 set -eu
 
@@ -9,14 +9,15 @@ usage() {
 usage: scripts/tm-elf-runtime-smoke.sh [-t seconds] [-o log] [--keep-running] [-- <emu args>]
 
 Injects a temporary sysinit fragment that runs /usr/bin/sysinfo, rebuilds the
-virtio qrvfs image, and boots QSOE/L with QSOE_RUST_TM_ELF=1. sysinfo is a
+virtio qrvfs image, and boots QSOE/L with Rust tm_elf selected. sysinfo is a
 dynamic ELF, so a clean run exercises taskman's ELF parser for the main image,
 rtld, and libc before process start.
 
 Environment:
   TM_ELF_RUNTIME_SMOKE_WORKDIR  output directory, default build/tm-elf-runtime-smoke
-  QSOE_RUST_TM_ELF              set to 1; this smoke validates the Rust provider
+  QSOE_RUST_TM_ELF              defaults to 1; set 0 only with rollback escape hatch
   QSOE_RUST_TM_PROCFS           must remain 1 after C tm_procfs retirement
+  TM_ELF_RUNTIME_ALLOW_C        internal RC rollback escape hatch
 EOF
 }
 
@@ -74,16 +75,26 @@ if [ "$timeout_s" -le 0 ]; then
     exit 2
 fi
 
+tm_elf_mode=
 case "${QSOE_RUST_TM_ELF:-1}" in
     1|true|TRUE|yes|YES)
         export QSOE_RUST_TM_ELF=1
+        tm_elf_mode=rust-selected
         ;;
     0|false|FALSE|no|NO)
-        echo "tm-elf-runtime-smoke.sh: this smoke validates QSOE_RUST_TM_ELF=1" >&2
-        exit 2
+        case "${TM_ELF_RUNTIME_ALLOW_C:-0}" in
+            1|true|TRUE|yes|YES)
+                export QSOE_RUST_TM_ELF=0
+                tm_elf_mode=c-rollback
+                ;;
+            *)
+                echo "tm-elf-runtime-smoke.sh: this smoke validates QSOE_RUST_TM_ELF=1" >&2
+                exit 2
+                ;;
+        esac
         ;;
     *)
-        echo "tm-elf-runtime-smoke.sh: QSOE_RUST_TM_ELF must be 1" >&2
+        echo "tm-elf-runtime-smoke.sh: QSOE_RUST_TM_ELF must be 0 or 1" >&2
         exit 2
         ;;
 esac
@@ -108,6 +119,7 @@ source_sysinit="$source_conf/sysinit"
 fragment=
 lq_libc="$ROOT/lq/build/libc/libc.so"
 sysinfo_staged="$ROOT/build/fsqrv-root/bin/sysinfo"
+members_log="$workdir/lq-$tm_elf_mode-libtaskman-members.txt"
 spawn_marker="tm-elf-runtime-smoke: /usr/bin/sysinfo dynamic ELF spawn ok"
 
 if [ -z "$log" ]; then
@@ -136,6 +148,14 @@ find_tool() {
 
 READELF=$(find_tool riscv64-linux-gnu-readelf readelf llvm-readelf) || {
     echo "tm-elf-runtime-smoke.sh: no readelf tool found" >&2
+    exit 127
+}
+AR=$(find_tool riscv64-linux-gnu-ar ar llvm-ar) || {
+    echo "tm-elf-runtime-smoke.sh: no ar tool found" >&2
+    exit 127
+}
+NM=$(find_tool riscv64-linux-gnu-nm nm llvm-nm) || {
+    echo "tm-elf-runtime-smoke.sh: no nm tool found" >&2
     exit 127
 }
 
@@ -186,10 +206,31 @@ if ! "$READELF" -l "$sysinfo_staged" | grep -Fq "Requesting program interpreter"
     exit 1
 fi
 
-echo "tm-elf-runtime-smoke.sh: rebuilding QSOE/L image with Rust tm_elf"
+echo "tm-elf-runtime-smoke.sh: rebuilding QSOE/L image with $tm_elf_mode tm_elf"
 "$MAKE" -C "$ROOT/lq" --no-print-directory \
-    QSOE_RUST_TM_ELF=1 \
+    QSOE_RUST_TM_ELF="$QSOE_RUST_TM_ELF" \
     QSOE_RUST_TM_PROCFS=1
+
+"$AR" t "$ROOT/lq/build/libtaskman/libtaskman.a" > "$members_log"
+case "$QSOE_RUST_TM_ELF" in
+    1)
+        if grep -Fxq elf.o "$members_log"; then
+            echo "tm-elf-runtime-smoke.sh: Rust-selected libtaskman still contains elf.o" >&2
+            exit 1
+        fi
+        if ! "$NM" -g --defined-only "$ROOT/build/rust/tm-providers/libqsoe_tm_providers.a" |
+            grep -Eq '[[:space:]]tm_elf_parse$'; then
+            echo "tm-elf-runtime-smoke.sh: Rust provider archive is missing tm_elf_parse" >&2
+            exit 1
+        fi
+        ;;
+    0)
+        if ! grep -Fxq elf.o "$members_log"; then
+            echo "tm-elf-runtime-smoke.sh: C rollback libtaskman is missing elf.o" >&2
+            exit 1
+        fi
+        ;;
+esac
 
 boot_args=(-k lq -t "$timeout_s" -o "$log")
 if [ "$keep_running" -eq 1 ]; then
@@ -199,7 +240,7 @@ if [ "${#emu_args[@]}" -gt 0 ]; then
     boot_args+=(-- "${emu_args[@]}")
 fi
 
-echo "tm-elf-runtime-smoke.sh: booting Rust tm_elf runtime smoke"
+echo "tm-elf-runtime-smoke.sh: booting $tm_elf_mode tm_elf runtime smoke"
 QSOE_BOOT_VIRTIO_PATTERN="/dev/vblk0 ready" \
     QSOE_BOOT_EXTRA_PATTERNS="$spawn_marker" \
     "$ROOT/scripts/boot-smoke.sh" "${boot_args[@]}"

@@ -1,11 +1,11 @@
-# Task Manager ELF Rust Opt-in Provider
+# Task Manager ELF Rust-Default RC Provider
 
-Captured: 2026-06-29 15:05 CEST.
+Captured: 2026-06-30 CEST.
 
 ## Scope
 
-`qsoe-tm-elf` is a Rust opt-in provider for the portable task-manager ELF view
-parser in:
+`qsoe-tm-elf` is the Rust-default release-candidate provider for the portable
+task-manager ELF view parser in:
 
 ```text
 libtaskman/src/elf.c
@@ -44,18 +44,18 @@ It does not replace:
 
 ## Selector
 
-Normal builds keep C selected:
+Normal builds select Rust:
+
+```sh
+make -C nq/taskman
+make -C lq taskman
+```
+
+C rollback remains available:
 
 ```sh
 QSOE_RUST_TM_ELF=0 make -C nq/taskman
 QSOE_RUST_TM_ELF=0 make -C lq taskman
-```
-
-The Rust opt-in path is:
-
-```sh
-QSOE_RUST_TM_ELF=1 make -C nq/taskman
-QSOE_RUST_TM_ELF=1 make -C lq taskman
 ```
 
 The top-level evidence target is:
@@ -63,6 +63,8 @@ The top-level evidence target is:
 ```sh
 make tm-elf-evidence
 make tm-elf-runtime-smoke
+make tm-elf-rc-smoke
+make tm-elf-rc-rollback-smoke
 ```
 
 Multiple taskman Rust providers may be selected together. The shared
@@ -72,16 +74,19 @@ still produce the historical single-provider output path for focused evidence.
 
 ## Evidence
 
-Local validation on 2026-06-29:
+Local validation on 2026-06-30:
 
 ```sh
 make check-tm-elf-model
 cargo test --manifest-path rust/Cargo.toml -p qsoe-tm-elf --features host-tests --lib
 cargo clippy --manifest-path rust/Cargo.toml -p qsoe-tm-elf --features host-tests -- -D warnings
-bash -n scripts/check-tm-elf-model.sh scripts/build-rust-tm-elf-provider.sh scripts/tm-elf-evidence.sh scripts/apply-component-overrides.sh
+bash -n scripts/check-tm-elf-model.sh scripts/build-rust-tm-elf-provider.sh scripts/tm-elf-evidence.sh scripts/tm-elf-runtime-smoke.sh scripts/tm-elf-rc-smoke.sh scripts/apply-component-overrides.sh scripts/boot-smoke.sh
+make -n tm-elf-rc-smoke tm-elf-rc-rollback-smoke container-tm-elf-rc-smoke container-tm-elf-rc-rollback-smoke
 make rust-tm-elf-provider
 make tm-elf-evidence
 make tm-elf-runtime-smoke
+make tm-elf-rc-smoke
+make tm-elf-rc-rollback-smoke
 ```
 
 `make tm-elf-evidence` verified:
@@ -92,11 +97,11 @@ make tm-elf-runtime-smoke
 - Rust staticlib builds for `riscv64imac-unknown-none-elf`;
 - Rust provider archive members report RVC soft-float ABI;
 - Rust provider archive exports `tm_elf_parse`;
-- NQ C-default `libtaskman.a` contains one `elf.o`;
-- NQ Rust-selected `libtaskman.a` contains zero `elf.o`;
-- LQ C-default `libtaskman.a` contains one `elf.o`;
-- LQ Rust-selected `libtaskman.a` contains zero `elf.o`;
-- NQ and LQ taskman links complete in both C-default and Rust-selected modes,
+- NQ C-rollback `libtaskman.a` contains one `elf.o`;
+- NQ Rust-default `libtaskman.a` contains zero `elf.o`;
+- LQ C-rollback `libtaskman.a` contains one `elf.o`;
+- LQ Rust-default `libtaskman.a` contains zero `elf.o`;
+- NQ and LQ taskman links complete in both C-rollback and Rust-default modes,
   and the linked taskman ELFs pass the evidence script's ELF flag and section
   audit.
 
@@ -115,14 +120,18 @@ This evidence proves ABI compatibility, archive selection, rollback, linked
 artifact shape, and focused dynamic ELF spawn behavior under the Rust ELF
 parser.
 
+`make tm-elf-rc-smoke` verifies the same dynamic ELF spawn path in the default
+selector mode and requires C `elf.o` to be absent from NQ and LQ
+`libtaskman.a`. `make tm-elf-rc-rollback-smoke` repeats the path with
+`QSOE_RUST_TM_ELF=0` and requires C `elf.o` to be present.
+
 ## C Rollback
 
-C remains the default and rollback path:
+C remains the rollback path:
 
-- `QSOE_RUST_TM_ELF=0` keeps `libtaskman/src/elf.c`;
-- `QSOE_RUST_TM_ELF=1` excludes `elf.o` and links
+- `QSOE_RUST_TM_ELF=1` is the default and excludes `elf.o`;
+- `QSOE_RUST_TM_ELF=0` keeps `libtaskman/src/elf.c` and C `elf.o`;
+- the Rust path links
   the shared taskman Rust provider archive.
 
-Do not promote this provider to a Rust-default RC until a separate RC decision
-accepts this loader/runtime coverage, and do not retire C until #26 is
-satisfied in a separate removal PR.
+Do not retire C until #26 is satisfied in a separate removal PR.
