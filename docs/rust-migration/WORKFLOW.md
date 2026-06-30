@@ -60,6 +60,26 @@ Recommended editor behavior:
 The Debian toolchain image installs the rust-analyzer component so containerized
 editors or devcontainers can use the same pinned Rust toolchain as the checks.
 
+## Codebase Discovery Order
+
+Use the Codebase Memory MCP graph before broad text search when navigating code
+definitions, callers, callees, or migration impact. The preferred order is:
+
+1. `search_graph` for functions, structs, classes, modules, and other named
+   code entities.
+2. `trace_path` for caller/callee and dependency impact.
+3. `get_code_snippet` for exact symbol source after `search_graph` has found
+   the qualified name.
+4. `query_graph` or `detect_changes` for cross-cutting impact questions when
+   the standard lookups are too broad.
+
+Fall back to `rg`, `git grep`, Cargo metadata, or direct file reads only when
+the graph is unavailable, the target is non-code, or the search is for literal
+text such as log lines, Make variables, CI YAML, shell scripts, or issue
+metadata. When a migration PR relies on fallback discovery because the graph
+tool is unavailable, mention that in the PR validation notes so reviewers know
+the impact analysis was text-based.
+
 ## Cargo Target Directories
 
 QSOE development commonly alternates between macOS host checks and Linux
