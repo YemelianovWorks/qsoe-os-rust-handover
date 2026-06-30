@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Boot QSOE/L with Rust tm_cpio selected and exercise CPIO-backed runtime
+# Boot QSOE/L with retired Rust tm_cpio selected and exercise CPIO-backed runtime
 # paths from sysinit.
 
 set -eu
@@ -16,9 +16,8 @@ access, a direct boot-cpio file read, and /bin/sh symlink spawn.
 
 Environment:
   TM_CPIO_RUNTIME_SMOKE_WORKDIR  output directory, default build/tm-cpio-runtime-smoke
-  QSOE_RUST_TM_CPIO              defaults to 1; set 0 only with rollback escape hatch
+  QSOE_RUST_TM_CPIO              must remain 1 after C tm_cpio retirement
   QSOE_RUST_TM_PROCFS            must remain 1 after C tm_procfs retirement
-  TM_CPIO_RUNTIME_ALLOW_C        internal RC rollback escape hatch
 EOF
 }
 
@@ -80,22 +79,14 @@ tm_cpio_mode=
 case "${QSOE_RUST_TM_CPIO:-1}" in
     1|true|TRUE|yes|YES)
         export QSOE_RUST_TM_CPIO=1
-        tm_cpio_mode=rust-selected
+        tm_cpio_mode=rust-retired
         ;;
     0|false|FALSE|no|NO)
-        case "${TM_CPIO_RUNTIME_ALLOW_C:-0}" in
-            1|true|TRUE|yes|YES)
-                export QSOE_RUST_TM_CPIO=0
-                tm_cpio_mode=c-rollback
-                ;;
-            *)
-                echo "tm-cpio-runtime-smoke.sh: this smoke validates QSOE_RUST_TM_CPIO=1" >&2
-                exit 2
-                ;;
-        esac
+        echo "tm-cpio-runtime-smoke.sh: C tm_cpio is retired; QSOE_RUST_TM_CPIO must be 1" >&2
+        exit 2
         ;;
     *)
-        echo "tm-cpio-runtime-smoke.sh: QSOE_RUST_TM_CPIO must be 1" >&2
+        echo "tm-cpio-runtime-smoke.sh: QSOE_RUST_TM_CPIO must be 1 after C retirement" >&2
         exit 2
         ;;
 esac

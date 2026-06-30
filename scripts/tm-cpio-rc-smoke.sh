@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Validate the tm_cpio Rust-default RC selector and the C rollback path.
+# Validate the retired tm_cpio Rust selector.
 
 set -eu
 
@@ -8,12 +8,12 @@ usage() {
     cat <<'EOF'
 usage: scripts/tm-cpio-rc-smoke.sh [-t seconds] [-o log] [--keep-running] [-- <emu args>]
 
-Builds NQ and LQ taskman in the selected tm_cpio RC mode, verifies the expected
-cpio.o archive membership, then reuses the live tm_cpio runtime smoke.
+Builds NQ and LQ taskman with the retired Rust tm_cpio provider, verifies that
+C cpio.o is absent, then reuses the live tm_cpio runtime smoke.
 
 Environment:
-  TM_CPIO_RC_ROLLBACK  set 1 to select C tm_cpio rollback
-  QSOE_RUST_TM_CPIO    defaults to the Rust RC path; may be 0 or 1
+  TM_CPIO_RC_ROLLBACK  unsupported after C tm_cpio retirement
+  QSOE_RUST_TM_CPIO    must remain 1 after C tm_cpio retirement
   TM_CPIO_RC_WORKDIR   output directory, default build/tm-cpio-rc
 EOF
 }
@@ -82,74 +82,51 @@ require_cpio_count() {
         fail "$label expected $expected cpio.o members, got $count"
 }
 
-normalize_selector() {
-    case "$1" in
-        1|true|TRUE|yes|YES)
-            printf '1'
-            ;;
-        0|false|FALSE|no|NO)
-            printf '0'
-            ;;
-        *)
-            fail "QSOE_RUST_TM_CPIO must be 0 or 1"
-            ;;
-    esac
-}
-
 mkdir -p "$workdir"
 "$ROOT/scripts/apply-component-overrides.sh"
 
-case "$rollback" in
-    0|false|FALSE|no|NO)
-        if [ "${QSOE_RUST_TM_CPIO+x}" ]; then
-            selected=$(normalize_selector "$QSOE_RUST_TM_CPIO")
-            if [ "$selected" -eq 1 ]; then
-                mode=rust-selected
-                expected_cpio_count=0
-            else
-                mode=c-selected
-                expected_cpio_count=1
-            fi
-        else
-            selected=1
-            mode=rust-default
-            expected_cpio_count=0
-        fi
-        ;;
+case "${QSOE_RUST_TM_CPIO:-1}" in
     1|true|TRUE|yes|YES)
-        selected=0
-        mode=c-rollback
-        expected_cpio_count=1
+        selected=1
+        ;;
+    0|false|FALSE|no|NO)
+        echo "tm-cpio-rc-smoke.sh: C tm_cpio is retired; QSOE_RUST_TM_CPIO must be 1" >&2
+        exit 2
         ;;
     *)
-        fail "TM_CPIO_RC_ROLLBACK must be 0 or 1"
+        echo "tm-cpio-rc-smoke.sh: QSOE_RUST_TM_CPIO must be 1 after C retirement" >&2
+        exit 2
+        ;;
+esac
+
+case "$rollback" in
+    0|false|FALSE|no|NO)
+        mode=rust-retired
+        expected_cpio_count=0
+        ;;
+    1|true|TRUE|yes|YES)
+        echo "tm-cpio-rc-smoke.sh: C tm_cpio rollback is retired" >&2
+        exit 2
+        ;;
+    *)
+        echo "tm-cpio-rc-smoke.sh: TM_CPIO_RC_ROLLBACK must be 0 after C retirement" >&2
+        exit 2
         ;;
 esac
 
 echo "tm-cpio-rc-smoke.sh: mode=$mode rollback=$rollback"
 
 echo "tm-cpio-rc-smoke.sh: verifying NQ taskman selector"
-if [ "$mode" = rust-default ]; then
-    env -u QSOE_RUST_TM_CPIO "$MAKE" -C "$ROOT/nq/taskman" --no-print-directory \
-        QSOE_RUST_TM_PROCFS=1
-else
-    "$MAKE" -C "$ROOT/nq/taskman" --no-print-directory \
-        QSOE_RUST_TM_CPIO="$selected" \
-        QSOE_RUST_TM_PROCFS=1
-fi
+"$MAKE" -C "$ROOT/nq/taskman" --no-print-directory \
+    QSOE_RUST_TM_CPIO=1 \
+    QSOE_RUST_TM_PROCFS=1
 require_cpio_count "nq-$mode" "$ROOT/nq/build/libtaskman/libtaskman.a" "$expected_cpio_count"
 
 echo "tm-cpio-rc-smoke.sh: verifying LQ taskman selector"
-if [ "$mode" = rust-default ]; then
-    env -u QSOE_RUST_TM_CPIO "$MAKE" -C "$ROOT/lq" --no-print-directory \
-        QSOE_RUST_TM_PROCFS=1 \
-        taskman
-else
-    "$MAKE" -C "$ROOT/lq" --no-print-directory \
-        QSOE_RUST_TM_CPIO="$selected" \
-        QSOE_RUST_TM_PROCFS=1 \
-        taskman
-fi
+"$MAKE" -C "$ROOT/lq" --no-print-directory \
+    QSOE_RUST_TM_CPIO=1 \
+    QSOE_RUST_TM_PROCFS=1 \
+    taskman
 require_cpio_count "lq-$mode" "$ROOT/lq/build/libtaskman/libtaskman.a" "$expected_cpio_count"
 
 runtime_args=("$@")
@@ -160,8 +137,5 @@ fi
 export QSOE_RUST_TM_CPIO="$selected"
 export QSOE_RUST_TM_PROCFS=1
 export TM_CPIO_RUNTIME_SMOKE_WORKDIR="$workdir"
-if [ "$selected" -eq 0 ]; then
-    export TM_CPIO_RUNTIME_ALLOW_C=1
-fi
 
 exec "$ROOT/scripts/tm-cpio-runtime-smoke.sh" "${runtime_args[@]}"

@@ -1,0 +1,84 @@
+diff --git a/Makefile b/Makefile
+--- a/Makefile
++++ b/Makefile
+@@ -45,7 +45,8 @@ CFLAGS    = -ffreestanding -fno-builtin -nostdinc \
+             -O2 -g \
+             -MMD -MP \
+             -isystem $(GCC_INCLUDE) \
+-            -Ikernel/arch/$(ARCH) -Iinclude \
++            -Ikernel/arch/$(ARCH) -Iinclude \
++            -I../common \
+             -I../libtaskman/include \
+             -I../libc/include
+ 
+@@ -93,8 +94,8 @@ S_SRCS    = kernel/arch/$(ARCH)/head.S \
+ # U-mode binaries.  No longer embedded in the kernel ELF -- they go into
+ # the boot CPIO archive (initrd), which QEMU passes via -initrd; Skimmer
+ # finds it via /chosen/linux,initrd-* in the FDT and locates each file
+-# via the libtaskman cpio walker (../libtaskman/src/cpio.c -- folded
+-# 2026-06-02 from the old kernel/cpio.c that duplicated it).  Built by
++# via the shared libcpio walker (../common/cpio.c).  The task-manager
++# tm_cpio provider is Rust-only; NQ kernel still stays C-only.  Built by
+ # their respective sub-Makefiles.
+ TASKMAN_BIN = build/taskman/taskman.bin
+ LIBC_SO     = build/libc/libc.so
+@@ -108,12 +109,11 @@ SELECTED_VIRTIO_ELF ?= $(abspath ../build/rust/selected/sbin/devb-virtio.elf)
+ # Distinct object suffixes so `foo.c` and `foo.S` don't both
+ # produce `foo.o` and clash at link time.
+ OBJS      = $(addprefix $(BUILD)/, $(C_SRCS:.c=.c.o) $(S_SRCS:.S=.S.o))
+ 
+-# libtaskman cpio walker -- the kernel's CPIO archive parser.  Was
+-# kernel/cpio.c until 2026-06-02 when the duplicated body was folded
+-# onto libtaskman.  Source lives under ../libtaskman/, so it needs an
+-# explicit rule (the bottom-of-file pattern only matches sources
+-# under nq/).  Compiled with the same kernel CFLAGS; the walker has
++# Shared libcpio walker -- the kernel's CPIO archive parser.  Source lives
++# under ../common/, so it needs an explicit rule (the bottom-of-file pattern
++# only matches sources under nq/).  Compiled with the same kernel CFLAGS; the
++# walker has
+ # no allocations / syscalls / kernel coupling and links in cleanly.
+ # The actual recipe is below the .PHONY block so `all` stays the
+ # default goal.
+@@ -282,5 +282,5 @@ $(BUILD)/%.S.o: %.S | $(AUTOCONF_H)
+ 
+ # See LIBTASKMAN_CPIO_O comment above the OBJS definition.
+-$(LIBTASKMAN_CPIO_O): ../libtaskman/src/cpio.c
++$(LIBTASKMAN_CPIO_O): ../common/cpio.c
+ 	@mkdir -p $(@D)
+ 	@echo "  CC  $<"
+diff --git a/kernel/main.c b/kernel/main.c
+--- a/kernel/main.c
++++ b/kernel/main.c
+@@ -27,7 +27,7 @@
+ #include <skimmer/pmap.h>
+ #include <skimmer/fdt.h>
+ #include <skimmer/sysmap.h>
+-#include <tm_cpio.h>
++#include <cpio.h>
+ #include <skimmer/intc.h>
+ #include <skimmer/sync.h>
+ #include <skimmer/vspace.h>
+@@ -349,11 +349,14 @@ static void kmain_primary_pa(void)
+         const u8 *cpio_data = (const u8 *) ir->base;
+         u64 cpio_size = ir->end - ir->base;
+ 
+-        if (!tm_cpio_check_valid(cpio_data, cpio_size))
++        struct cpio_info cpio_meta;
++        if (cpio_info(cpio_data, cpio_size, &cpio_meta) != 0)
+             PANIC("initrd does not look like a newc CPIO archive");
+ 
+-        tm_cpio_file_info_t info;
+-        if (!tm_cpio_find_file(cpio_data, cpio_size, "taskman.bin", &info))
++        unsigned long taskman_size = 0;
++        const void *taskman_data = cpio_get_file(cpio_data, cpio_size,
++                                                 "taskman.bin", &taskman_size);
++        if (!taskman_data)
+             PANIC("initrd: taskman.bin not found");
+ 
+         /* /chosen/bootargs is taskman's command line (the kernel
+@@ -367,4 +370,4 @@ static void kmain_primary_pa(void)
+         sk_debug_level = parse_debug_level(strs->bootargs,
+                                            (unsigned) strs->bootargs_len);
+-        pmap_map_user_blob(TASKMAN_VA_BASE, TASKMAN_STACK_VA, info.data, info.filesize,
++        pmap_map_user_blob(TASKMAN_VA_BASE, TASKMAN_STACK_VA, taskman_data, taskman_size,
+                            strs->bootargs, (u64) strs->bootargs_len);

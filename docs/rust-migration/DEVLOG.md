@@ -24,6 +24,68 @@ Follow-up:
 - ...
 ```
 
+## 2026-06-30 14:16 CEST - `tm_cpio` C Provider Retirement
+
+Scope:
+
+- Removed the C `tm_cpio` provider implementation from `libtaskman/src/cpio.c`.
+- Removed the C host model fixture `tests/tm_cpio_model_test.c`; the Rust
+  `qsoe-tm-cpio` host tests are now the canonical CPIO model evidence.
+- Made `QSOE_RUST_TM_CPIO=1` mandatory in the top-level, `libtaskman`, NQ/LQ
+  component makefiles, the Rust provider archive builder, and tm_cpio
+  smoke/evidence scripts.
+- Removed the tm_cpio C rollback smoke target and converted rollback selector
+  attempts into fail-fast configuration errors.
+- Updated docs, inventory/status summaries, and component patch overlays to
+  mark `tm_cpio` as a retired C provider.
+
+Commands:
+
+- `mcp__codebase_memory_mcp.list_projects`
+- `mcp__codebase_memory_mcp.index_status`
+- `mcp__codebase_memory_mcp.search_graph`
+- `mcp__codebase_memory_mcp.trace_path`
+- `mcp__codebase_memory_mcp.get_code_snippet`
+- `bash -n scripts/build-rust-tm-providers.sh scripts/check-tm-cpio-model.sh scripts/tm-cpio-evidence.sh scripts/tm-cpio-runtime-smoke.sh scripts/tm-cpio-rc-smoke.sh scripts/apply-component-overrides.sh`
+- `scripts/c-index.sh files`
+- `scripts/apply-component-overrides.sh`
+- `make check-tm-cpio-model`
+- `QSOE_RUST_TM_CPIO=0 scripts/build-rust-tm-providers.sh /tmp/should-not-build-tm-cpio.a`
+- `make tm-cpio-evidence`
+- `TM_CPIO_RC_ROLLBACK=1 scripts/tm-cpio-rc-smoke.sh`
+- `QSOE_RUST_TM_CPIO=0 scripts/tm-cpio-rc-smoke.sh`
+- `timeout 300 make tm-cpio-rc-smoke`
+- `make tm-fdt-evidence`
+- `make tm-pathmgr-evidence`
+- `make tm-rsrcdb-evidence`
+- `make roadmap-validate`
+- `git diff --check`
+- `make rust-quality`
+
+Result:
+
+- C index now reports 811 tracked C/asm/linker files and 130,410 approximate
+  LOC after removing the retired CPIO implementation and C fixture.
+- `qsoe-tm-cpio` host tests pass and cover archive iteration, exact lookup,
+  symlink resolution, directory entries, directory existence, short output
+  buffers, missing paths, malformed archive stopping, and unaligned archive
+  pointers.
+- Rust provider archives still build with the required `tm-cpio` feature, and
+  explicit `QSOE_RUST_TM_CPIO=0` use is rejected before archive builds.
+- NQ and LQ taskman builds no longer include `libtaskman` `cpio.o`; final
+  taskman symbols resolve to the Rust `tm_cpio_*` provider.
+- The retired RC smoke still boots the CPIO symlink listing, `/etc/passwd`
+  symlink read, direct `/sbin/init` boot-CPIO read, and `/bin/sh` symlink
+  spawn probes in Rust-retired mode.
+- Adjacent taskman evidence paths (`tm-fdt`, `tm-pathmgr`, `tm-rsrcdb`) pass
+  after switching their link-plan setup to mandatory Rust tm_cpio.
+- Roadmap metadata validates with 38 issue-backed items.
+
+Follow-up:
+
+- Open the retirement PR, watch QSOE CI, merge after green, then close issue
+  #142 with the PR and main-branch CI evidence.
+
 ## 2026-06-30 12:40 CEST - `tm_script` C Provider Retirement
 
 Scope:

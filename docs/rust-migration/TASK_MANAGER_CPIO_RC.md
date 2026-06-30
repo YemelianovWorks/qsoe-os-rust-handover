@@ -2,12 +2,13 @@
 
 Captured: 2026-06-29 CEST.
 
-This note records the `tm_cpio` Rust-default release-candidate path with C
-rollback still available.
+This historical note records the `tm_cpio` Rust-default release-candidate path
+and the C rollback drill that existed before C provider retirement. Current
+Rust-only retirement status lives in `TASK_MANAGER_CPIO_RETIREMENT.md`.
 
 ## Rust Migration: `tm_cpio`
 
-Status: Rust default RC.
+Status: Historical Rust default RC; C provider is now retired.
 Release or build: `qsoe-tm-cpio-rc1`, introduced by the
 `codex/tm-cpio-rust-default-rc` branch.
 
@@ -18,7 +19,7 @@ Release or build: `qsoe-tm-cpio-rc1`, introduced by the
 - Rust artifact or crate: `rust/crates/qsoe-tm-cpio`
 - Taskman Rust link model: selected providers are packaged through the shared
   `build/rust/tm-providers/libqsoe_tm_providers.a` archive
-- C implementation status during this RC: rollback-only through
+- C implementation status during this historical RC: rollback-only through
   `QSOE_RUST_TM_CPIO=0`
 - User-visible behavior changes: none expected for boot CPIO lookup, symlink
   resolution, directory iteration, file reads, or symlink-backed spawn
@@ -29,7 +30,7 @@ loading, relocation, process tables, and seL4 invocation code remain C.
 
 ## Rollback
 
-- Rollback available during RC: yes
+- Rollback available during this historical RC: yes
 - Rollback selector: `QSOE_RUST_TM_CPIO=0`
 - Rollback command:
 
@@ -43,9 +44,7 @@ Default RC smoke:
 make tm-cpio-rc-smoke
 ```
 
-Rollback window: open. Do not remove `libtaskman/src/cpio.c` until #26's C
-retirement checklist is satisfied and a separate removal PR records fresh
-evidence.
+Rollback window: closed by `TASK_MANAGER_CPIO_RETIREMENT.md`.
 
 ## Test Evidence
 
@@ -65,7 +64,8 @@ symlink spawn probes.
 
 ## Known Limitations
 
-- No C source is removed by this RC.
+- No C source was removed by this RC; the later retirement removed
+  `libtaskman/src/cpio.c`.
 - The RC covers QSOE/L QEMU runtime behavior, not a full hardware release.
 - Only the portable archive model is selected through Rust. Task-manager
   process lifecycle, CPIO file-descriptor state, path-manager registration,
@@ -75,5 +75,6 @@ symlink spawn probes.
 
 - Unsafe review: no new Rust unsafe code in this RC target wiring.
 - Data or on-disk format migration: none.
-- Operator impact: use `make tm-cpio-rc-smoke` to validate the Rust default RC
-  path and `make tm-cpio-rc-rollback-smoke` to validate rollback.
+- Operator impact at the time: `make tm-cpio-rc-smoke` validated the Rust
+  default RC path and `make tm-cpio-rc-rollback-smoke` validated rollback.
+  Current rollback selectors fail fast after retirement.

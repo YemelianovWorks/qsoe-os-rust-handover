@@ -26,6 +26,20 @@ fi
 features=
 selected=0
 
+case "${QSOE_RUST_TM_CPIO:-1}" in
+    1|true|TRUE|yes|YES)
+        QSOE_RUST_TM_CPIO=1
+        ;;
+    0|false|FALSE|no|NO)
+        echo "build-rust-tm-providers.sh: C tm_cpio is retired; QSOE_RUST_TM_CPIO must be 1" >&2
+        exit 2
+        ;;
+    *)
+        echo "build-rust-tm-providers.sh: QSOE_RUST_TM_CPIO must be 1 after C retirement" >&2
+        exit 2
+        ;;
+esac
+
 case "${QSOE_RUST_TM_PROCFS:-1}" in
     1|true|TRUE|yes|YES)
         QSOE_RUST_TM_PROCFS=1
