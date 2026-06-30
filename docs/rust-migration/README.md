@@ -124,16 +124,18 @@ Read in this order:
    release-candidate note and C rollback drill.
 63. `TASK_MANAGER_SYSMAP_RETIREMENT.md`: C provider retirement note for
    `tm_sysmap`, including the Rust-only taskman path and removed rollback.
-64. `TASK_MANAGER_PATHMGR.md`: Rust opt-in task-manager path registry provider
-   and evidence gate.
-65. `KERNEL_CANDIDATES.md`: Phase 10 kernel candidate inventory, explicit
+64. `TASK_MANAGER_PATHMGR.md`: Rust-default RC task-manager path registry
+   provider and evidence gate.
+65. `TASK_MANAGER_PATHMGR_RC.md`: Rust-default `tm_pathmgr`
+   release-candidate note and C rollback drill.
+66. `KERNEL_CANDIDATES.md`: Phase 10 kernel candidate inventory, explicit
    exclusions, and fixture-only ranking.
-66. `KERNEL_ARTIFACT_AUDIT.md`: Phase 10 kernel Rust artifact audit needs.
-67. `SPEC.md`: technical constraints, allowed boundaries, runtime/linking rules,
+67. `KERNEL_ARTIFACT_AUDIT.md`: Phase 10 kernel Rust artifact audit needs.
+68. `SPEC.md`: technical constraints, allowed boundaries, runtime/linking rules,
    and acceptance standards.
-68. `PLAN.md`: phased migration plan from baseline validation through possible
+69. `PLAN.md`: phased migration plan from baseline validation through possible
    kernel reassessment.
-69. `TASKS.md`: executable backlog with acceptance criteria.
+70. `TASKS.md`: executable backlog with acceptance criteria.
 
 The first implementation milestone should not be a subsystem rewrite. It should
 be a reproducible baseline plus artifact audit, followed by a minimal Rust

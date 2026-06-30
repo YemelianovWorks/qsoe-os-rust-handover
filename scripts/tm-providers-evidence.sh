@@ -14,9 +14,9 @@ usage() {
     cat <<'EOF'
 usage: scripts/tm-providers-evidence.sh
 
-Builds Rust tm_cpio + tm_cred + tm_fdt + tm_procfs + tm_rsrcdb into one taskman provider
-archive, links NQ and LQ taskman with their default shared-provider selections,
-audits the ELFs, and runs the /proc smoke.
+Builds Rust tm_cpio + tm_cred + tm_fdt + tm_pathmgr + tm_procfs + tm_rsrcdb
+into one taskman provider archive, links NQ and LQ taskman with their default
+shared-provider selections, audits the ELFs, and runs the /proc smoke.
 
 Environment:
   TM_PROVIDERS_EVIDENCE_WORKDIR  output directory, default build/tm-providers-evidence
@@ -119,6 +119,7 @@ audit_elf() {
         tm_cpio_check_valid \
         tm_cpio_find_file \
         tm_cred_init \
+        tm_pathmgr_resolve \
         tm_procfs_init \
         tm_procfs_resolve
     do
@@ -167,6 +168,7 @@ audit_provider_archive() {
         tm_cpio_find_file \
         tm_cred_init \
         tm_fdt_check \
+        tm_pathmgr_resolve \
         tm_procfs_init \
         tm_procfs_resolve \
         tm_rsrc_init \
@@ -198,31 +200,36 @@ echo "tm-providers-evidence.sh: building shared Rust provider archive"
 QSOE_RUST_TM_CPIO=1 \
 QSOE_RUST_TM_CRED=1 \
 QSOE_RUST_TM_FDT=1 \
+QSOE_RUST_TM_PATHMGR=1 \
 QSOE_RUST_TM_PROCFS=1 \
 QSOE_RUST_TM_RSRCDB=1 \
     "$MAKE" -C "$ROOT" --no-print-directory rust-tm-providers
 audit_provider_archive
 
-echo "tm-providers-evidence.sh: linking NQ taskman with tm_cpio + tm_cred + tm_procfs"
+echo "tm-providers-evidence.sh: linking NQ taskman with tm_cpio + tm_cred + tm_pathmgr + tm_procfs"
 "$MAKE" -C "$ROOT/nq/taskman" --no-print-directory \
     QSOE_RUST_TM_CPIO=1 \
     QSOE_RUST_TM_CRED=1 \
+    QSOE_RUST_TM_PATHMGR=1 \
     QSOE_RUST_TM_PROCFS=1
 require_absent_object nq-shared "$ROOT/nq/build/libtaskman/libtaskman.a" cpio.o
 require_absent_object nq-shared "$ROOT/nq/build/libtaskman/libtaskman.a" cred.o
+require_absent_object nq-shared "$ROOT/nq/build/libtaskman/libtaskman.a" pathmgr.o
 require_absent_object nq-shared "$ROOT/nq/build/libtaskman/libtaskman.a" tm_procfs.o
 audit_elf nq-shared-taskman "$ROOT/nq/build/taskman/taskman.elf"
 
-echo "tm-providers-evidence.sh: linking LQ taskman with tm_cpio + tm_cred + tm_fdt + tm_procfs + tm_rsrcdb"
+echo "tm-providers-evidence.sh: linking LQ taskman with tm_cpio + tm_cred + tm_fdt + tm_pathmgr + tm_procfs + tm_rsrcdb"
 "$MAKE" -C "$ROOT/lq" --no-print-directory \
     QSOE_RUST_TM_CPIO=1 \
     QSOE_RUST_TM_CRED=1 \
     QSOE_RUST_TM_FDT=1 \
+    QSOE_RUST_TM_PATHMGR=1 \
     QSOE_RUST_TM_PROCFS=1 \
     QSOE_RUST_TM_RSRCDB=1 \
     taskman
 require_absent_object lq-shared "$ROOT/lq/build/libtaskman/libtaskman.a" cpio.o
 require_absent_object lq-shared "$ROOT/lq/build/libtaskman/libtaskman.a" cred.o
+require_absent_object lq-shared "$ROOT/lq/build/libtaskman/libtaskman.a" pathmgr.o
 require_absent_object lq-shared "$ROOT/lq/build/libtaskman/libtaskman.a" tm_procfs.o
 audit_elf lq-shared-taskman "$ROOT/lq/build/taskman.elf" 1 1
 
@@ -230,6 +237,7 @@ echo "tm-providers-evidence.sh: running shared-provider /proc smoke"
 QSOE_RUST_TM_CPIO=1 \
 QSOE_RUST_TM_CRED=1 \
 QSOE_RUST_TM_FDT=1 \
+QSOE_RUST_TM_PATHMGR=1 \
 QSOE_RUST_TM_PROCFS=1 \
 QSOE_RUST_TM_RSRCDB=1 \
 PROCFS_SMOKE_WORKDIR="$WORKDIR/procfs-smoke" \

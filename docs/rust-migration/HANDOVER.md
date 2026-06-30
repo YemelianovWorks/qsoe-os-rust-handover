@@ -22,7 +22,7 @@ origin git@github.com:dmytro-yemelianov/qsoe-os-rust-handover.git
 Current main tip:
 
 ```text
-37ae162e01163673ad7de640109eb5523843feb9
+9342c49a080b80632b553f1c1703ed8de451ba2b
 ```
 
 The local tree adds:
@@ -93,9 +93,10 @@ merged the `tm_sysmap` retirement into `main` at
 
 Current in-flight follow-up:
 
-- #151: `tm_rsrcdb` is moving from Rust opt-in into a Rust-default RC on the
-  current branch. Rust `qsoe-tm-rsrcdb` is selected by default in LQ taskman,
-  and `QSOE_RUST_TM_RSRCDB=0` remains the explicit C rollback path.
+- #149: `tm_pathmgr` is moving from Rust opt-in into a Rust-default RC on the
+  current branch. Rust `qsoe-tm-pathmgr` is selected by default in standalone
+  `libtaskman` plus NQ/LQ taskman, and `QSOE_RUST_TM_PATHMGR=0` remains the
+  explicit C rollback path.
 
 The #96 Rust pipe data-path gate, #97 Rust `test_msgpass` gate, and #103
 `tm_procfs` opt-in gate are satisfied by trusted `main` CI run `28102250069` at
@@ -368,13 +369,14 @@ The strict ELF audit showed:
   covers retired selector rejection and no `tm_sysfs.o` archive membership;
   `make tm-sysfs-rc-smoke` covers the Rust-only `/sys` readdir plus all five
   portable `/sys` file reads.
-- `tm_pathmgr` has a Rust opt-in provider behind `QSOE_RUST_TM_PATHMGR=1`. The
-  selector removes C `pathmgr.o` from `libtaskman.a` and links through the
-  shared taskman Rust provider archive. `make tm-pathmgr-runtime-smoke` covers
+- `tm_pathmgr` is a Rust-default RC provider behind `QSOE_RUST_TM_PATHMGR=1`.
+  The selector removes C `pathmgr.o` from `libtaskman.a` and links through the
+  shared taskman Rust provider archive. `make tm-pathmgr-rc-smoke` covers
   `/dev` PMDIR readdir, `/etc` cpio symlink file access, `/dev/console`
   repath, dynamic helper registration, duplicate rejection, MsgSend through
-  the resolved binding, and unregister-on-exit cleanup. C remains default and
-  rollback until a separate RC decision exists.
+  the resolved binding, and unregister-on-exit cleanup. `make
+  tm-pathmgr-rc-rollback-smoke` keeps C `pathmgr.o` rollback live until trusted
+  RC evidence and a separate removal PR exist.
 - `tm_rsrcdb` is a Rust-default RC provider behind `QSOE_RUST_TM_RSRCDB=1`.
   The selector removes LQ C `sys/rsrcdb.o` and links through the shared
   taskman Rust provider archive. `make tm-rsrcdb-rc-smoke` covers live

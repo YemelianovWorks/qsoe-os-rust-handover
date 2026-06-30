@@ -1,0 +1,5 @@
+--- a/Makefile
++++ b/Makefile
+@@ -47,1 +47,1 @@
+-QSOE_RUST_TM_PATHMGR ?= 0
++QSOE_RUST_TM_PATHMGR ?= 1
