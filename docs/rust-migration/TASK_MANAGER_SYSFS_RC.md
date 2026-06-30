@@ -1,13 +1,14 @@
-# `qsoe-tm-sysfs` Rust-Default Release Candidate
+# `qsoe-tm-sysfs` Rust-Default Release Candidate (Historical)
 
 Captured: 2026-06-30 CEST.
 
-This note records the `tm_sysfs` Rust-default release-candidate path with C
-rollback still available.
+This note records the historical `tm_sysfs` Rust-default release-candidate
+path. The C provider has since been retired; see
+`TASK_MANAGER_SYSFS_RETIREMENT.md` for the current Rust-only state.
 
 ## Rust Migration: `tm_sysfs`
 
-Status: Rust default RC.
+Status: historical Rust default RC; current state is retired.
 Release or build: `qsoe-tm-sysfs-rc1`, introduced by the
 `codex/tm-sysfs-rust-default-rc` branch.
 
@@ -29,9 +30,9 @@ process tables, IPC decoding, and seL4 object code remain C.
 
 ## Rollback
 
-- Rollback available during RC: yes
+- Rollback available during RC: yes; removed after retirement
 - Rollback selector: `QSOE_RUST_TM_SYSFS=0`
-- Rollback command:
+- Historical rollback command:
 
 ```sh
 make tm-sysfs-rc-rollback-smoke
@@ -43,9 +44,8 @@ Default RC smoke:
 make tm-sysfs-rc-smoke
 ```
 
-Rollback window: open. Do not remove `libtaskman/src/tm_sysfs.c` until #26's
-C retirement checklist is satisfied and a separate removal PR records fresh
-evidence.
+Rollback window: closed by the retirement PR. `libtaskman/src/tm_sysfs.c` is
+removed and `QSOE_RUST_TM_SYSFS=0` now fails fast.
 
 ## Test Evidence
 
@@ -54,7 +54,7 @@ evidence.
 - Artifact and membership audit: `make tm-sysfs-evidence`
 - Existing Rust-selected runtime smoke: `make tm-sysfs-runtime-smoke`
 - Rust-default RC smoke: `make tm-sysfs-rc-smoke`
-- C rollback RC smoke: `make tm-sysfs-rc-rollback-smoke`
+- Historical C rollback RC smoke: `make tm-sysfs-rc-rollback-smoke`
 
 The RC smoke builds NQ and LQ taskman in the default selector mode and verifies
 that C `tm_sysfs.o` is absent from `libtaskman.a`. The rollback smoke repeats
@@ -65,7 +65,8 @@ fragment that enumerates `/sys` and reads `/sys/board`, `/sys/builddate`,
 
 ## Known Limitations
 
-- No C source is removed by this RC.
+- No C source was removed by this RC; removal happened in the later retirement
+  PR.
 - The RC covers QSOE/L QEMU runtime behavior, not a full hardware release.
 - Only the portable `/sys` data model is selected through Rust. Syscfg/FDT
   discovery, sysmap construction, path dispatch, process lifecycle, IPC, and
@@ -75,5 +76,7 @@ fragment that enumerates `/sys` and reads `/sys/board`, `/sys/builddate`,
 
 - Unsafe review: no new Rust unsafe code in this RC target wiring.
 - Data or on-disk format migration: none.
-- Operator impact: use `make tm-sysfs-rc-smoke` to validate the Rust default
-  RC path and `make tm-sysfs-rc-rollback-smoke` to validate rollback.
+- Operator impact during the RC: use `make tm-sysfs-rc-smoke` to validate the
+  Rust default RC path and `make tm-sysfs-rc-rollback-smoke` to validate
+  rollback. In the current retired state only `make tm-sysfs-rc-smoke`
+  remains.

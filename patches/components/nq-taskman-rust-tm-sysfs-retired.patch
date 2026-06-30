@@ -1,0 +1,11 @@
+diff --git a/taskman/Makefile b/taskman/Makefile
+--- a/taskman/Makefile
++++ b/taskman/Makefile
+@@ -40,6 +40,9 @@ ifneq ($(QSOE_RUST_TM_SYSCFG),1)
+ $(error QSOE_RUST_TM_SYSCFG must be 1 after C tm_syscfg retirement)
+ endif
++ifneq ($(QSOE_RUST_TM_SYSFS),1)
++$(error QSOE_RUST_TM_SYSFS must be 1 after C tm_sysfs retirement)
++endif
+ 
+ GCC_INCLUDE := $(shell $(CC) -print-file-name=include)

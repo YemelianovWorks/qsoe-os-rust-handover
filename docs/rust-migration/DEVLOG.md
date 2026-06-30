@@ -24,6 +24,77 @@ Follow-up:
 - ...
 ```
 
+## 2026-06-30 17:00 CEST - tm_sysfs C Retirement
+
+Scope:
+
+- Retired the portable task-manager `tm_sysfs` C provider after its
+  Rust-default RC window.
+- Removed `libtaskman/src/tm_sysfs.c` and the C host fixture
+  `tests/tm_sysfs_model_test.c`.
+- Made `QSOE_RUST_TM_SYSFS=1` mandatory in the umbrella, standalone
+  `libtaskman`, and applied NQ/LQ component Makefiles. The old
+  `QSOE_RUST_TM_SYSFS=0` selector now fails fast.
+- Removed the `tm-sysfs-rc-rollback-smoke` and
+  `container-tm-sysfs-rc-rollback-smoke` targets and CI step.
+- Converted `check-tm-sysfs-model`, `tm-sysfs-evidence`,
+  `tm-sysfs-runtime-smoke`, and `tm-sysfs-rc-smoke` to Rust-only retirement
+  semantics.
+- Updated adjacent provider evidence scripts so they pin
+  `QSOE_RUST_TM_SYSFS=1` instead of the retired C rollback selector.
+- Added `TASK_MANAGER_SYSFS_RETIREMENT.md` and updated the README, status,
+  inventory, retirement, handover, and Rust workspace docs.
+
+Commands:
+
+- `mcp__codebase_memory_mcp.search_code(pattern="QSOE_RUST_TM_SYSFS")`
+- `scripts/apply-component-overrides.sh`
+- `scripts/c-index.sh files`
+- `bash -n scripts/build-rust-tm-providers.sh scripts/check-tm-sysfs-model.sh scripts/tm-sysfs-evidence.sh scripts/tm-sysfs-runtime-smoke.sh scripts/tm-sysfs-rc-smoke.sh scripts/apply-component-overrides.sh scripts/tm-fdt-evidence.sh scripts/tm-rsrcdb-evidence.sh scripts/tm-cpio-evidence.sh scripts/tm-pathmgr-evidence.sh scripts/tm-script-evidence.sh`
+- `QSOE_RUST_TM_SYSFS=0 scripts/build-rust-tm-providers.sh /tmp/should-not-build-tm-sysfs.a`
+- `TM_SYSFS_RC_ROLLBACK=1 scripts/tm-sysfs-rc-smoke.sh`
+- `QSOE_RUST_TM_SYSFS=0 scripts/tm-sysfs-rc-smoke.sh`
+- `QSOE_RUST_TM_SYSFS=0 scripts/tm-sysfs-runtime-smoke.sh`
+- `QSOE_RUST_TM_SYSFS=0 make -C libtaskman --no-print-directory`
+- `QSOE_RUST_TM_SYSFS=0 make -n tm-sysfs-rc-smoke`
+- `make -n tm-sysfs-rc-rollback-smoke`
+- `make check-tm-sysfs-model`
+- `make tm-sysfs-evidence`
+- `timeout 300 make tm-sysfs-rc-smoke`
+- `make tm-cpio-evidence`
+- `make tm-script-evidence`
+- `make tm-fdt-evidence`
+- `make tm-rsrcdb-evidence`
+- `make tm-pathmgr-evidence`
+- `make tm-providers-evidence`
+- `make roadmap-validate`
+- `git diff --check`
+- `make rust-quality`
+
+Result:
+
+- The component override stack applies cleanly and represents sysfs retirement
+  in NQ and LQ taskman Makefiles.
+- The C index now contains 807 QSOE-owned C/ASM/linker files. The indexed C
+  file count drops to 515 after removing `libtaskman/src/tm_sysfs.c`.
+- `qsoe-tm-sysfs` host tests pass as the canonical `/sys` model evidence.
+- The sysfs evidence gate rejects retired C selectors, builds Rust provider
+  archives, and verifies that NQ/LQ taskman archives contain no `tm_sysfs.o`.
+- The RC smoke boots QSOE/L with the Rust `/sys` provider and reaches the
+  expected `/sys/board`, `/sys/builddate`, `/sys/cmdline`, `/sys/osname`, and
+  `/sys/version` checks.
+- Adjacent task-manager evidence for cpio, script, fdt, rsrcdb, and pathmgr
+  still passes with `QSOE_RUST_TM_SYSFS=1`.
+- The aggregate task-manager provider evidence passes, including the shared
+  Rust provider archive and dual-provider `/proc` smoke.
+- Roadmap metadata validation, diff whitespace checks, and the Rust quality
+  suite pass.
+
+Follow-up:
+
+- Publish the PR, wait for trusted CI, merge, and update #148 to
+  `status:retired`.
+
 ## 2026-06-30 16:24 CEST - `tm_sysmap` C Provider Retirement
 
 Scope:
@@ -74,9 +145,8 @@ Result:
 
 Follow-up:
 
-- Finish the PR, watch trusted CI, merge, then update and close roadmap issue
-  #147 as `status:retired`.
-- `tm_sysfs` remains the next task-manager Rust-default RC with C rollback.
+- Completed by PR #213 and roadmap issue #147. `tm_sysfs` became the next
+  task-manager retirement candidate.
 
 ## 2026-06-30 15:44 CEST - `tm_syscfg` C Provider Retirement
 
@@ -142,8 +212,8 @@ Result:
 
 Follow-up:
 
-- Keep `tm_sysmap` and `tm_sysfs` as the remaining Rust-default RC providers
-  until their own separate retirement PRs.
+- `tm_sysmap` and `tm_sysfs` were the remaining Rust-default RC providers at
+  this point and each needed its own separate retirement PR.
 
 ## 2026-06-30 15:07 CEST - `tm_elf` C Provider Retirement
 

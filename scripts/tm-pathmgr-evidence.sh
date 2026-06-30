@@ -184,7 +184,7 @@ echo "tm-pathmgr-evidence.sh: verifying NQ C rollback membership"
 "$MAKE" -C "$ROOT/nq/taskman" --no-print-directory \
     QSOE_RUST_TM_CPIO=1 QSOE_RUST_TM_CRED=0 QSOE_RUST_TM_ELF=1 \
     QSOE_RUST_TM_PATHMGR=0 QSOE_RUST_TM_PROCFS=1 \
-    QSOE_RUST_TM_SCRIPT=1 QSOE_RUST_TM_SYSCFG=1 QSOE_RUST_TM_SYSFS=0
+    QSOE_RUST_TM_SCRIPT=1 QSOE_RUST_TM_SYSCFG=1 QSOE_RUST_TM_SYSFS=1
 require_pathmgr_count nq-c-default "$ROOT/nq/build/libtaskman/libtaskman.a" 1
 audit_flags nq-c-default-taskman "$ROOT/nq/build/taskman/taskman.elf"
 audit_linked_symbols nq-c-default-taskman "$ROOT/nq/build/taskman/taskman.elf"
@@ -193,7 +193,7 @@ echo "tm-pathmgr-evidence.sh: verifying NQ Rust-selected membership"
 "$MAKE" -C "$ROOT/nq/taskman" --no-print-directory \
     QSOE_RUST_TM_CPIO=1 QSOE_RUST_TM_CRED=0 QSOE_RUST_TM_ELF=1 \
     QSOE_RUST_TM_PATHMGR=1 QSOE_RUST_TM_PROCFS=1 \
-    QSOE_RUST_TM_SCRIPT=1 QSOE_RUST_TM_SYSCFG=1 QSOE_RUST_TM_SYSFS=0
+    QSOE_RUST_TM_SCRIPT=1 QSOE_RUST_TM_SYSCFG=1 QSOE_RUST_TM_SYSFS=1
 require_pathmgr_count nq-rust-selected "$ROOT/nq/build/libtaskman/libtaskman.a" 0
 audit_flags nq-rust-selected-taskman "$ROOT/nq/build/taskman/taskman.elf"
 audit_linked_symbols nq-rust-selected-taskman "$ROOT/nq/build/taskman/taskman.elf"
@@ -211,7 +211,7 @@ echo "tm-pathmgr-evidence.sh: verifying LQ C rollback membership"
     QSOE_RUST_TM_SCRIPT=1 \
     QSOE_RUST_TM_SYSCFG=1 \
     QSOE_RUST_TM_SYSMAP=1 \
-    QSOE_RUST_TM_SYSFS=0 \
+    QSOE_RUST_TM_SYSFS=1 \
     taskman
 require_pathmgr_count lq-c-default "$ROOT/lq/build/libtaskman/libtaskman.a" 1
 audit_flags lq-c-default-taskman "$ROOT/lq/build/taskman.elf"
@@ -230,7 +230,7 @@ echo "tm-pathmgr-evidence.sh: verifying LQ Rust-selected membership"
     QSOE_RUST_TM_SCRIPT=1 \
     QSOE_RUST_TM_SYSCFG=1 \
     QSOE_RUST_TM_SYSMAP=1 \
-    QSOE_RUST_TM_SYSFS=0 \
+    QSOE_RUST_TM_SYSFS=1 \
     taskman
 require_pathmgr_count lq-rust-selected "$ROOT/lq/build/libtaskman/libtaskman.a" 0
 audit_flags lq-rust-selected-taskman "$ROOT/lq/build/taskman.elf"

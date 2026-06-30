@@ -197,7 +197,7 @@ audit_provider_archive
 echo "tm-cpio-evidence.sh: verifying NQ Rust-only membership"
 "$MAKE" -C "$ROOT/nq/taskman" --no-print-directory \
     QSOE_RUST_TM_CPIO=1 QSOE_RUST_TM_CRED=0 QSOE_RUST_TM_PROCFS=1 \
-    QSOE_RUST_TM_SCRIPT=1 QSOE_RUST_TM_SYSFS=0
+    QSOE_RUST_TM_SCRIPT=1 QSOE_RUST_TM_SYSFS=1
 require_cpio_count nq-rust-retired "$ROOT/nq/build/libtaskman/libtaskman.a" 0
 audit_flags nq-rust-retired-taskman "$ROOT/nq/build/taskman/taskman.elf"
 audit_linked_symbols nq-rust-retired-taskman "$ROOT/nq/build/taskman/taskman.elf"
@@ -213,7 +213,7 @@ echo "tm-cpio-evidence.sh: verifying LQ Rust-only membership"
     QSOE_RUST_TM_PROCFS=1 \
     QSOE_RUST_TM_PSEUDODEV=0 \
     QSOE_RUST_TM_SCRIPT=1 \
-    QSOE_RUST_TM_SYSFS=0 \
+    QSOE_RUST_TM_SYSFS=1 \
     taskman
 require_cpio_count lq-rust-retired "$ROOT/lq/build/libtaskman/libtaskman.a" 0
 audit_flags lq-rust-retired-taskman "$ROOT/lq/build/taskman.elf"

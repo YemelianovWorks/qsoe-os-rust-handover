@@ -181,6 +181,9 @@ apply_patch_if_possible_or_present nq nq-taskman-rust-tm-script-retired.patch \
 apply_patch_if_possible_or_present nq nq-taskman-rust-tm-syscfg-retired.patch \
     "$ROOT/nq/taskman/Makefile" \
     'QSOE_RUST_TM_SYSCFG must be 1 after C tm_syscfg retirement'
+apply_patch_if_possible_or_present nq nq-taskman-rust-tm-sysfs-retired.patch \
+    "$ROOT/nq/taskman/Makefile" \
+    'QSOE_RUST_TM_SYSFS must be 1 after C tm_sysfs retirement'
 apply_patch_if_possible_or_present nq nq-makefile-rust-slogger-retired.patch \
     "$ROOT/nq/Makefile" \
     'SELECTED_SLOGGER_ELF ?= $(abspath ../build/rust/selected/sbin/slogger.elf)'
@@ -254,6 +257,9 @@ apply_patch_if_possible_or_present lq lq-makefile-rust-tm-syscfg-retired.patch \
 apply_patch_if_possible_or_present lq lq-makefile-rust-tm-sysmap-retired.patch \
     "$ROOT/lq/Makefile" \
     'QSOE_RUST_TM_SYSMAP must be 1 after C tm_sysmap retirement'
+apply_patch_if_possible_or_present lq lq-makefile-rust-tm-sysfs-retired.patch \
+    "$ROOT/lq/Makefile" \
+    'QSOE_RUST_TM_SYSFS must be 1 after C tm_sysfs retirement'
 apply_patch_if_possible_or_present lq lq-makefile-rust-slogger-retired.patch \
     "$ROOT/lq/Makefile" \
     'SELECTED_SLOGGER_ELF ?= $(abspath $(TOP)/..)/build/rust/selected/sbin/slogger.elf'
@@ -323,6 +329,9 @@ apply_patch_if_possible_or_present lq lq-taskman-rust-tm-syscfg-retired.patch \
 apply_patch_if_possible_or_present lq lq-taskman-rust-tm-sysmap-retired.patch \
     "$ROOT/lq/taskman/Makefile" \
     'QSOE_RUST_TM_SYSMAP must be 1 after C tm_sysmap retirement'
+apply_patch_if_possible_or_present lq lq-taskman-rust-tm-sysfs-retired.patch \
+    "$ROOT/lq/taskman/Makefile" \
+    'QSOE_RUST_TM_SYSFS must be 1 after C tm_sysfs retirement'
 apply_patch_if_possible_or_present lq lq-taskman-stack-32k.patch \
     "$ROOT/lq/taskman/start.S" \
     '    .skip 32768'
@@ -413,6 +422,7 @@ require_line "$ROOT/nq/taskman/Makefile" 'QSOE_RUST_TM_PROCFS must be 1 after C 
 require_line "$ROOT/nq/taskman/Makefile" 'QSOE_RUST_TM_ELF must be 1 after C tm_elf retirement'
 require_line "$ROOT/nq/taskman/Makefile" 'QSOE_RUST_TM_SCRIPT must be 1 after C tm_script retirement'
 require_line "$ROOT/nq/taskman/Makefile" 'QSOE_RUST_TM_SYSCFG must be 1 after C tm_syscfg retirement'
+require_line "$ROOT/nq/taskman/Makefile" 'QSOE_RUST_TM_SYSFS must be 1 after C tm_sysfs retirement'
 require_line "$ROOT/nq/taskman/Makefile" 'QSOE_RUST_TM_CRED ?= 0'
 require_line "$ROOT/nq/taskman/Makefile" 'QSOE_RUST_TM_ELF ?= 1'
 require_line "$ROOT/nq/taskman/Makefile" 'QSOE_RUST_TM_PATHMGR ?= 0'
@@ -488,6 +498,7 @@ require_line "$ROOT/lq/Makefile" 'QSOE_RUST_TM_ELF must be 1 after C tm_elf reti
 require_line "$ROOT/lq/Makefile" 'QSOE_RUST_TM_SCRIPT must be 1 after C tm_script retirement'
 require_line "$ROOT/lq/Makefile" 'QSOE_RUST_TM_SYSCFG must be 1 after C tm_syscfg retirement'
 require_line "$ROOT/lq/Makefile" 'QSOE_RUST_TM_SYSMAP must be 1 after C tm_sysmap retirement'
+require_line "$ROOT/lq/Makefile" 'QSOE_RUST_TM_SYSFS must be 1 after C tm_sysfs retirement'
 require_line "$ROOT/lq/Makefile" 'QSOE_RUST_TM_CRED ?= 0'
 require_line "$ROOT/lq/Makefile" 'QSOE_RUST_TM_ELF ?= 1'
 require_line "$ROOT/lq/Makefile" 'QSOE_RUST_TM_FDT ?= 0'
@@ -563,6 +574,7 @@ require_line "$ROOT/lq/taskman/Makefile" 'QSOE_RUST_TM_ELF must be 1 after C tm_
 require_line "$ROOT/lq/taskman/Makefile" 'QSOE_RUST_TM_SCRIPT must be 1 after C tm_script retirement'
 require_line "$ROOT/lq/taskman/Makefile" 'QSOE_RUST_TM_SYSCFG must be 1 after C tm_syscfg retirement'
 require_line "$ROOT/lq/taskman/Makefile" 'QSOE_RUST_TM_SYSMAP must be 1 after C tm_sysmap retirement'
+require_line "$ROOT/lq/taskman/Makefile" 'QSOE_RUST_TM_SYSFS must be 1 after C tm_sysfs retirement'
 require_line "$ROOT/lq/taskman/Makefile" 'QSOE_RUST_TM_CRED ?= 0'
 require_line "$ROOT/lq/taskman/Makefile" 'QSOE_RUST_TM_ELF ?= 1'
 require_line "$ROOT/lq/taskman/Makefile" 'QSOE_RUST_TM_FDT ?= 0'
@@ -601,6 +613,10 @@ require_absent "$ROOT/lq/taskman/Makefile" 'TASKMAN_SYSMAP_OBJS += $(OBJDIR)/sys
 require_line "$ROOT/lq/taskman/Makefile" '$(TASKMAN_SYSMAP_OBJS)'
 if [ -e "$ROOT/lq/taskman/sys/sysmap.c" ]; then
     fail "lq/taskman/sys/sysmap.c should be retired"
+fi
+require_line "$ROOT/libtaskman/Makefile" 'QSOE_RUST_TM_SYSFS must be 1 after C tm_sysfs retirement'
+if [ -e "$ROOT/libtaskman/src/tm_sysfs.c" ]; then
+    fail "libtaskman/src/tm_sysfs.c should be retired"
 fi
 require_absent "$ROOT/lq/taskman/Makefile" 'select at most one taskman Rust provider until they share one staticlib'
 require_line "$ROOT/lq/taskman/Makefile" 'FORCE:'
