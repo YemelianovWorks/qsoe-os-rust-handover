@@ -168,13 +168,21 @@ jobs:
         if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
         run: make container-tm-fdt-rc-rollback-smoke
 
-      - name: Run tm_pathmgr Rust opt-in evidence
+      - name: Run tm_pathmgr Rust-default RC evidence
         if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
         run: make container-tm-pathmgr-evidence
 
       - name: Run tm_pathmgr Rust runtime smoke
         if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
         run: make container-tm-pathmgr-runtime-smoke
+
+      - name: Run tm_pathmgr Rust-default RC smoke
+        if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+        run: make container-tm-pathmgr-rc-smoke
+
+      - name: Run tm_pathmgr C rollback RC smoke
+        if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+        run: make container-tm-pathmgr-rc-rollback-smoke
 
       - name: Run tm_rsrcdb Rust-default RC evidence
         if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
@@ -288,6 +296,8 @@ jobs:
             build/tm-pathmgr-evidence/**/*.txt
             build/tm-pathmgr-runtime-smoke/*.log
             build/tm-pathmgr-runtime-smoke/*.txt
+            build/tm-pathmgr-rc/*.log
+            build/tm-pathmgr-rc/*.txt
             build/tm-rsrcdb-evidence/**/*.log
             build/tm-rsrcdb-evidence/**/*.txt
             build/tm-rsrcdb-runtime-smoke/*.log

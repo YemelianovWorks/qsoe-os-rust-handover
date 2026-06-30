@@ -39,9 +39,9 @@ gate in `docs/rust-migration/RETIREMENT.md`.
   `qsoe-tm-procfs`, `qsoe-tm-cpio`, `qsoe-tm-script`, `qsoe-tm-elf`,
   `qsoe-tm-syscfg`, `qsoe-tm-sysmap`, and `qsoe-tm-sysfs` through the shared
   provider archive.
-- `qsoe-tm-cred`, `qsoe-tm-fdt`, and `qsoe-tm-rsrcdb` are in Rust-default RC
-  with C rollback. Rust opt-in task-manager providers still exist for
-  `qsoe-tm-pathmgr` and `qsoe-tm-pseudodev`. Selected task-manager Rust
+- `qsoe-tm-cred`, `qsoe-tm-fdt`, `qsoe-tm-pathmgr`, and `qsoe-tm-rsrcdb` are
+  in Rust-default RC with C rollback. Rust opt-in task-manager provider
+  coverage still exists for `qsoe-tm-pseudodev`. Selected task-manager Rust
   providers are packaged through the shared `qsoe-tm-providers` archive so
   multiple providers can link behind one panic handler; C remains the normal
   taskman default for each remaining opt-in provider.
@@ -82,12 +82,12 @@ Detailed planning lives under `docs/rust-migration/`. Start with:
 | `pipe` service | Retired C service | `qsoe-pipe` host tests pass, `pipe-rs` links and audits, `make rust-pipe-smoke` boots LQ with Rust `/sbin/pipe` registered, `make rust-pipe-data-smoke` proves a libc/taskman `pipe(2)` write/read round trip, and `make pipe-rc-data-smoke` validates the Rust-only service path. The C service source and rollback targets are removed by the retirement PR. |
 | `test_msgpass` helper | Retired C helper | `test_msgpass-rs` links, is always staged into the qrvfs test image as `/usr/bin/test_msgpass`, and passes the existing suite `[msgpass]` section through `make rust-test-msgpass-smoke` and `make test-msgpass-rc-smoke`. The C helper source and rollback target are removed by the retirement PR. |
 | `tm_procfs` task-manager pilot | Retired C provider | `qsoe-tm-procfs` exports the existing C ABI and is mandatory in taskman through the shared `qsoe-tm-providers` archive. `make tm-procfs-evidence` verifies Rust host tests, archive audit, no `tm_procfs.o` in NQ/LQ `libtaskman.a`, retired selector rejection, and the Rust-only `/proc` smoke. |
-| Task-manager Rust provider archive | Shared provider link unit | `qsoe-tm-providers` packages selected taskman Rust providers into one `libqsoe_tm_providers.a` with one panic handler. `make tm-providers-evidence` selects the current shared provider set including `tm_cpio`, `tm_cred`, `tm_fdt`, `tm_procfs`, and `tm_rsrcdb`, audits the soft-float archive and final taskman ELFs, verifies selected portable C objects are absent, and runs the shared-provider `/proc` smoke. |
+| Task-manager Rust provider archive | Shared provider link unit | `qsoe-tm-providers` packages selected taskman Rust providers into one `libqsoe_tm_providers.a` with one panic handler. `make tm-providers-evidence` selects the current shared provider set including `tm_cpio`, `tm_cred`, `tm_fdt`, `tm_pathmgr`, `tm_procfs`, and `tm_rsrcdb`, audits the soft-float archive and final taskman ELFs, verifies selected portable C objects are absent, and runs the shared-provider `/proc` smoke. |
 | `tm_cpio` task-manager provider | Retired C provider | `qsoe-tm-cpio` exports the existing `tm_cpio.h` ABI and is mandatory in normal NQ/LQ taskman builds. `QSOE_RUST_TM_CPIO=0` fails fast, `libtaskman/src/cpio.c` is removed, and `make tm-cpio-evidence` verifies Rust host tests, soft-float archive audit, no C `cpio.o` in NQ/LQ taskman links, retired selector rejection, and exported symbols. `make tm-cpio-rc-smoke` boots LQ through CPIO symlink/read/spawn paths on the Rust-only path. |
 | `tm_cred` task-manager provider | Rust default RC | `qsoe-tm-cred` exports the existing `tm_cred.h` ABI and is selected by default through `QSOE_RUST_TM_CRED=1`. `make tm-cred-evidence` verifies C rollback and Rust-default archive membership, and `make tm-cred-rc-smoke` boots LQ through live uid/gid mutation, umask, cwd, permission rejection, and spawn inheritance on the Rust-default path. `make tm-cred-rc-rollback-smoke` keeps the C `cred.o` rollback path live. |
 | `tm_elf` task-manager provider | Retired C provider | `qsoe-tm-elf` exports the existing `tm_elf.h` ABI and is mandatory in normal NQ/LQ taskman builds. `QSOE_RUST_TM_ELF=0` fails fast, `libtaskman/src/elf.c` is removed, and `make tm-elf-evidence` verifies Rust host tests, soft-float archive audit, no C `elf.o` in NQ/LQ taskman links, retired selector rejection, and exported symbols. `make tm-elf-rc-smoke` boots LQ through a dynamic `/usr/bin/sysinfo` spawn on the Rust-only path. |
 | `tm_fdt` task-manager provider | Rust default RC | `qsoe-tm-fdt` exports the existing LQ `tm_fdt_*` ABI and is selected by default through `QSOE_RUST_TM_FDT=1`; `make tm-fdt-evidence` runs C/Rust host tests, audits the soft-float staticlib, and verifies LQ taskman links with Rust default and C rollback. `make tm-fdt-rc-smoke` boots LQ through `/chosen` bootargs, syscfg/sysmap construction, `/sys`, and `sysinfo` consumers on the Rust-default path. `make tm-fdt-rc-rollback-smoke` keeps C `sys/fdt.o` rollback live. |
-| `tm_pathmgr` task-manager provider | Rust opt-in | `qsoe-tm-pathmgr` exports the existing `tm_pathmgr.h` ABI behind `QSOE_RUST_TM_PATHMGR=1`; `make tm-pathmgr-evidence` runs C/Rust host tests, audits the soft-float staticlib, and verifies NQ/LQ taskman links with C rollback and Rust-selected archives. `make tm-pathmgr-runtime-smoke` boots LQ with Rust `tm_pathmgr` selected and covers `/dev` readdir, `/etc` symlink file access, `/dev/console` repath, dynamic helper registration, duplicate rejection, MsgSend through the resolved binding, and unregister-on-exit cleanup. Next gate: separate Rust-default RC decision. |
+| `tm_pathmgr` task-manager provider | Rust default RC | `qsoe-tm-pathmgr` exports the existing `tm_pathmgr.h` ABI and is selected by default through `QSOE_RUST_TM_PATHMGR=1`; `make tm-pathmgr-evidence` runs C/Rust host tests, audits the soft-float staticlib, and verifies NQ/LQ taskman links with Rust default and C rollback. `make tm-pathmgr-rc-smoke` boots LQ with Rust `tm_pathmgr` selected and covers `/dev` readdir, `/etc` symlink file access, `/dev/console` repath, dynamic helper registration, duplicate rejection, MsgSend through the resolved binding, and unregister-on-exit cleanup. `make tm-pathmgr-rc-rollback-smoke` keeps C `pathmgr.o` rollback live. |
 | `tm_pseudodev` task-manager provider | Rust opt-in | `qsoe-tm-pseudodev` exports the existing LQ `/dev/null` and `/dev/zero` ABI behind `QSOE_RUST_TM_PSEUDODEV=1`; `make tm-pseudodev-evidence` runs Rust host tests, audits the soft-float staticlib, and verifies LQ C-default/Rust-selected taskman links. `make tm-pseudodev-runtime-smoke` boots LQ with Rust `tm_pseudodev` selected and covers live `/dev/null` and `/dev/zero` open, write, read, and fstat calls. Next gate: separate Rust-default RC decision. |
 | `tm_rsrcdb` task-manager provider | Rust default RC | `qsoe-tm-rsrcdb` exports the existing LQ `tm_rsrc_*` ABI and is selected by default through `QSOE_RUST_TM_RSRCDB=1`; `make tm-rsrcdb-evidence` runs C/Rust host tests, audits the soft-float staticlib, and verifies LQ Rust-default/C-rollback taskman links. `make tm-rsrcdb-rc-smoke` boots LQ through live `rsrcdbmgr_*` create, attach, query, detach, and destroy calls on the Rust-default path. `make tm-rsrcdb-rc-rollback-smoke` keeps C `sys/rsrcdb.o` rollback live. |
 | `tm_script` task-manager provider | Retired C provider | `qsoe-tm-script` exports the existing `tm_script.h` ABI and is mandatory in normal NQ/LQ taskman builds. `QSOE_RUST_TM_SCRIPT=0` fails fast, `libtaskman/src/script.c` is removed, and `make tm-script-evidence` verifies Rust host tests, soft-float archive audit, no C `script.o` in NQ/LQ taskman links, retired selector rejection, and exported symbols. `make tm-script-rc-smoke` boots LQ through direct shebang-backed script spawn on the Rust-only path. |
@@ -128,10 +128,10 @@ Detailed planning lives under `docs/rust-migration/`. Start with:
   `qsoe-tm-procfs`, `qsoe-tm-script`, `qsoe-tm-cpio`, `qsoe-tm-elf`,
   `qsoe-tm-syscfg`, `qsoe-tm-sysmap`, and `qsoe-tm-sysfs` through the shared
   provider archive.
-- `tm_cred`, `tm_fdt`, and `tm_rsrcdb` are Rust-default task-manager RCs with C
-  rollback. `tm_pathmgr` and `tm_pseudodev` remain Rust opt-in task-manager
-  providers with focused runtime smoke coverage; keep those providers C-default
-  until separate RC decisions exist.
+- `tm_cred`, `tm_fdt`, `tm_pathmgr`, and `tm_rsrcdb` are Rust-default
+  task-manager RCs with C rollback. `tm_pseudodev` remains a Rust opt-in
+  task-manager provider with focused runtime smoke coverage; keep it C-default
+  until a separate RC decision exists.
 
 ## Useful Commands
 
@@ -183,6 +183,8 @@ make check-tm-pathmgr-model
 make rust-tm-pathmgr-provider
 make tm-pathmgr-evidence
 make tm-pathmgr-runtime-smoke
+make tm-pathmgr-rc-smoke
+make tm-pathmgr-rc-rollback-smoke
 make check-tm-procfs-model
 make rust-tm-procfs-provider
 make tm-procfs-evidence

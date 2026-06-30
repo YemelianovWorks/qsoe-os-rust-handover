@@ -1,8 +1,8 @@
 # Task Manager Path Registry Provider
 
-Captured: 2026-06-29 CEST.
+Captured: 2026-06-30 CEST.
 
-`tm_pathmgr` is a Rust opt-in provider for the portable task-manager path
+`tm_pathmgr` is a Rust-default RC provider for the portable task-manager path
 namespace registry:
 
 ```text
@@ -41,11 +41,11 @@ object manipulation. NQ and LQ taskman still run those layers in C.
 
 ## Selector
 
-Normal taskman builds remain C-default:
+Normal taskman builds are Rust-default during the RC window:
 
 ```text
-QSOE_RUST_TM_PATHMGR=0  -> C `libtaskman/src/pathmgr.c` remains selected
-QSOE_RUST_TM_PATHMGR=1  -> Rust `qsoe-tm-pathmgr` staticlib is linked instead
+QSOE_RUST_TM_PATHMGR=1  -> Rust `qsoe-tm-pathmgr` is selected by default
+QSOE_RUST_TM_PATHMGR=0  -> C `libtaskman/src/pathmgr.c` remains rollback
 ```
 
 When Rust is selected, `libtaskman/Makefile` excludes `pathmgr.o` from
@@ -77,7 +77,7 @@ The Rust provider has equivalent host coverage:
 cargo test --manifest-path rust/Cargo.toml -p qsoe-tm-pathmgr --features host-tests
 ```
 
-The full opt-in evidence gate is:
+The full Rust-default RC evidence gate is:
 
 ```sh
 make tm-pathmgr-evidence
@@ -85,9 +85,9 @@ make tm-pathmgr-evidence
 
 It runs the C fixture, Rust host tests, builds and audits the Rust staticlib,
 checks all exported `tm_pathmgr_*` symbols, verifies all archive members are
-RVC soft-float, and links both NQ and LQ taskman in C rollback and
-Rust-selected modes. The gate also verifies `pathmgr.o` is present for
-`QSOE_RUST_TM_PATHMGR=0` and absent for `QSOE_RUST_TM_PATHMGR=1`.
+RVC soft-float, and links both NQ and LQ taskman in Rust-default and C rollback
+modes. The gate also verifies `pathmgr.o` is absent for
+`QSOE_RUST_TM_PATHMGR=1` and present for `QSOE_RUST_TM_PATHMGR=0`.
 
 The focused runtime smoke is:
 
@@ -95,17 +95,29 @@ The focused runtime smoke is:
 make tm-pathmgr-runtime-smoke
 ```
 
-It boots QSOE/L with `QSOE_RUST_TM_PATHMGR=1`, verifies C `pathmgr.o` is
-absent from the selected `libtaskman.a`, checks the shared Rust provider
-exports all nine `tm_pathmgr_*` ABI symbols, and exercises runtime consumers:
-`/dev` PMDIR readdir, `/etc/passwd` via the cpio-root symlink, `/dev/console`
-repath to `/dev/ser1`, helper registration under `/dev/pathmgr_probe`,
-duplicate registration rejection, MsgSend through the resolved external
-binding, and unregister-on-exit cleanup after the helper exits.
+It boots QSOE/L with `QSOE_RUST_TM_PATHMGR=1` by default, verifies C
+`pathmgr.o` is absent from the selected `libtaskman.a`, checks the shared Rust
+provider exports all nine `tm_pathmgr_*` ABI symbols, and exercises runtime
+consumers: `/dev` PMDIR readdir, `/etc/passwd` via the cpio-root symlink,
+`/dev/console` repath to `/dev/ser1`, helper registration under
+`/dev/pathmgr_probe`, duplicate registration rejection, MsgSend through the
+resolved external binding, and unregister-on-exit cleanup after the helper
+exits. With `TM_PATHMGR_RUNTIME_ALLOW_C=1` and `QSOE_RUST_TM_PATHMGR=0`, the
+same smoke validates the C rollback path.
+
+The RC wrappers are:
+
+```sh
+make tm-pathmgr-rc-smoke
+make tm-pathmgr-rc-rollback-smoke
+```
+
+They verify NQ and LQ `libtaskman.a` membership before running the live LQ
+runtime smoke.
 
 ## Current State
 
-`tm_pathmgr` is Rust opt-in only. It is not a Rust-default release candidate
-and has no C retirement approval. Keep `libtaskman/src/pathmgr.c` as the
-rollback implementation until a separate Rust-default RC decision, the global
-retirement checklist, and a separate removal PR are satisfied.
+`tm_pathmgr` is a Rust-default release candidate. It has no C retirement
+approval. Keep `libtaskman/src/pathmgr.c` as the rollback implementation until
+the RC accumulates trusted CI evidence, the global retirement checklist is
+satisfied, and a separate removal PR explicitly retires the C provider.

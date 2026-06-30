@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Capture tm_pathmgr Rust opt-in evidence without changing the default provider.
+# Capture tm_pathmgr Rust-default RC evidence while keeping C rollback alive.
 
 set -eu
 
@@ -14,7 +14,7 @@ usage() {
     cat <<'EOF'
 usage: scripts/tm-pathmgr-evidence.sh
 
-Builds and audits the Rust tm_pathmgr opt-in path and verifies C rollback
+Builds and audits the Rust tm_pathmgr default path and verifies C rollback
 archive membership for NQ and LQ taskman links.
 
 Environment:
@@ -180,60 +180,60 @@ echo "tm-pathmgr-evidence.sh: building Rust provider archive"
 "$MAKE" -C "$ROOT" --no-print-directory rust-tm-pathmgr-provider
 audit_provider_archive
 
-echo "tm-pathmgr-evidence.sh: verifying NQ C rollback membership"
+echo "tm-pathmgr-evidence.sh: verifying NQ Rust-default membership"
 "$MAKE" -C "$ROOT/nq/taskman" --no-print-directory \
-    QSOE_RUST_TM_CPIO=1 QSOE_RUST_TM_CRED=0 QSOE_RUST_TM_ELF=1 \
-    QSOE_RUST_TM_PATHMGR=0 QSOE_RUST_TM_PROCFS=1 \
-    QSOE_RUST_TM_SCRIPT=1 QSOE_RUST_TM_SYSCFG=1 QSOE_RUST_TM_SYSFS=1
-require_pathmgr_count nq-c-default "$ROOT/nq/build/libtaskman/libtaskman.a" 1
-audit_flags nq-c-default-taskman "$ROOT/nq/build/taskman/taskman.elf"
-audit_linked_symbols nq-c-default-taskman "$ROOT/nq/build/taskman/taskman.elf"
-
-echo "tm-pathmgr-evidence.sh: verifying NQ Rust-selected membership"
-"$MAKE" -C "$ROOT/nq/taskman" --no-print-directory \
-    QSOE_RUST_TM_CPIO=1 QSOE_RUST_TM_CRED=0 QSOE_RUST_TM_ELF=1 \
+    QSOE_RUST_TM_CPIO=1 QSOE_RUST_TM_CRED=1 QSOE_RUST_TM_ELF=1 \
     QSOE_RUST_TM_PATHMGR=1 QSOE_RUST_TM_PROCFS=1 \
     QSOE_RUST_TM_SCRIPT=1 QSOE_RUST_TM_SYSCFG=1 QSOE_RUST_TM_SYSFS=1
-require_pathmgr_count nq-rust-selected "$ROOT/nq/build/libtaskman/libtaskman.a" 0
-audit_flags nq-rust-selected-taskman "$ROOT/nq/build/taskman/taskman.elf"
-audit_linked_symbols nq-rust-selected-taskman "$ROOT/nq/build/taskman/taskman.elf"
+require_pathmgr_count nq-rust-default "$ROOT/nq/build/libtaskman/libtaskman.a" 0
+audit_flags nq-rust-default-taskman "$ROOT/nq/build/taskman/taskman.elf"
+audit_linked_symbols nq-rust-default-taskman "$ROOT/nq/build/taskman/taskman.elf"
+
+echo "tm-pathmgr-evidence.sh: verifying NQ C rollback membership"
+"$MAKE" -C "$ROOT/nq/taskman" --no-print-directory \
+    QSOE_RUST_TM_CPIO=1 QSOE_RUST_TM_CRED=1 QSOE_RUST_TM_ELF=1 \
+    QSOE_RUST_TM_PATHMGR=0 QSOE_RUST_TM_PROCFS=1 \
+    QSOE_RUST_TM_SCRIPT=1 QSOE_RUST_TM_SYSCFG=1 QSOE_RUST_TM_SYSFS=1
+require_pathmgr_count nq-c-rollback "$ROOT/nq/build/libtaskman/libtaskman.a" 1
+audit_flags nq-c-rollback-taskman "$ROOT/nq/build/taskman/taskman.elf"
+audit_linked_symbols nq-c-rollback-taskman "$ROOT/nq/build/taskman/taskman.elf"
+
+echo "tm-pathmgr-evidence.sh: verifying LQ Rust-default membership"
+"$MAKE" -C "$ROOT/lq" --no-print-directory \
+    QSOE_RUST_TM_CPIO=1 \
+    QSOE_RUST_TM_CRED=1 \
+    QSOE_RUST_TM_ELF=1 \
+    QSOE_RUST_TM_FDT=1 \
+    QSOE_RUST_TM_PATHMGR=1 \
+    QSOE_RUST_TM_PROCFS=1 \
+    QSOE_RUST_TM_PSEUDODEV=0 \
+    QSOE_RUST_TM_RSRCDB=1 \
+    QSOE_RUST_TM_SCRIPT=1 \
+    QSOE_RUST_TM_SYSCFG=1 \
+    QSOE_RUST_TM_SYSMAP=1 \
+    QSOE_RUST_TM_SYSFS=1 \
+    taskman
+require_pathmgr_count lq-rust-default "$ROOT/lq/build/libtaskman/libtaskman.a" 0
+audit_flags lq-rust-default-taskman "$ROOT/lq/build/taskman.elf"
+audit_linked_symbols lq-rust-default-taskman "$ROOT/lq/build/taskman.elf"
 
 echo "tm-pathmgr-evidence.sh: verifying LQ C rollback membership"
 "$MAKE" -C "$ROOT/lq" --no-print-directory \
     QSOE_RUST_TM_CPIO=1 \
-    QSOE_RUST_TM_CRED=0 \
+    QSOE_RUST_TM_CRED=1 \
     QSOE_RUST_TM_ELF=1 \
-    QSOE_RUST_TM_FDT=0 \
+    QSOE_RUST_TM_FDT=1 \
     QSOE_RUST_TM_PATHMGR=0 \
     QSOE_RUST_TM_PROCFS=1 \
     QSOE_RUST_TM_PSEUDODEV=0 \
-    QSOE_RUST_TM_RSRCDB=0 \
+    QSOE_RUST_TM_RSRCDB=1 \
     QSOE_RUST_TM_SCRIPT=1 \
     QSOE_RUST_TM_SYSCFG=1 \
     QSOE_RUST_TM_SYSMAP=1 \
     QSOE_RUST_TM_SYSFS=1 \
     taskman
-require_pathmgr_count lq-c-default "$ROOT/lq/build/libtaskman/libtaskman.a" 1
-audit_flags lq-c-default-taskman "$ROOT/lq/build/taskman.elf"
-audit_linked_symbols lq-c-default-taskman "$ROOT/lq/build/taskman.elf"
-
-echo "tm-pathmgr-evidence.sh: verifying LQ Rust-selected membership"
-"$MAKE" -C "$ROOT/lq" --no-print-directory \
-    QSOE_RUST_TM_CPIO=1 \
-    QSOE_RUST_TM_CRED=0 \
-    QSOE_RUST_TM_ELF=1 \
-    QSOE_RUST_TM_FDT=0 \
-    QSOE_RUST_TM_PATHMGR=1 \
-    QSOE_RUST_TM_PROCFS=1 \
-    QSOE_RUST_TM_PSEUDODEV=0 \
-    QSOE_RUST_TM_RSRCDB=0 \
-    QSOE_RUST_TM_SCRIPT=1 \
-    QSOE_RUST_TM_SYSCFG=1 \
-    QSOE_RUST_TM_SYSMAP=1 \
-    QSOE_RUST_TM_SYSFS=1 \
-    taskman
-require_pathmgr_count lq-rust-selected "$ROOT/lq/build/libtaskman/libtaskman.a" 0
-audit_flags lq-rust-selected-taskman "$ROOT/lq/build/taskman.elf"
-audit_linked_symbols lq-rust-selected-taskman "$ROOT/lq/build/taskman.elf"
+require_pathmgr_count lq-c-rollback "$ROOT/lq/build/libtaskman/libtaskman.a" 1
+audit_flags lq-c-rollback-taskman "$ROOT/lq/build/taskman.elf"
+audit_linked_symbols lq-c-rollback-taskman "$ROOT/lq/build/taskman.elf"
 
 echo "tm-pathmgr-evidence.sh: evidence captured in $WORKDIR"

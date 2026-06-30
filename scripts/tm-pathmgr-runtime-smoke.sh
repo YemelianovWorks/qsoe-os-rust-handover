@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Boot QSOE/L with Rust tm_pathmgr selected and exercise runtime namespace use.
+# Boot QSOE/L with the selected tm_pathmgr provider and exercise runtime namespace use.
 
 set -eu
 
@@ -10,7 +10,8 @@ usage: scripts/tm-pathmgr-runtime-smoke.sh [-t seconds] [-o log] [--keep-running
 
 Injects a temporary sysinit fragment that enumerates /dev, follows the cpio
 /etc symlink, repaths /dev/console, and runs /usr/bin/pathmgr_probe.  It then
-rebuilds the virtio qrvfs image and boots QSOE/L with QSOE_RUST_TM_PATHMGR=1.
+rebuilds the virtio qrvfs image and boots QSOE/L with the selected
+QSOE_RUST_TM_PATHMGR provider.
 
 This validates the Rust-selected taskman path manager through real boot-time
 device registrations, PMDIR readdir, cpio-root symlink expansion, explicit
@@ -19,7 +20,8 @@ external binding, and process-exit unregister cleanup.
 
 Environment:
   TM_PATHMGR_RUNTIME_SMOKE_WORKDIR  output directory, default build/tm-pathmgr-runtime-smoke
-  QSOE_RUST_TM_PATHMGR              set to 1; this smoke validates the Rust selection
+  QSOE_RUST_TM_PATHMGR              default 1; set 0 only with TM_PATHMGR_RUNTIME_ALLOW_C=1
+  TM_PATHMGR_RUNTIME_ALLOW_C        set to 1 to validate the C rollback path
   QSOE_RUST_TM_PROCFS               must remain 1 after C tm_procfs retirement
 EOF
 }
@@ -81,13 +83,26 @@ fi
 case "${QSOE_RUST_TM_PATHMGR:-1}" in
     1|true|TRUE|yes|YES)
         export QSOE_RUST_TM_PATHMGR=1
+        selected=1
+        mode=rust-selected
+        expected_pathmgr_count=0
         ;;
     0|false|FALSE|no|NO)
-        echo "tm-pathmgr-runtime-smoke.sh: this smoke validates QSOE_RUST_TM_PATHMGR=1" >&2
-        exit 2
+        case "${TM_PATHMGR_RUNTIME_ALLOW_C:-0}" in
+            1|true|TRUE|yes|YES)
+                export QSOE_RUST_TM_PATHMGR=0
+                selected=0
+                mode=c-rollback
+                expected_pathmgr_count=1
+                ;;
+            *)
+                echo "tm-pathmgr-runtime-smoke.sh: QSOE_RUST_TM_PATHMGR=0 requires TM_PATHMGR_RUNTIME_ALLOW_C=1" >&2
+                exit 2
+                ;;
+        esac
         ;;
     *)
-        echo "tm-pathmgr-runtime-smoke.sh: QSOE_RUST_TM_PATHMGR must be 1" >&2
+        echo "tm-pathmgr-runtime-smoke.sh: QSOE_RUST_TM_PATHMGR must be 0 or 1" >&2
         exit 2
         ;;
 esac
@@ -229,34 +244,39 @@ if [ ! -x "$probe_staged" ]; then
     exit 1
 fi
 
-echo "tm-pathmgr-runtime-smoke.sh: rebuilding QSOE/L image with Rust tm_pathmgr"
+echo "tm-pathmgr-runtime-smoke.sh: rebuilding QSOE/L image with mode=$mode"
 "$MAKE" -C "$ROOT/lq" --no-print-directory \
     QSOE_RUST_TM_PROCFS=1 \
-    QSOE_RUST_TM_PATHMGR=1
+    QSOE_RUST_TM_PATHMGR="$selected"
 
 "$AR" t "$ROOT/lq/build/libtaskman/libtaskman.a" > "$members_log"
-if grep -Fxq pathmgr.o "$members_log"; then
-    echo "tm-pathmgr-runtime-smoke.sh: Rust-selected libtaskman still contains pathmgr.o" >&2
+pathmgr_count=$(awk '$0 == "pathmgr.o" { n++ } END { print n + 0 }' "$members_log")
+printf 'tm-pathmgr-runtime-smoke.sh: %s pathmgr.o count: %s\n' "$mode" "$pathmgr_count" |
+    tee "$workdir/lq-$mode-libtaskman-membership.txt"
+if [ "$pathmgr_count" -ne "$expected_pathmgr_count" ]; then
+    echo "tm-pathmgr-runtime-smoke.sh: $mode expected $expected_pathmgr_count pathmgr.o members, got $pathmgr_count" >&2
     exit 1
 fi
 
-for symbol in \
-    tm_pathmgr_init \
-    tm_pathmgr_register \
-    tm_pathmgr_unregister_pid \
-    tm_pathmgr_resolve \
-    tm_pathmgr_repath \
-    tm_pathmgr_symlink \
-    tm_pathmgr_expand_symlink_cpio \
-    tm_pathmgr_expand_symlink \
-    tm_pathmgr_child_at
-do
-    if ! "$NM" -g --defined-only "$ROOT/build/rust/tm-providers/libqsoe_tm_providers.a" |
-        grep -Eq "[[:space:]]$symbol$"; then
-        echo "tm-pathmgr-runtime-smoke.sh: Rust provider archive is missing $symbol" >&2
-        exit 1
-    fi
-done
+if [ "$selected" -eq 1 ]; then
+    for symbol in \
+        tm_pathmgr_init \
+        tm_pathmgr_register \
+        tm_pathmgr_unregister_pid \
+        tm_pathmgr_resolve \
+        tm_pathmgr_repath \
+        tm_pathmgr_symlink \
+        tm_pathmgr_expand_symlink_cpio \
+        tm_pathmgr_expand_symlink \
+        tm_pathmgr_child_at
+    do
+        if ! "$NM" -g --defined-only "$ROOT/build/rust/tm-providers/libqsoe_tm_providers.a" |
+            grep -Eq "[[:space:]]$symbol$"; then
+            echo "tm-pathmgr-runtime-smoke.sh: Rust provider archive is missing $symbol" >&2
+            exit 1
+        fi
+    done
+fi
 
 boot_args=(-k lq -t "$timeout_s" -o "$log")
 if [ "$keep_running" -eq 1 ]; then
@@ -281,7 +301,7 @@ expected_markers=(
 )
 boot_extra_patterns=$(printf '%s\n' "${expected_markers[@]}")
 
-echo "tm-pathmgr-runtime-smoke.sh: booting Rust tm_pathmgr runtime smoke"
+echo "tm-pathmgr-runtime-smoke.sh: booting tm_pathmgr runtime smoke mode=$mode"
 FSQRV_BINS="$fsqrv_bins" \
     QSOE_BOOT_VIRTIO_PATTERN="/dev/vblk0 ready" \
     QSOE_BOOT_EXTRA_PATTERNS="$boot_extra_patterns" \
