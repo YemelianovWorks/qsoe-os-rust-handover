@@ -394,13 +394,13 @@ The strict ELF audit showed:
   `libtaskman.a` and links through the shared taskman Rust provider archive.
   `make tm-elf-rc-smoke` covers the Rust-only archive selection plus dynamic
   ELF-backed `/usr/bin/sysinfo` spawn.
-- `tm_fdt` is a Rust-default RC provider behind `QSOE_RUST_TM_FDT=1`. The
-  selector removes LQ C `sys/fdt.o` and links through the shared taskman Rust
-  provider archive. `make tm-fdt-rc-smoke` covers `/chosen` bootargs,
-  syscfg/sysmap construction, `/sys`, and `sysinfo` consumers with Rust
-  `tm_fdt` selected by default. `make tm-fdt-rc-rollback-smoke` keeps C
-  `sys/fdt.o` rollback live until broader PCI/memory-topology confidence and a
-  separate removal PR exist.
+- `tm_fdt` is retired to Rust behind mandatory `QSOE_RUST_TM_FDT=1`. The
+  selector removes LQ C `sys/fdt.o`, `lq/taskman/sys/fdt.c` is removed by
+  component overrides, and taskman links through the shared Rust provider
+  archive. `make tm-fdt-rc-smoke` covers `/chosen` bootargs, syscfg/sysmap
+  construction, `/sys`, and `sysinfo` consumers on the Rust-only path. The old
+  `QSOE_RUST_TM_FDT=0` and `TM_FDT_RC_ROLLBACK=1` rollback selectors now fail
+  fast.
 - Tooling/process improvements are now tracked as roadmap tooling gates:
   #200 for a component gate harness and roadmap sync, #201 for CI cache and
   `sccache`, #202 for CodeQL/dependency-review/static security gates, and #203
@@ -426,8 +426,8 @@ The active decision log is `DECISIONS.md`. Most relevant recent decisions:
 1. Land the #202/#203 warning-mode tooling PR and record the first PR/main
    CodeQL, dependency-review, deep-test, and fuzz-smoke outcomes in those issue
    bodies before marking either item complete.
-2. Keep #146 `tm_fdt` under RC observation until broader PCI/memory-topology
-   confidence justifies a separate C provider retirement PR.
+2. Finish #146 `tm_fdt` C provider retirement by landing the PR, recording
+   PR/main evidence, and updating the roadmap metadata to `retired`.
 3. After the #202/#203 baselines stabilize, decide whether to promote the new
    checks to required parser/unsafe-boundary gates or move directly to the next
    component milestone.

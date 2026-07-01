@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Capture LQ tm_fdt Rust-default RC evidence while keeping C rollback alive.
+# Capture LQ tm_fdt Rust-only retirement evidence.
 
 set -eu
 
@@ -11,16 +11,17 @@ RUST_PROVIDER_A=${RUST_PROVIDER_A:-"$ROOT/build/rust/tm-fdt/libqsoe_tm_fdt.a"}
 MANIFEST="$ROOT/rust/Cargo.toml"
 
 usage() {
-    cat <<'EOF'
+    cat <<'EOF_USAGE'
 usage: scripts/tm-fdt-evidence.sh
 
-Builds and audits the Rust LQ taskman FDT default path and verifies that C
-remains the rollback provider for sys/fdt.c.
+Builds and audits the retired Rust LQ taskman FDT path, verifies that C
+sys/fdt.o is absent from the taskman link plan, and checks retired selector
+rejection for LQ taskman links and the shared Rust provider archive.
 
 Environment:
   TM_FDT_EVIDENCE_WORKDIR  output directory, default build/tm-fdt-evidence
   RUST_PROVIDER_A          Rust provider archive path
-EOF
+EOF_USAGE
 }
 
 case "${1:-}" in
@@ -65,6 +66,10 @@ fail() {
     echo "tm-fdt-evidence.sh: $*" >&2
     exit 1
 }
+
+if [ -e "$ROOT/lq/taskman/sys/fdt.c" ]; then
+    fail "lq/taskman/sys/fdt.c should be retired"
+fi
 
 audit_flags() {
     local label=$1
@@ -133,7 +138,6 @@ audit_provider_archive() {
 
 capture_lq_taskman_plan() {
     local label=$1
-    local rust_selected=$2
     local log="$WORKDIR/$label-taskman-dry-run.txt"
 
     "$MAKE" -C "$ROOT/lq/taskman" --no-print-directory -B -n all \
@@ -142,12 +146,14 @@ capture_lq_taskman_plan() {
         QSOE_RUST_TM_CPIO=1 \
         QSOE_RUST_TM_CRED=1 \
         QSOE_RUST_TM_ELF=1 \
-        QSOE_RUST_TM_FDT="$rust_selected" \
+        QSOE_RUST_TM_FDT=1 \
+        QSOE_RUST_TM_PATHMGR=1 \
         QSOE_RUST_TM_PROCFS=1 \
         QSOE_RUST_TM_PSEUDODEV=1 \
         QSOE_RUST_TM_RSRCDB=1 \
         QSOE_RUST_TM_SCRIPT=1 \
         QSOE_RUST_TM_SYSCFG=1 \
+        QSOE_RUST_TM_SYSMAP=1 \
         QSOE_RUST_TM_SYSFS=1 \
         > "$log"
 }
@@ -173,26 +179,36 @@ require_plan_omits() {
 
 build_lq_taskman() {
     local label=$1
-    local rust_selected=$2
 
     rm -f "$ROOT/lq/build/taskman.elf"
     "$MAKE" -C "$ROOT/lq" --no-print-directory \
         QSOE_RUST_TM_CPIO=1 \
         QSOE_RUST_TM_CRED=1 \
         QSOE_RUST_TM_ELF=1 \
-        QSOE_RUST_TM_FDT="$rust_selected" \
+        QSOE_RUST_TM_FDT=1 \
+        QSOE_RUST_TM_PATHMGR=1 \
         QSOE_RUST_TM_PROCFS=1 \
         QSOE_RUST_TM_PSEUDODEV=1 \
         QSOE_RUST_TM_RSRCDB=1 \
         QSOE_RUST_TM_SCRIPT=1 \
         QSOE_RUST_TM_SYSCFG=1 \
+        QSOE_RUST_TM_SYSMAP=1 \
         QSOE_RUST_TM_SYSFS=1 \
         taskman
     audit_flags "$label-taskman" "$ROOT/lq/build/taskman.elf"
 }
 
-echo "tm-fdt-evidence.sh: running C host model"
-"$MAKE" -C "$ROOT" --no-print-directory check-tm-fdt-model
+require_retired_selector_rejected() {
+    local label=$1
+    shift
+    local log="$WORKDIR/$label-retired-selector-rejection.txt"
+
+    if "$@" > "$log" 2>&1; then
+        fail "$label unexpectedly accepted QSOE_RUST_TM_FDT=0"
+    fi
+    grep -Fq 'QSOE_RUST_TM_FDT must be 1' "$log" ||
+        fail "$label rejection did not mention retired tm_fdt selector"
+}
 
 echo "tm-fdt-evidence.sh: running Rust host tests"
 cargo test --manifest-path "$MANIFEST" -p qsoe-tm-fdt --features host-tests
@@ -201,22 +217,22 @@ echo "tm-fdt-evidence.sh: building Rust provider archive"
 "$MAKE" -C "$ROOT" --no-print-directory rust-tm-fdt-provider
 audit_provider_archive
 
-echo "tm-fdt-evidence.sh: verifying LQ Rust-default link plan"
-capture_lq_taskman_plan lq-rust-default 1
-require_plan_omits lq-rust-default '/sys/fdt.o'
-require_plan_omits lq-rust-default 'libqsoe_tm_fdt.a'
-require_plan_contains lq-rust-default 'libqsoe_tm_providers.a'
+echo "tm-fdt-evidence.sh: verifying LQ Rust-only link plan"
+capture_lq_taskman_plan lq-rust-retired
+require_plan_omits lq-rust-retired '/sys/fdt.o'
+require_plan_omits lq-rust-retired 'libqsoe_tm_fdt.a'
+require_plan_contains lq-rust-retired 'libqsoe_tm_providers.a'
 
-echo "tm-fdt-evidence.sh: verifying LQ Rust-default taskman link"
-build_lq_taskman lq-rust-default 1
+echo "tm-fdt-evidence.sh: verifying LQ Rust-only taskman link"
+build_lq_taskman lq-rust-retired
 
-echo "tm-fdt-evidence.sh: verifying LQ C rollback link plan"
-capture_lq_taskman_plan lq-c-rollback 0
-require_plan_contains lq-c-rollback '/sys/fdt.o'
-require_plan_omits lq-c-rollback 'libqsoe_tm_fdt.a'
-require_plan_contains lq-c-rollback 'libqsoe_tm_providers.a'
-
-echo "tm-fdt-evidence.sh: verifying LQ C rollback taskman link"
-build_lq_taskman lq-c-rollback 0
+echo "tm-fdt-evidence.sh: verifying retired selector rejection"
+require_retired_selector_rejected lq \
+    "$MAKE" -C "$ROOT/lq" --no-print-directory QSOE_RUST_TM_FDT=0 taskman
+require_retired_selector_rejected lq-taskman \
+    "$MAKE" -C "$ROOT/lq/taskman" --no-print-directory QSOE_RUST_TM_FDT=0 all
+require_retired_selector_rejected rust-provider \
+    env QSOE_RUST_TM_FDT=0 "$ROOT/scripts/build-rust-tm-providers.sh" \
+        "$WORKDIR/rejected-libqsoe_tm_providers.a"
 
 echo "tm-fdt-evidence.sh: evidence captured in $WORKDIR"

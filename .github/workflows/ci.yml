@@ -156,7 +156,7 @@ jobs:
         if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
         run: make container-tm-elf-rc-smoke
 
-      - name: Run tm_fdt Rust-default RC evidence
+      - name: Run tm_fdt Rust-only retirement evidence
         if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
         run: make container-tm-fdt-evidence
 
@@ -164,13 +164,9 @@ jobs:
         if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
         run: make container-tm-fdt-runtime-smoke
 
-      - name: Run tm_fdt Rust-default RC smoke
+      - name: Run tm_fdt Rust-only RC smoke
         if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
         run: make container-tm-fdt-rc-smoke
-
-      - name: Run tm_fdt C rollback RC smoke
-        if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
-        run: make container-tm-fdt-rc-rollback-smoke
 
       - name: Run tm_pathmgr Rust-default RC evidence
         if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository

@@ -24,6 +24,50 @@ Follow-up:
 - ...
 ```
 
+## 2026-07-01 08:22 CEST - tm_fdt C Retirement
+
+Scope:
+
+- Retired the LQ C `tm_fdt` provider after the Rust-default RC window.
+- Added mandatory `QSOE_RUST_TM_FDT=1` guards to the umbrella, LQ component
+  overrides, LQ taskman overrides, and the shared Rust provider archive builder.
+- Removed the C `tm_fdt` host fixture and rollback make/CI targets.
+- Reworked `tm-fdt-evidence`, `tm-fdt-runtime-smoke`, and `tm-fdt-rc-smoke`
+  so they verify Rust-only taskman links, absence of `sys/fdt.o`, source
+  removal through component overrides, and retired selector rejection.
+- Updated adjacent taskman evidence so `tm_elf` and `tm_sysmap` no longer pin
+  `QSOE_RUST_TM_FDT=0` while isolating their own providers.
+- Added `TASK_MANAGER_FDT_RETIREMENT.md` and updated status, inventory,
+  handover, README, and retirement-gate docs from RC-with-rollback to retired.
+
+Commands:
+
+- `bash -n scripts/tm-fdt-evidence.sh scripts/tm-fdt-runtime-smoke.sh scripts/tm-fdt-rc-smoke.sh scripts/build-rust-tm-providers.sh scripts/apply-component-overrides.sh scripts/tm-sysmap-evidence.sh scripts/tm-elf-evidence.sh`
+- `./scripts/apply-component-overrides.sh`
+- `make tm-fdt-evidence`
+- `make tm-fdt-runtime-smoke`
+- `make tm-fdt-rc-smoke`
+- `make tm-providers-evidence`
+
+Result:
+
+- Component overrides apply cleanly and remove `lq/taskman/sys/fdt.c`.
+- `make tm-fdt-evidence` passed: Rust host tests passed, the shared provider
+  archive had 413/413 soft-float members, LQ taskman omitted `sys/fdt.o`, and
+  `QSOE_RUST_TM_FDT=0` was rejected for LQ and provider-archive builds.
+- `make tm-fdt-runtime-smoke` passed and reached the `/chosen`, syscfg,
+  sysmap, `/sys/board`, `/sys/cmdline`, and `sysinfo` boot markers.
+- `make tm-fdt-rc-smoke` passed with `lq-rust-retired sys/fdt.o plan count: 0`
+  before rerunning the runtime smoke.
+- `make tm-providers-evidence` passed with one `rust_begin_unwind` symbol,
+  413/413 soft-float provider members, NQ/LQ shared taskman links with retired
+  C provider objects omitted, and the shared-provider `/proc` smoke.
+
+Follow-up:
+
+- Open the retirement PR for #146, record PR/main CI evidence, then update
+  issue #146 roadmap metadata to `retired`.
+
 ## 2026-07-01 00:00 CEST - #202/#203 Warning-Mode Tooling Rollout
 
 Scope:

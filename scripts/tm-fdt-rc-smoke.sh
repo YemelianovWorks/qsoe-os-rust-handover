@@ -1,27 +1,26 @@
 #!/usr/bin/env bash
 #
-# Validate the tm_fdt Rust-default RC selector while keeping C rollback alive.
+# Validate the retired tm_fdt Rust-only selector.
 
 set -eu
 
 usage() {
-    cat <<'EOF'
+    cat <<'EOF_USAGE'
 usage: scripts/tm-fdt-rc-smoke.sh [-t seconds] [-o log] [--keep-running] [-- <emu args>]
 
-Builds LQ taskman with the tm_fdt RC selection, verifies whether C sys/fdt.o is
-present in the link plan, then reuses the live tm_fdt runtime smoke.
+Builds LQ taskman with retired Rust tm_fdt, verifies C sys/fdt.o is absent from
+the link plan, then reuses the live tm_fdt runtime smoke.
 
 Environment:
-  TM_FDT_RC_ROLLBACK  set to 1 to validate the C rollback path
-  QSOE_RUST_TM_FDT    default 1 for Rust RC; set 0 only for rollback validation
+  TM_FDT_RC_ROLLBACK  no longer supported after C tm_fdt retirement
+  QSOE_RUST_TM_FDT    must remain 1 after C tm_fdt retirement
   TM_FDT_RC_WORKDIR   output directory, default build/tm-fdt-rc
-EOF
+EOF_USAGE
 }
 
 ROOT=$(cd "$(dirname "$0")/.." && pwd)
 MAKE=${MAKE:-make}
 workdir=${TM_FDT_RC_WORKDIR:-"$ROOT/build/tm-fdt-rc"}
-rollback=${TM_FDT_RC_ROLLBACK:-0}
 has_log=0
 
 for arg in "$@"; do
@@ -45,14 +44,23 @@ fail() {
 }
 
 capture_lq_plan() {
-    local selected=$1
-    local log=$2
+    local log=$1
 
     "$MAKE" -C "$ROOT/lq/taskman" --no-print-directory -B -n all \
         LIBTASKMAN_A="$ROOT/lq/build/libtaskman/libtaskman.a" \
         LIBTASKMAN_INC="$ROOT/libtaskman/include" \
-        QSOE_RUST_TM_FDT="$selected" \
+        QSOE_RUST_TM_CPIO=1 \
+        QSOE_RUST_TM_CRED=1 \
+        QSOE_RUST_TM_ELF=1 \
+        QSOE_RUST_TM_FDT=1 \
+        QSOE_RUST_TM_PATHMGR=1 \
         QSOE_RUST_TM_PROCFS=1 \
+        QSOE_RUST_TM_PSEUDODEV=1 \
+        QSOE_RUST_TM_RSRCDB=1 \
+        QSOE_RUST_TM_SCRIPT=1 \
+        QSOE_RUST_TM_SYSCFG=1 \
+        QSOE_RUST_TM_SYSMAP=1 \
+        QSOE_RUST_TM_SYSFS=1 \
         > "$log"
 }
 
@@ -72,14 +80,12 @@ require_fdt_plan() {
 mkdir -p "$workdir"
 "$ROOT/scripts/apply-component-overrides.sh"
 
-case "$rollback" in
+case "${TM_FDT_RC_ROLLBACK:-0}" in
     0|false|FALSE|no|NO)
-        rollback=0
-        default_selected=1
         ;;
     1|true|TRUE|yes|YES)
-        rollback=1
-        default_selected=0
+        echo "tm-fdt-rc-smoke.sh: TM_FDT_RC_ROLLBACK is retired; C tm_fdt rollback no longer exists" >&2
+        exit 2
         ;;
     *)
         echo "tm-fdt-rc-smoke.sh: TM_FDT_RC_ROLLBACK must be 0 or 1" >&2
@@ -87,39 +93,46 @@ case "$rollback" in
         ;;
 esac
 
-case "${QSOE_RUST_TM_FDT:-$default_selected}" in
+case "${QSOE_RUST_TM_FDT:-1}" in
     1|true|TRUE|yes|YES)
         selected=1
-        mode=rust-default
-        expected_fdt_count=0
+        mode=rust-retired
         ;;
     0|false|FALSE|no|NO)
-        selected=0
-        mode=c-rollback
-        expected_fdt_count=2
+        echo "tm-fdt-rc-smoke.sh: C tm_fdt is retired; QSOE_RUST_TM_FDT must be 1" >&2
+        exit 2
         ;;
     *)
-        echo "tm-fdt-rc-smoke.sh: QSOE_RUST_TM_FDT must be 0 or 1" >&2
+        echo "tm-fdt-rc-smoke.sh: QSOE_RUST_TM_FDT must be 1 after C retirement" >&2
         exit 2
         ;;
 esac
 
-if [ "$rollback" -eq 1 ] && [ "$selected" -ne 0 ]; then
-    echo "tm-fdt-rc-smoke.sh: TM_FDT_RC_ROLLBACK=1 requires QSOE_RUST_TM_FDT=0" >&2
-    exit 2
+if [ -e "$ROOT/lq/taskman/sys/fdt.c" ]; then
+    fail "lq/taskman/sys/fdt.c should be retired"
 fi
 
-echo "tm-fdt-rc-smoke.sh: mode=$mode rollback=$rollback"
+echo "tm-fdt-rc-smoke.sh: mode=$mode"
 
 plan_log="$workdir/lq-$mode-taskman-dry-run.txt"
 echo "tm-fdt-rc-smoke.sh: verifying LQ taskman selector"
-capture_lq_plan "$selected" "$plan_log"
-require_fdt_plan "lq-$mode" "$plan_log" "$expected_fdt_count"
+capture_lq_plan "$plan_log"
+require_fdt_plan "lq-$mode" "$plan_log" 0
 
 echo "tm-fdt-rc-smoke.sh: building LQ taskman selector"
 "$MAKE" -C "$ROOT/lq" --no-print-directory \
+    QSOE_RUST_TM_CPIO=1 \
+    QSOE_RUST_TM_CRED=1 \
+    QSOE_RUST_TM_ELF=1 \
     QSOE_RUST_TM_FDT="$selected" \
+    QSOE_RUST_TM_PATHMGR=1 \
     QSOE_RUST_TM_PROCFS=1 \
+    QSOE_RUST_TM_PSEUDODEV=1 \
+    QSOE_RUST_TM_RSRCDB=1 \
+    QSOE_RUST_TM_SCRIPT=1 \
+    QSOE_RUST_TM_SYSCFG=1 \
+    QSOE_RUST_TM_SYSMAP=1 \
+    QSOE_RUST_TM_SYSFS=1 \
     taskman
 
 runtime_args=("$@")
@@ -127,11 +140,8 @@ if [ "$has_log" -eq 0 ]; then
     runtime_args=(-o "$workdir/boot-smoke-lq-tm-fdt-rc-$mode.log" "${runtime_args[@]}")
 fi
 
-export QSOE_RUST_TM_FDT="$selected"
+export QSOE_RUST_TM_FDT=1
 export QSOE_RUST_TM_PROCFS=1
 export TM_FDT_RUNTIME_SMOKE_WORKDIR="$workdir"
-if [ "$selected" -eq 0 ]; then
-    export TM_FDT_RUNTIME_ALLOW_C=1
-fi
 
 exec "$ROOT/scripts/tm-fdt-runtime-smoke.sh" "${runtime_args[@]}"

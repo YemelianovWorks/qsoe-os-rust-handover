@@ -1,27 +1,26 @@
 #!/usr/bin/env bash
 #
-# Boot QSOE/L with the selected tm_fdt provider and exercise booted FDT consumers.
+# Boot QSOE/L with retired Rust tm_fdt and exercise booted FDT consumers.
 
 set -eu
 
 usage() {
-    cat <<'EOF'
+    cat <<'EOF_USAGE'
 usage: scripts/tm-fdt-runtime-smoke.sh [-t seconds] [-o log] [--keep-running] [-- <emu args>]
 
 Injects a temporary sysinit fragment that reads /sys/board and /sys/cmdline,
 runs /usr/bin/sysinfo, rebuilds the virtio qrvfs image, and boots QSOE/L with
-the selected tm_fdt provider.
+retired Rust tm_fdt.
 
-This validates the selected LQ FDT parser through /chosen bootargs, syscfg/sysmap
-construction, syscfg-backed /sys consumers, and sysinfo. It is a QEMU/LQ runtime
-smoke, not complete hardware PCI or memory-topology coverage.
+This validates the retired LQ FDT parser through /chosen bootargs,
+syscfg/sysmap construction, syscfg-backed /sys consumers, and sysinfo. It is a
+QEMU/LQ runtime smoke, not complete hardware PCI or memory-topology coverage.
 
 Environment:
   TM_FDT_RUNTIME_SMOKE_WORKDIR  output directory, default build/tm-fdt-runtime-smoke
-  TM_FDT_RUNTIME_ALLOW_C        set to 1 only for the C rollback smoke
-  QSOE_RUST_TM_FDT              default 1; set 0 only with TM_FDT_RUNTIME_ALLOW_C=1
+  QSOE_RUST_TM_FDT              must remain 1 after C tm_fdt retirement
   QSOE_RUST_TM_PROCFS           must remain 1 after C tm_procfs retirement
-EOF
+EOF_USAGE
 }
 
 ROOT=$(cd "$(dirname "$0")/.." && pwd)
@@ -81,23 +80,18 @@ fi
 case "${QSOE_RUST_TM_FDT:-1}" in
     1|true|TRUE|yes|YES)
         selected=1
-        mode=rust-default
+        mode=rust-retired
         ;;
     0|false|FALSE|no|NO)
-        if [ "${TM_FDT_RUNTIME_ALLOW_C:-0}" = 1 ]; then
-            selected=0
-            mode=c-rollback
-        else
-            echo "tm-fdt-runtime-smoke.sh: QSOE_RUST_TM_FDT=0 is only allowed with TM_FDT_RUNTIME_ALLOW_C=1" >&2
-            exit 2
-        fi
+        echo "tm-fdt-runtime-smoke.sh: C tm_fdt is retired; QSOE_RUST_TM_FDT must be 1" >&2
+        exit 2
         ;;
     *)
-        echo "tm-fdt-runtime-smoke.sh: QSOE_RUST_TM_FDT must be 0 or 1" >&2
+        echo "tm-fdt-runtime-smoke.sh: QSOE_RUST_TM_FDT must be 1 after C retirement" >&2
         exit 2
         ;;
 esac
-export QSOE_RUST_TM_FDT="$selected"
+export QSOE_RUST_TM_FDT=1
 
 case "${QSOE_RUST_TM_PROCFS:-1}" in
     1|true|TRUE|yes|YES)
@@ -166,6 +160,11 @@ log_has_marker() {
 
 "$ROOT/scripts/apply-component-overrides.sh"
 
+if [ -e "$ROOT/lq/taskman/sys/fdt.c" ]; then
+    echo "tm-fdt-runtime-smoke.sh: lq/taskman/sys/fdt.c should be retired" >&2
+    exit 1
+fi
+
 cleanup() {
     if [ -n "$fragment" ]; then
         rm -f "$fragment"
@@ -176,7 +175,7 @@ trap cleanup EXIT
 
 mkdir -p "$source_sysinit"
 fragment=$(mktemp "$source_sysinit/10-tm-fdt-runtime-smoke.XXXXXX.sh")
-cat > "$fragment" <<EOF
+cat > "$fragment" <<EOF_FRAGMENT
 if read -r BOARD < /sys/board && [ -n "\$BOARD" ] && [ "\$BOARD" != "unknown" ]; then
     echo "$board_marker"
 else
@@ -198,7 +197,7 @@ else
     rc=\$?
     echo "tm-fdt-runtime-smoke: /usr/bin/sysinfo failed \$rc"
 fi
-EOF
+EOF_FRAGMENT
 chmod 0644 "$fragment"
 
 echo "tm-fdt-runtime-smoke.sh: building LQ runtime prerequisites"
@@ -219,50 +218,61 @@ echo "tm-fdt-runtime-smoke.sh: capturing $mode tm_fdt LQ taskman link plan"
 "$MAKE" -C "$ROOT/lq/taskman" --no-print-directory -B -n all \
     LIBTASKMAN_A="$ROOT/lq/build/libtaskman/libtaskman.a" \
     LIBTASKMAN_INC="$ROOT/libtaskman/include" \
+    QSOE_RUST_TM_CPIO=1 \
+    QSOE_RUST_TM_CRED=1 \
+    QSOE_RUST_TM_ELF=1 \
     QSOE_RUST_TM_FDT="$selected" \
+    QSOE_RUST_TM_PATHMGR=1 \
     QSOE_RUST_TM_PROCFS=1 \
+    QSOE_RUST_TM_PSEUDODEV=1 \
+    QSOE_RUST_TM_RSRCDB=1 \
+    QSOE_RUST_TM_SCRIPT=1 \
+    QSOE_RUST_TM_SYSCFG=1 \
+    QSOE_RUST_TM_SYSMAP=1 \
+    QSOE_RUST_TM_SYSFS=1 \
     > "$plan_log"
 
-if [ "$selected" -eq 1 ]; then
-    if grep -Fq '/sys/fdt.o' "$plan_log"; then
-        echo "tm-fdt-runtime-smoke.sh: Rust-default taskman link plan still contains sys/fdt.o" >&2
-        exit 1
-    fi
-    if ! grep -Fq 'libqsoe_tm_providers.a' "$plan_log"; then
-        echo "tm-fdt-runtime-smoke.sh: Rust-default taskman link plan omits libqsoe_tm_providers.a" >&2
-        exit 1
-    fi
-else
-    if ! grep -Fq '/sys/fdt.o' "$plan_log"; then
-        echo "tm-fdt-runtime-smoke.sh: C rollback taskman link plan omits sys/fdt.o" >&2
-        exit 1
-    fi
+if grep -Fq '/sys/fdt.o' "$plan_log"; then
+    echo "tm-fdt-runtime-smoke.sh: retired taskman link plan still contains sys/fdt.o" >&2
+    exit 1
+fi
+if ! grep -Fq 'libqsoe_tm_providers.a' "$plan_log"; then
+    echo "tm-fdt-runtime-smoke.sh: retired taskman link plan omits libqsoe_tm_providers.a" >&2
+    exit 1
 fi
 
 echo "tm-fdt-runtime-smoke.sh: rebuilding QSOE/L image with $mode tm_fdt"
 "$MAKE" -C "$ROOT/lq" --no-print-directory \
+    QSOE_RUST_TM_CPIO=1 \
+    QSOE_RUST_TM_CRED=1 \
+    QSOE_RUST_TM_ELF=1 \
     QSOE_RUST_TM_FDT="$selected" \
-    QSOE_RUST_TM_PROCFS=1
+    QSOE_RUST_TM_PATHMGR=1 \
+    QSOE_RUST_TM_PROCFS=1 \
+    QSOE_RUST_TM_PSEUDODEV=1 \
+    QSOE_RUST_TM_RSRCDB=1 \
+    QSOE_RUST_TM_SCRIPT=1 \
+    QSOE_RUST_TM_SYSCFG=1 \
+    QSOE_RUST_TM_SYSMAP=1 \
+    QSOE_RUST_TM_SYSFS=1
 
-if [ "$selected" -eq 1 ]; then
-    for symbol in \
-        tm_fdt_check \
-        tm_fdt_size \
-        tm_fdt_path \
-        tm_fdt_compatible \
-        tm_fdt_prop \
-        tm_fdt_prop_u32 \
-        tm_fdt_prop_u64 \
-        tm_fdt_prop_str \
-        tm_fdt_reg
-    do
-        if ! "$NM" -g --defined-only "$ROOT/build/rust/tm-providers/libqsoe_tm_providers.a" |
-            grep -Eq "[[:space:]]$symbol$"; then
-            echo "tm-fdt-runtime-smoke.sh: Rust provider archive is missing $symbol" >&2
-            exit 1
-        fi
-    done
-fi
+for symbol in \
+    tm_fdt_check \
+    tm_fdt_size \
+    tm_fdt_path \
+    tm_fdt_compatible \
+    tm_fdt_prop \
+    tm_fdt_prop_u32 \
+    tm_fdt_prop_u64 \
+    tm_fdt_prop_str \
+    tm_fdt_reg
+do
+    if ! "$NM" -g --defined-only "$ROOT/build/rust/tm-providers/libqsoe_tm_providers.a" |
+        grep -Eq "[[:space:]]$symbol$"; then
+        echo "tm-fdt-runtime-smoke.sh: Rust provider archive is missing $symbol" >&2
+        exit 1
+    fi
+done
 
 boot_args=(-k lq -t "$timeout_s" -o "$log")
 if [ "$keep_running" -eq 1 ]; then
