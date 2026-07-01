@@ -1,3 +1,24 @@
+## 2026-07-02 CEST - tm_spawn_argpack C Seam Evidence
+
+Scope:
+
+- Added a C-only `tm_spawn_argpack` planning seam in `spawn.c` so argv/envp/auxv
+  bounds and initial-stack byte accounting are validated before child stack
+  writes.
+- Added `spawn-argpack-c-evidence` and CI wiring to make the seam verifiable
+  next to the existing spawn/loader boundary and stress evidence.
+- Kept spawn, capability, loader, scratch mapping, and stack commit authority in
+  C; no Rust provider candidate is introduced in this step.
+
+Commands:
+
+- Not run locally; PR CI is the formal evidence path.
+
+Result:
+
+- #154 now has its first narrow C-owned planning seam while the broader
+  spawn/capability/loader milestone remains deferred.
+
 ## 2026-07-01 CEST - tm_sysfs/qrvfs CI Posture and tm_reloc Metadata Cleanup
 
 Scope:

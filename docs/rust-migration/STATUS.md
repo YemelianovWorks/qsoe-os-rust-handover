@@ -2,6 +2,10 @@
 
 Captured: 2026-07-01 CEST.
 
+Spawn/capability/loader note (2026-07-02 CEST): `tm_spawn_argpack` is now the
+first C-only planning seam for #154, with argv/envp/auxv bounds and initial
+stack byte accounting validated before child stack writes.
+
 This table tracks components whose current C implementation may be replaced by
 Rust. Link-smoke binaries, examples, and reusable parser crates are not listed
 unless they replace a C component in an image or test path.
