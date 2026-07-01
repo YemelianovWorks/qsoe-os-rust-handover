@@ -1056,6 +1056,14 @@ spawn-loader-c-evidence:
 container-spawn-loader-c-evidence:
 	@scripts/container-toolchain.sh run make spawn-loader-c-evidence
 
+.PHONY: spawn-argpack-c-evidence container-spawn-argpack-c-evidence
+
+spawn-argpack-c-evidence:
+	@scripts/spawn-argpack-c-evidence.sh
+
+container-spawn-argpack-c-evidence:
+	@scripts/container-toolchain.sh run make spawn-argpack-c-evidence
+
 .PHONY: spawn-loader-c-stress-evidence container-spawn-loader-c-stress-evidence
 
 spawn-loader-c-stress-evidence:

@@ -135,8 +135,10 @@ inputs and explicit rollback/evidence:
 
 - `tm_spawn_plan`: parsed, immutable load plan for main image, interpreter,
   libc, rtld, stack, TLS, sysmap, auxv, and RELRO ranges.
-- `tm_spawn_argpack`: bounded argv/envp copy and validation result independent
-  of child memory writes.
+- `tm_spawn_argpack`: bounded argv/envp/auxv copy and validation result
+  independent of child memory writes.  This is now a C-owned planning seam
+  evidenced by `spawn-argpack-c-evidence`; the child stack writer remains C
+  authority code.
 - `tm_reloc_provider`: pure relocation walk result or callback-compatible
   relocation writer, isolated from spawn.
 - `tm_cap_plan`: declarative list of object creates, cap mints/copies/moves,
@@ -163,7 +165,8 @@ Before moving any subcomponent from deferred to opt-in:
 
 ## Recommended next submilestones
 
-1. Add formal C evidence for the current spawn/loader path.
+1. Keep `tm_spawn_argpack` source evidence running next to the current
+   spawn/loader runtime evidence.
 2. Split `tm_spawn(...)` internally into plan/build/commit phases while staying
    C-only.
 3. Keep the now-retired/default `qsoe-tm-reloc` provider isolated behind the
