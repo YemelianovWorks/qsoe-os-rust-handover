@@ -1,5 +1,5 @@
 diff --git a/taskman/proc/spawn.c b/taskman/proc/spawn.c
-index 58e8a5b..094e3d4 100644
+index 58e8a5b..46ef244 100644
 --- a/taskman/proc/spawn.c
 +++ b/taskman/proc/spawn.c
 @@ -411,6 +411,77 @@ static unsigned long qstrlen(const char *s)
@@ -187,3 +187,21 @@ index 58e8a5b..094e3d4 100644
      if (dyn_link) {
          auxv[auxc++] = (struct aux_pair){ AT_PHDR_,     main_phdr_va };
          auxv[auxc++] = (struct aux_pair){ AT_PHENT_,    sizeof(struct elf64_phdr) };
+@@ -1511,9 +1561,15 @@ int tm_spawn(const void *elf_blob, unsigned long elf_len,
+         auxv[auxc++] = (struct aux_pair){ AT_KPRELOAD_, DL_LIBC_LOAD_VA };
+     }
+ 
++    int argpack_rc = tm_spawn_argpack_prepare(&argpack, argc, argv, envc, envp,
++                                              auxv, auxc);
++    if (argpack_rc != 0) {
++        tm_err("spawn: tm_spawn_argpack_prepare failed rc=%d", argpack_rc);
++        return argpack_rc;
++    }
++
+     unsigned long initial_sp =
+-        build_initial_stack(stack_frames[CHILD_STACK_PAGES - 1],
+-                            argc, argv, envc, envp, auxv, auxc);
++        build_initial_stack(stack_frames[CHILD_STACK_PAGES - 1], &argpack);
+     if (!initial_sp) {
+         tm_err("spawn: build_initial_stack failed");
+         return -E2BIG;
