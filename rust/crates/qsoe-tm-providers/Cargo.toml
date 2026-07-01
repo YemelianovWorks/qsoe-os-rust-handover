@@ -16,6 +16,7 @@ tm-cpio = ["dep:qsoe-tm-cpio"]
 tm-cred = ["dep:qsoe-tm-cred"]
 tm-elf = ["dep:qsoe-tm-elf"]
 tm-fdt = ["dep:qsoe-tm-fdt"]
+tm-log = ["dep:qsoe-tm-log"]
 tm-pathmgr = ["dep:qsoe-tm-pathmgr"]
 tm-procfs = ["dep:qsoe-tm-procfs"]
 tm-pseudodev = ["dep:qsoe-tm-pseudodev"]
@@ -30,6 +31,7 @@ qsoe-tm-cpio = { path = "../qsoe-tm-cpio", optional = true, default-features = f
 qsoe-tm-cred = { path = "../qsoe-tm-cred", optional = true, default-features = false }
 qsoe-tm-elf = { path = "../qsoe-tm-elf", optional = true, default-features = false }
 qsoe-tm-fdt = { path = "../qsoe-tm-fdt", optional = true, default-features = false }
+qsoe-tm-log = { path = "../qsoe-tm-log", optional = true, default-features = false }
 qsoe-tm-pathmgr = { path = "../qsoe-tm-pathmgr", optional = true, default-features = false }
 qsoe-tm-procfs = { path = "../qsoe-tm-procfs", optional = true, default-features = false }
 qsoe-tm-pseudodev = { path = "../qsoe-tm-pseudodev", optional = true, default-features = false }

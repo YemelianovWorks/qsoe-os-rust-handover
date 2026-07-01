@@ -16,6 +16,7 @@ pub extern "C" fn qsoe_tm_providers_archive_anchor() -> usize {
         feature = "tm-cred",
         feature = "tm-elf",
         feature = "tm-fdt",
+        feature = "tm-log",
         feature = "tm-pathmgr",
         feature = "tm-procfs",
         feature = "tm-pseudodev",
@@ -34,6 +35,7 @@ pub extern "C" fn qsoe_tm_providers_archive_anchor() -> usize {
         feature = "tm-cred",
         feature = "tm-elf",
         feature = "tm-fdt",
+        feature = "tm-log",
         feature = "tm-pathmgr",
         feature = "tm-procfs",
         feature = "tm-pseudodev",
@@ -61,6 +63,10 @@ pub extern "C" fn qsoe_tm_providers_archive_anchor() -> usize {
         #[cfg(feature = "tm-fdt")]
         {
             acc ^= qsoe_tm_fdt::tm_fdt_check as *const () as usize;
+        }
+        #[cfg(feature = "tm-log")]
+        {
+            acc ^= qsoe_tm_log::qsoe_tm_log_provider_anchor as *const () as usize;
         }
         #[cfg(feature = "tm-pathmgr")]
         {

@@ -17,6 +17,16 @@
 #include <stdarg.h>
 #include <tm_log.h>
 
+#ifndef QSOE_RUST_TM_LOG
+#define QSOE_RUST_TM_LOG 0
+#endif
+
+#if QSOE_RUST_TM_LOG
+extern void qsoe_tm_log_provider_anchor(void);
+static void (*const tm_log_provider_anchor_ref)(void) __attribute__((used)) =
+    qsoe_tm_log_provider_anchor;
+#endif
+
 static tm_log_sink_t tm_sink;                       /* NULL until tm_log_init */
 static int tm_level = TM_LOG_LEVEL_DEFAULT;
 
@@ -437,8 +447,9 @@ static void tm_fmt_args(struct tm_out *o, const char *fmt,
     }
 }
 
-void tm_log_emit_args(int level, const char *fmt,
-                      const tm_log_arg_t *args, unsigned nargs)
+void __attribute__((weak)) tm_log_emit_args(int level, const char *fmt,
+                                            const tm_log_arg_t *args,
+                                            unsigned nargs)
 {
     if (!tm_log_enabled(level))
         return;

@@ -113,6 +113,10 @@ name = "qsoe-tm-fdt"
 version = "0.0.0"
 
 [[package]]
+name = "qsoe-tm-log"
+version = "0.0.0"
+
+[[package]]
 name = "qsoe-tm-pathmgr"
 version = "0.0.0"
 
@@ -128,6 +132,7 @@ dependencies = [
  "qsoe-tm-cred",
  "qsoe-tm-elf",
  "qsoe-tm-fdt",
+ "qsoe-tm-log",
  "qsoe-tm-pathmgr",
  "qsoe-tm-procfs",
  "qsoe-tm-pseudodev",
