@@ -262,9 +262,6 @@ apply_patch_if_possible_or_present lq lq-makefile-rust-tm-cpio-retired.patch \
 apply_patch_if_possible_or_present lq lq-makefile-rust-tm-elf-retired.patch \
     "$ROOT/lq/Makefile" \
     'QSOE_RUST_TM_ELF must be 1 after C tm_elf retirement'
-apply_patch_if_possible_or_present lq lq-makefile-rust-tm-fdt-retired.patch \
-    "$ROOT/lq/Makefile" \
-    'QSOE_RUST_TM_FDT must be 1 after C tm_fdt retirement'
 apply_patch_if_possible_or_present lq lq-makefile-rust-tm-cred-retired.patch \
     "$ROOT/lq/Makefile" \
     'QSOE_RUST_TM_CRED must be 1 after C tm_cred retirement'
@@ -491,6 +488,9 @@ apply_patch_if_possible_or_present lq lq-taskman-rust-tm-pseudodev-retired.patch
 apply_patch_if_possible_or_present lq lq-makefile-rust-tm-rsrcdb-retired.patch \
     "$ROOT/lq/Makefile" \
     'QSOE_RUST_TM_RSRCDB must be 1 after C tm_rsrcdb retirement'
+apply_patch_if_possible_or_present lq lq-makefile-rust-tm-fdt-retired.patch \
+    "$ROOT/lq/Makefile" \
+    'QSOE_RUST_TM_FDT must be 1 after C tm_fdt retirement'
 apply_patch_if_possible_or_present lq lq-taskman-rust-tm-rsrcdb-retired.patch \
     "$ROOT/lq/taskman/Makefile" \
     'QSOE_RUST_TM_RSRCDB must be 1 after C tm_rsrcdb retirement'
