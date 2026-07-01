@@ -345,11 +345,7 @@ mod tests {
     fn preserves_c_fallback_edge_cases() {
         let out = render(
             "%s %05d %d %x",
-            &[
-                arg_str(core::ptr::null()),
-                arg_signed(-42),
-                arg_unsigned(7),
-            ],
+            &[arg_str(core::ptr::null()), arg_signed(-42), arg_unsigned(7)],
         );
         assert_eq!(out, "(null) 00-42 (badarg) (badarg)");
     }
