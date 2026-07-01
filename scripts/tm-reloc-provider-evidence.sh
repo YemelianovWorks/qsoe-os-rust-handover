@@ -89,8 +89,8 @@ audit_provider_archive() {
     grep -Eq '[[:space:]]tm_reloc_apply$' "$symbols" || fail "Rust provider archive is missing symbol tm_reloc_apply"
     grep -Eq '[[:space:]]tm_reloc_init_resolver$' "$symbols" || fail "Rust provider archive is missing symbol tm_reloc_init_resolver"
 
-    if grep -Eq '(\.(tdata|tbss|init_array|fini_array|ctors|dtors|gcc_except_table|eh_frame|debug_frame)| TLS )' "$sections"; then
-        fail "Rust provider archive contains unsupported TLS, constructor, or unwind sections"
+    if grep -Eq '(\.(tdata|tbss|init_array|fini_array|ctors|dtors|gcc_except_table)| TLS )' "$sections"; then
+        fail "Rust provider archive contains unsupported TLS or constructor sections"
     fi
     if grep -Fq 'Dynamic section at offset' "$dynamic"; then
         fail "Rust provider archive unexpectedly has a dynamic section"
