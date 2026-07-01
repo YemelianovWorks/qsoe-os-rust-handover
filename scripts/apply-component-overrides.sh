@@ -246,7 +246,7 @@ ensure_tm_log_env_continuations() {
     awk '
         index($0, "QSOE_RUST_TM_LOG=$(QSOE_RUST_TM_LOG)") &&
             $0 !~ /\\[[:space:]]*$/ {
-            $0 = $0 " \"
+            $0 = $0 " \\"
         }
         { print }
     ' "$file" > "$tmp"
