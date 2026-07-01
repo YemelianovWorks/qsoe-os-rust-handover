@@ -62,9 +62,9 @@ int  tm_log_apply_cmdline(const char *cmdline);
 void tm_log_emit(int level, const char *buf, unsigned len);
 
 /* Typed argument boundary for printf-subset formatting.  The C variadic
- * wrapper owns va_list consumption and marshals into this representation;
- * future Rust formatter work can target this non-variadic ABI without
- * exporting or consuming a C variadic function. */
+ * wrapper owns va_list consumption and marshals into this representation.
+ * C provides the default formatter; when QSOE_RUST_TM_LOG=1 the Rust
+ * provider exports the same symbol and overrides the weak C fallback. */
 #define TM_LOG_ARGS_MAX         24
 
 enum tm_log_arg_kind {

@@ -83,6 +83,15 @@ require_line() {
         fail "$file is missing expected override: $needle"
 }
 
+require_line_contains() {
+    local file=$1
+    local prefix=$2
+    local needle=$3
+
+    grep -F -- "$prefix" "$file" | grep -Fq -- "$needle" ||
+        fail "$file is missing expected override on $prefix: $needle"
+}
+
 require_absent() {
     local file=$1
     local needle=$2
@@ -133,6 +142,96 @@ require_before_contains() {
         END { exit (found_second && ok) ? 0 : 1 }
     ' "$file" ||
         fail "$file is missing expected override order: $first before $second"
+}
+
+ensure_line_after_first() {
+    local file=$1
+    local anchor=$2
+    local line=$3
+    local tmp
+
+    grep -Fq -- "$line" "$file" && return 0
+
+    tmp=$(mktemp)
+    awk -v anchor="$anchor" -v line="$line" '
+        {
+            print
+            if (!done && index($0, anchor)) {
+                print line
+                done = 1
+            }
+        }
+    ' "$file" > "$tmp"
+    mv "$tmp" "$file"
+}
+
+ensure_line_after_each() {
+    local file=$1
+    local anchor=$2
+    local line=$3
+    local tmp
+
+    tmp=$(mktemp)
+    awk -v anchor="$anchor" -v line="$line" '
+        index($0, anchor) {
+            print
+            if ((getline nextline) > 0) {
+                if (!index(nextline, line))
+                    print line
+                print nextline
+            } else {
+                print line
+            }
+            next
+        }
+        { print }
+    ' "$file" > "$tmp"
+    mv "$tmp" "$file"
+}
+
+ensure_line_between() {
+    local file=$1
+    local first=$2
+    local second=$3
+    local line=$4
+    local tmp
+
+    tmp=$(mktemp)
+    awk -v first="$first" -v second="$second" -v line="$line" '
+        index($0, first) {
+            print
+            if ((getline nextline) > 0) {
+                if (!index(nextline, line) && index(nextline, second))
+                    print line
+                print nextline
+            } else {
+                print line
+            }
+            next
+        }
+        { print }
+    ' "$file" > "$tmp"
+    mv "$tmp" "$file"
+}
+
+ensure_provider_count_has_tm_log() {
+    local file=$1
+    local after=$2
+    local tmp
+
+    if grep -F 'TM_RUST_PROVIDER_COUNT :=' "$file" |
+        grep -Fq '$(QSOE_RUST_TM_LOG)'; then
+        return 0
+    fi
+
+    tmp=$(mktemp)
+    awk -v after="$after" '
+        /^TM_RUST_PROVIDER_COUNT :=/ {
+            sub(after, after " $(QSOE_RUST_TM_LOG)")
+        }
+        { print }
+    ' "$file" > "$tmp"
+    mv "$tmp" "$file"
 }
 
 # Older self-hosted workspaces may already have the selector patch but with
@@ -503,6 +602,39 @@ remove_component_file lq taskman/sys/devzero.c
 remove_component_file lq taskman/sys/rsrcdb.c
 remove_component_file lq taskman/sys/fdt.c
 
+TM_LOG_ENV_LINE=$(printf '\t    QSOE_RUST_TM_LOG=$(QSOE_RUST_TM_LOG) \\')
+
+ensure_line_after_first "$ROOT/nq/taskman/Makefile" \
+    'QSOE_RUST_TM_SYSFS ?= 1' \
+    'QSOE_RUST_TM_LOG ?= 0'
+ensure_provider_count_has_tm_log "$ROOT/nq/taskman/Makefile" \
+    '$(QSOE_RUST_TM_ELF)'
+ensure_line_after_each "$ROOT/nq/taskman/Makefile" \
+    'QSOE_RUST_TM_ELF=$(QSOE_RUST_TM_ELF)' \
+    "$TM_LOG_ENV_LINE"
+
+ensure_line_after_first "$ROOT/lq/Makefile" \
+    'QSOE_RUST_TM_SYSFS ?= 1' \
+    'QSOE_RUST_TM_LOG ?= 0'
+ensure_provider_count_has_tm_log "$ROOT/lq/Makefile" \
+    '$(QSOE_RUST_TM_FDT)'
+ensure_line_between "$ROOT/lq/Makefile" \
+    'QSOE_RUST_TM_SYSCFG=$(QSOE_RUST_TM_SYSCFG)' \
+    'QSOE_RUST_TM_SYSFS=$(QSOE_RUST_TM_SYSFS)' \
+    "$TM_LOG_ENV_LINE"
+ensure_line_after_each "$ROOT/lq/Makefile" \
+    'QSOE_RUST_TM_FDT=$(QSOE_RUST_TM_FDT)' \
+    "$TM_LOG_ENV_LINE"
+
+ensure_line_after_first "$ROOT/lq/taskman/Makefile" \
+    'QSOE_RUST_TM_SYSFS ?= 1' \
+    'QSOE_RUST_TM_LOG ?= 0'
+ensure_provider_count_has_tm_log "$ROOT/lq/taskman/Makefile" \
+    '$(QSOE_RUST_TM_FDT)'
+ensure_line_after_each "$ROOT/lq/taskman/Makefile" \
+    'QSOE_RUST_TM_FDT=$(QSOE_RUST_TM_FDT)' \
+    "$TM_LOG_ENV_LINE"
+
 require_line "$ROOT/nq/taskman/Makefile" 'QSOE_RUST_TM_CPIO ?= 1'
 require_line "$ROOT/nq/taskman/Makefile" 'QSOE_RUST_TM_CPIO must be 1 after C tm_cpio retirement'
 require_line "$ROOT/nq/taskman/Makefile" 'QSOE_RUST_TM_CRED must be 1 after C tm_cred retirement'
@@ -519,6 +651,10 @@ require_line "$ROOT/nq/taskman/Makefile" 'QSOE_RUST_TM_PATHMGR ?= 1'
 require_line "$ROOT/nq/taskman/Makefile" 'QSOE_RUST_TM_SCRIPT ?= 1'
 require_line "$ROOT/nq/taskman/Makefile" 'QSOE_RUST_TM_SYSCFG ?= 1'
 require_line "$ROOT/nq/taskman/Makefile" 'QSOE_RUST_TM_SYSFS ?= 1'
+require_line "$ROOT/nq/taskman/Makefile" 'QSOE_RUST_TM_LOG ?= 0'
+require_line_contains "$ROOT/nq/taskman/Makefile" \
+    'TM_RUST_PROVIDER_COUNT :=' \
+    '$(QSOE_RUST_TM_LOG)'
 require_line "$ROOT/nq/taskman/Makefile" 'RUST_TM_CPIO_A := $(REPO_ROOT)/build/rust/tm-cpio/libqsoe_tm_cpio.a'
 require_line "$ROOT/nq/taskman/Makefile" 'RUST_TM_PROCFS_A := $(REPO_ROOT)/build/rust/tm-procfs/libqsoe_tm_procfs.a'
 require_line "$ROOT/nq/taskman/Makefile" 'RUST_TM_CRED_A := $(REPO_ROOT)/build/rust/tm-cred/libqsoe_tm_cred.a'
@@ -534,6 +670,7 @@ require_line "$ROOT/nq/taskman/Makefile" '$(REPO_ROOT)/scripts/build-rust-tm-pro
 require_line "$ROOT/nq/taskman/Makefile" 'QSOE_RUST_TM_CPIO=$(QSOE_RUST_TM_CPIO)'
 require_line "$ROOT/nq/taskman/Makefile" 'QSOE_RUST_TM_CRED=$(QSOE_RUST_TM_CRED)'
 require_line "$ROOT/nq/taskman/Makefile" 'QSOE_RUST_TM_ELF=$(QSOE_RUST_TM_ELF)'
+require_line "$ROOT/nq/taskman/Makefile" 'QSOE_RUST_TM_LOG=$(QSOE_RUST_TM_LOG)'
 require_line "$ROOT/nq/taskman/Makefile" 'QSOE_RUST_TM_PATHMGR=$(QSOE_RUST_TM_PATHMGR)'
 require_line "$ROOT/nq/taskman/Makefile" 'QSOE_RUST_TM_PROCFS=$(QSOE_RUST_TM_PROCFS)'
 require_line "$ROOT/nq/taskman/Makefile" 'QSOE_RUST_TM_SCRIPT=$(QSOE_RUST_TM_SCRIPT)'
@@ -547,6 +684,9 @@ require_adjacent_contains "$ROOT/nq/taskman/Makefile" \
     'QSOE_RUST_TM_ELF=$(QSOE_RUST_TM_ELF)'
 require_adjacent_contains "$ROOT/nq/taskman/Makefile" \
     'QSOE_RUST_TM_ELF=$(QSOE_RUST_TM_ELF)' \
+    'QSOE_RUST_TM_LOG=$(QSOE_RUST_TM_LOG)'
+require_adjacent_contains "$ROOT/nq/taskman/Makefile" \
+    'QSOE_RUST_TM_LOG=$(QSOE_RUST_TM_LOG)' \
     'QSOE_RUST_TM_PATHMGR=$(QSOE_RUST_TM_PATHMGR)'
 require_adjacent_contains "$ROOT/nq/taskman/Makefile" \
     'QSOE_RUST_TM_PATHMGR=$(QSOE_RUST_TM_PATHMGR)' \
@@ -604,10 +744,15 @@ require_line "$ROOT/lq/Makefile" 'QSOE_RUST_TM_SCRIPT ?= 1'
 require_line "$ROOT/lq/Makefile" 'QSOE_RUST_TM_SYSCFG ?= 1'
 require_line "$ROOT/lq/Makefile" 'QSOE_RUST_TM_SYSMAP ?= 1'
 require_line "$ROOT/lq/Makefile" 'QSOE_RUST_TM_SYSFS ?= 1'
+require_line "$ROOT/lq/Makefile" 'QSOE_RUST_TM_LOG ?= 0'
+require_line_contains "$ROOT/lq/Makefile" \
+    'TM_RUST_PROVIDER_COUNT :=' \
+    '$(QSOE_RUST_TM_LOG)'
 require_line "$ROOT/lq/Makefile" 'QSOE_RUST_TM_CPIO=$(QSOE_RUST_TM_CPIO)'
 require_line "$ROOT/lq/Makefile" 'QSOE_RUST_TM_CRED=$(QSOE_RUST_TM_CRED)'
 require_line "$ROOT/lq/Makefile" 'QSOE_RUST_TM_ELF=$(QSOE_RUST_TM_ELF)'
 require_line "$ROOT/lq/Makefile" 'QSOE_RUST_TM_FDT=$(QSOE_RUST_TM_FDT)'
+require_line "$ROOT/lq/Makefile" 'QSOE_RUST_TM_LOG=$(QSOE_RUST_TM_LOG)'
 require_line "$ROOT/lq/Makefile" 'QSOE_RUST_TM_PATHMGR=$(QSOE_RUST_TM_PATHMGR)'
 require_line "$ROOT/lq/Makefile" 'QSOE_RUST_TM_PROCFS=$(QSOE_RUST_TM_PROCFS)'
 require_line "$ROOT/lq/Makefile" 'QSOE_RUST_TM_PSEUDODEV=$(QSOE_RUST_TM_PSEUDODEV)'
@@ -636,6 +781,9 @@ require_adjacent_contains "$ROOT/lq/Makefile" \
     'QSOE_RUST_TM_FDT=$(QSOE_RUST_TM_FDT)'
 require_adjacent_contains "$ROOT/lq/Makefile" \
     'QSOE_RUST_TM_FDT=$(QSOE_RUST_TM_FDT)' \
+    'QSOE_RUST_TM_LOG=$(QSOE_RUST_TM_LOG)'
+require_adjacent_contains "$ROOT/lq/Makefile" \
+    'QSOE_RUST_TM_LOG=$(QSOE_RUST_TM_LOG)' \
     'QSOE_RUST_TM_PATHMGR=$(QSOE_RUST_TM_PATHMGR)'
 require_adjacent_contains "$ROOT/lq/Makefile" \
     'QSOE_RUST_TM_PATHMGR=$(QSOE_RUST_TM_PATHMGR)' \
@@ -685,6 +833,10 @@ require_line "$ROOT/lq/taskman/Makefile" 'QSOE_RUST_TM_SCRIPT ?= 1'
 require_line "$ROOT/lq/taskman/Makefile" 'QSOE_RUST_TM_SYSCFG ?= 1'
 require_line "$ROOT/lq/taskman/Makefile" 'QSOE_RUST_TM_SYSMAP ?= 1'
 require_line "$ROOT/lq/taskman/Makefile" 'QSOE_RUST_TM_SYSFS ?= 1'
+require_line "$ROOT/lq/taskman/Makefile" 'QSOE_RUST_TM_LOG ?= 0'
+require_line_contains "$ROOT/lq/taskman/Makefile" \
+    'TM_RUST_PROVIDER_COUNT :=' \
+    '$(QSOE_RUST_TM_LOG)'
 require_line "$ROOT/lq/taskman/Makefile" 'RUST_TM_CPIO_A := $(REPO_ROOT)/build/rust/tm-cpio/libqsoe_tm_cpio.a'
 require_line "$ROOT/lq/taskman/Makefile" 'RUST_TM_PROCFS_A := $(REPO_ROOT)/build/rust/tm-procfs/libqsoe_tm_procfs.a'
 require_line "$ROOT/lq/taskman/Makefile" 'RUST_TM_CRED_A := $(REPO_ROOT)/build/rust/tm-cred/libqsoe_tm_cred.a'
@@ -701,6 +853,7 @@ require_line "$ROOT/lq/taskman/Makefile" 'RUST_TM_PROVIDERS_A := $(REPO_ROOT)/bu
 require_line "$ROOT/lq/taskman/Makefile" 'TASKMAN_RUST_LIBS += $(RUST_TM_PROVIDERS_A)'
 require_line "$ROOT/lq/taskman/Makefile" '$(RUST_TM_PROVIDERS_A): FORCE'
 require_line "$ROOT/lq/taskman/Makefile" '$(REPO_ROOT)/scripts/build-rust-tm-providers.sh $@'
+require_line "$ROOT/lq/taskman/Makefile" 'QSOE_RUST_TM_LOG=$(QSOE_RUST_TM_LOG)'
 require_line "$ROOT/lq/taskman/start.S" '    .skip 32768'
 require_absent "$ROOT/lq/taskman/Makefile" 'TASKMAN_PSEUDODEV_OBJS += $(OBJDIR)/sys/devnull.o'
 require_absent "$ROOT/lq/taskman/Makefile" 'TASKMAN_PSEUDODEV_OBJS += $(OBJDIR)/sys/devzero.o'

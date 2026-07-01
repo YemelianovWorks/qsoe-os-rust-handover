@@ -26,6 +26,7 @@ QSOE_RUST_TM_PROCFS ?= 1
 QSOE_RUST_TM_SCRIPT ?= 1
 QSOE_RUST_TM_SYSCFG ?= 1
 QSOE_RUST_TM_SYSFS ?= 1
+QSOE_RUST_TM_LOG ?= 0
 
 O           ?= build
 LIBC_INC    ?= ../libc/include
@@ -49,6 +50,10 @@ CFLAGS := $(ARCHFLAGS) -std=c11 -D_XOPEN_SOURCE=700 \
           -isystem $(LIBC_INC) \
           -Iinclude \
           $(EXTRA_CFLAGS)
+
+ifeq ($(QSOE_RUST_TM_LOG),1)
+CFLAGS += -DQSOE_RUST_TM_LOG=1
+endif
 
 ifneq ($(QSOE_RUST_TM_CPIO),1)
 $(error QSOE_RUST_TM_CPIO must be 1 after C tm_cpio retirement)

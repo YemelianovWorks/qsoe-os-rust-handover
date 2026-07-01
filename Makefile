@@ -31,10 +31,11 @@ QSOE_RUST_TM_SCRIPT ?= 1
 QSOE_RUST_TM_SYSCFG ?= 1
 QSOE_RUST_TM_SYSMAP ?= 1
 QSOE_RUST_TM_SYSFS ?= 1
+QSOE_RUST_TM_LOG ?= 0
 QSOE_RUST_TREEQRVFS ?= 1
 QSOE_RUST_MKFS_QRV ?= 1
 
-TM_RUST_PROVIDER_COUNT := $(words $(filter 1,$(QSOE_RUST_TM_CPIO) $(QSOE_RUST_TM_CRED) $(QSOE_RUST_TM_ELF) $(QSOE_RUST_TM_FDT) $(QSOE_RUST_TM_PATHMGR) $(QSOE_RUST_TM_PROCFS) $(QSOE_RUST_TM_PSEUDODEV) $(QSOE_RUST_TM_RSRCDB) $(QSOE_RUST_TM_SCRIPT) $(QSOE_RUST_TM_SYSCFG) $(QSOE_RUST_TM_SYSMAP) $(QSOE_RUST_TM_SYSFS)))
+TM_RUST_PROVIDER_COUNT := $(words $(filter 1,$(QSOE_RUST_TM_CPIO) $(QSOE_RUST_TM_CRED) $(QSOE_RUST_TM_ELF) $(QSOE_RUST_TM_FDT) $(QSOE_RUST_TM_LOG) $(QSOE_RUST_TM_PATHMGR) $(QSOE_RUST_TM_PROCFS) $(QSOE_RUST_TM_PSEUDODEV) $(QSOE_RUST_TM_RSRCDB) $(QSOE_RUST_TM_SCRIPT) $(QSOE_RUST_TM_SYSCFG) $(QSOE_RUST_TM_SYSMAP) $(QSOE_RUST_TM_SYSFS)))
 ifneq ($(QSOE_RUST_TM_CPIO),1)
 $(error QSOE_RUST_TM_CPIO must be 1 after C tm_cpio retirement)
 endif
@@ -106,7 +107,7 @@ SELECTED_PIPE_ELF ?= build/rust/selected/sbin/pipe.elf
         rust-service-example-link-smoke rust-virtio-link-smoke \
         rust-test-msgpass-link-smoke rust-pipe-link-smoke \
         slogger-artifact virtio-artifact test-msgpass-artifact pipe-artifact \
-        rust-tm-cpio-provider rust-tm-cred-provider rust-tm-elf-provider rust-tm-fdt-provider rust-tm-pathmgr-provider rust-tm-procfs-provider \
+        rust-tm-cpio-provider rust-tm-cred-provider rust-tm-elf-provider rust-tm-fdt-provider rust-tm-log-provider rust-tm-pathmgr-provider rust-tm-procfs-provider \
         rust-tm-rsrcdb-provider rust-tm-script-provider rust-tm-syscfg-provider rust-tm-sysmap-provider rust-tm-sysfs-provider \
         rust-tm-pseudodev-provider rust-tm-providers \
         tm-cpio-evidence tm-cpio-runtime-smoke tm-cpio-rc-smoke tm-cred-evidence tm-cred-runtime-smoke tm-cred-rc-smoke tm-elf-evidence tm-elf-runtime-smoke tm-elf-rc-smoke tm-fdt-evidence tm-fdt-runtime-smoke tm-fdt-rc-smoke tm-pathmgr-evidence tm-pathmgr-runtime-smoke tm-pathmgr-rc-smoke tm-procfs-evidence tm-providers-evidence tm-rsrcdb-evidence tm-rsrcdb-runtime-smoke tm-rsrcdb-rc-smoke tm-script-evidence tm-script-runtime-smoke tm-script-rc-smoke \
@@ -132,7 +133,7 @@ SELECTED_PIPE_ELF ?= build/rust/selected/sbin/pipe.elf
         container-slogger-artifact container-virtio-artifact \
         container-test-msgpass-artifact container-pipe-artifact \
         container-rust-tm-cpio-provider container-rust-tm-cred-provider \
-        container-rust-tm-elf-provider container-rust-tm-fdt-provider container-rust-tm-pathmgr-provider container-rust-tm-procfs-provider container-rust-tm-rsrcdb-provider container-rust-tm-script-provider \
+        container-rust-tm-elf-provider container-rust-tm-fdt-provider container-rust-tm-log-provider container-rust-tm-pathmgr-provider container-rust-tm-procfs-provider container-rust-tm-rsrcdb-provider container-rust-tm-script-provider \
         container-rust-tm-syscfg-provider container-rust-tm-sysmap-provider container-rust-tm-sysfs-provider \
         container-rust-tm-pseudodev-provider container-rust-tm-providers \
         container-tm-cpio-evidence container-tm-cpio-runtime-smoke container-tm-cpio-rc-smoke container-tm-cred-evidence container-tm-cred-runtime-smoke container-tm-cred-rc-smoke container-tm-elf-evidence container-tm-elf-runtime-smoke container-tm-elf-rc-smoke container-tm-fdt-evidence container-tm-fdt-runtime-smoke container-tm-fdt-rc-smoke container-tm-pathmgr-evidence container-tm-pathmgr-runtime-smoke container-tm-pathmgr-rc-smoke container-tm-procfs-evidence container-tm-providers-evidence \
@@ -158,6 +159,7 @@ all: component-overrides
 	$(MAKE) -C nq QSOE_RUST_TM_CPIO=$(QSOE_RUST_TM_CPIO) \
 	    QSOE_RUST_TM_CRED=$(QSOE_RUST_TM_CRED) \
 	    QSOE_RUST_TM_ELF=$(QSOE_RUST_TM_ELF) \
+	    QSOE_RUST_TM_LOG=$(QSOE_RUST_TM_LOG) \
 	    QSOE_RUST_TM_PATHMGR=$(QSOE_RUST_TM_PATHMGR) \
 	    QSOE_RUST_TM_PROCFS=$(QSOE_RUST_TM_PROCFS) \
 	    QSOE_RUST_TM_SCRIPT=$(QSOE_RUST_TM_SCRIPT) \
@@ -167,6 +169,7 @@ all: component-overrides
 	    QSOE_RUST_TM_CRED=$(QSOE_RUST_TM_CRED) \
 	    QSOE_RUST_TM_ELF=$(QSOE_RUST_TM_ELF) \
 	    QSOE_RUST_TM_FDT=$(QSOE_RUST_TM_FDT) \
+	    QSOE_RUST_TM_LOG=$(QSOE_RUST_TM_LOG) \
 	    QSOE_RUST_TM_PATHMGR=$(QSOE_RUST_TM_PATHMGR) \
 	    QSOE_RUST_TM_PROCFS=$(QSOE_RUST_TM_PROCFS) \
 	    QSOE_RUST_TM_PSEUDODEV=$(QSOE_RUST_TM_PSEUDODEV) \
@@ -464,6 +467,10 @@ rust-tm-fdt-provider:
 	@QSOE_RUST_TM_FDT=1 \
 	    scripts/build-rust-tm-providers.sh build/rust/tm-fdt/libqsoe_tm_fdt.a
 
+rust-tm-log-provider:
+	@QSOE_RUST_TM_LOG=1 \
+	    scripts/build-rust-tm-providers.sh build/rust/tm-log/libqsoe_tm_log.a
+
 rust-tm-pathmgr-provider:
 	@QSOE_RUST_TM_PATHMGR=1 \
 	    scripts/build-rust-tm-providers.sh build/rust/tm-pathmgr/libqsoe_tm_pathmgr.a
@@ -501,6 +508,7 @@ rust-tm-providers:
 	    QSOE_RUST_TM_CRED=$(QSOE_RUST_TM_CRED) \
 	    QSOE_RUST_TM_ELF=$(QSOE_RUST_TM_ELF) \
 	    QSOE_RUST_TM_FDT=$(QSOE_RUST_TM_FDT) \
+	    QSOE_RUST_TM_LOG=$(QSOE_RUST_TM_LOG) \
 	    QSOE_RUST_TM_PATHMGR=$(QSOE_RUST_TM_PATHMGR) \
 	    QSOE_RUST_TM_PROCFS=$(QSOE_RUST_TM_PROCFS) \
 	    QSOE_RUST_TM_PSEUDODEV=$(QSOE_RUST_TM_PSEUDODEV) \
@@ -755,6 +763,9 @@ container-rust-tm-elf-provider:
 
 container-rust-tm-fdt-provider:
 	@scripts/container-toolchain.sh run make rust-tm-fdt-provider
+
+container-rust-tm-log-provider:
+	@scripts/container-toolchain.sh run make rust-tm-log-provider
 
 container-rust-tm-pathmgr-provider:
 	@scripts/container-toolchain.sh run make rust-tm-pathmgr-provider
