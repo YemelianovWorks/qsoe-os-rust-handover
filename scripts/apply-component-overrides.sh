@@ -1029,11 +1029,13 @@ echo "apply-component-overrides.sh: component overrides ready"
 # after the historical component patches so both fresh release checkouts and
 # already-patched self-hosted workspaces get the same selector surface.
 ensure_line_after_first "$ROOT/lq/Makefile" 'QSOE_RUST_TM_SYSFS ?= 0' 'QSOE_RUST_TM_RELOC ?= 0'
+ensure_line_after_first "$ROOT/lq/Makefile" 'QSOE_RUST_TM_SYSFS ?= 1' 'QSOE_RUST_TM_RELOC ?= 0'
 ensure_provider_count_has_tm_reloc "$ROOT/lq/Makefile" '$(QSOE_RUST_TM_SYSFS)'
 ensure_tm_reloc_env_continuations "$ROOT/lq/Makefile"
 ensure_line_after_each "$ROOT/lq/Makefile" 'QSOE_RUST_TM_SYSFS=$(QSOE_RUST_TM_SYSFS)' '    QSOE_RUST_TM_RELOC=$(QSOE_RUST_TM_RELOC) \'
 
 ensure_line_after_first "$ROOT/lq/taskman/Makefile" 'QSOE_RUST_TM_SYSFS ?= 0' 'QSOE_RUST_TM_RELOC ?= 0'
+ensure_line_after_first "$ROOT/lq/taskman/Makefile" 'QSOE_RUST_TM_SYSFS ?= 1' 'QSOE_RUST_TM_RELOC ?= 0'
 ensure_provider_count_has_tm_reloc "$ROOT/lq/taskman/Makefile" '$(QSOE_RUST_TM_SYSFS)'
 ensure_tm_reloc_env_continuations "$ROOT/lq/taskman/Makefile"
 ensure_line_after_each "$ROOT/lq/taskman/Makefile" 'QSOE_RUST_TM_SYSFS=$(QSOE_RUST_TM_SYSFS)' '    QSOE_RUST_TM_RELOC=$(QSOE_RUST_TM_RELOC) \'
