@@ -10,6 +10,15 @@ on:
   pull_request:
     branches: [main]
   workflow_dispatch:
+    inputs:
+      lq_repository:
+        description: Optional GitHub owner/repo or clone URL for an LQ source override.
+        required: false
+        default: ""
+      lq_ref:
+        description: Optional branch, tag, or commit to fetch for the LQ source override.
+        required: false
+        default: ""
 
 concurrency:
   group: qsoe-ci-${{ github.ref }}
@@ -53,6 +62,40 @@ jobs:
 
       - name: Build Debian toolchain image
         run: make container-toolchain-build
+
+      - name: Prepare release components for LQ override
+        if: github.event_name == 'workflow_dispatch' && inputs.lq_repository != '' && inputs.lq_ref != ''
+        run: scripts/container-toolchain.sh run make prepare
+
+      - name: Overlay requested LQ source ref
+        if: github.event_name == 'workflow_dispatch' && inputs.lq_repository != '' && inputs.lq_ref != ''
+        env:
+          LQ_REPOSITORY: ${{ inputs.lq_repository }}
+          LQ_REF: ${{ inputs.lq_ref }}
+        run: |
+          set -eu
+
+          case "$LQ_REPOSITORY" in
+            http://*|https://*|git@*|ssh://*)
+              lq_url="$LQ_REPOSITORY"
+              ;;
+            *)
+              lq_url="https://github.com/${LQ_REPOSITORY}.git"
+              ;;
+          esac
+
+          rm -rf lq
+          git clone "$lq_url" lq
+          git -C lq fetch --depth 1 origin "$LQ_REF"
+          git -C lq checkout --detach FETCH_HEAD
+          scripts/apply-component-overrides.sh
+
+          mkdir -p build/lq-ref-evidence
+          {
+            printf 'lq_repository=%s\n' "$LQ_REPOSITORY"
+            printf 'lq_ref=%s\n' "$LQ_REF"
+            printf 'lq_commit=%s\n' "$(git -C lq rev-parse HEAD)"
+          } > build/lq-ref-evidence/summary.txt
 
       - name: Build release source tree
         run: make container-source-build
@@ -276,6 +319,7 @@ jobs:
             build/mkfs-qrv-rc/*.log
             build/rust-pipe-data/*.log
             build/pipe-rc/*.log
+            build/lq-ref-evidence/**/*.txt
             build/tm-cpio-evidence/**/*.log
             build/tm-cpio-evidence/**/*.txt
             build/tm-cpio-runtime-smoke/*.log
@@ -327,6 +371,10 @@ jobs:
             build/tm-sysmap-runtime-smoke/*.txt
             build/tm-sysmap-rc/*.log
             build/tm-sysmap-rc/*.txt
+            build/spawn-loader-c-evidence/**/*.log
+            build/spawn-loader-c-evidence/**/*.txt
+            build/spawn-loader-c-stress-evidence/**/*.log
+            build/spawn-loader-c-stress-evidence/**/*.txt
             build/tm-procfs-evidence/**/*.log
             build/tm-procfs-evidence/**/*.txt
             build/tm-pseudodev-evidence/**/*.log
