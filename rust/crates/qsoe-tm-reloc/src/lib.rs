@@ -94,8 +94,7 @@ impl Default for TmRelocResolver {
 
 pub type TmRelocWriteQFn =
     Option<unsafe extern "C" fn(user: *mut c_void, vaddr: u64, value: u64) -> c_int>;
-pub type TmRelocSkipLogFn =
-    Option<unsafe extern "C" fn(user: *mut c_void, name: *const c_char)>;
+pub type TmRelocSkipLogFn = Option<unsafe extern "C" fn(user: *mut c_void, name: *const c_char)>;
 
 #[repr(C)]
 #[derive(Clone, Copy)]
@@ -165,9 +164,7 @@ unsafe fn va_to_blob(view: &TmElfView, bias: u64, vaddr: u64) -> Option<*const u
         let load = view.phdrs[i];
         let hi = load.vaddr.wrapping_add(load.file_size);
         if rel >= load.vaddr && rel < hi {
-            let file_off = rel
-                .wrapping_sub(load.vaddr)
-                .wrapping_add(load.file_offset);
+            let file_off = rel.wrapping_sub(load.vaddr).wrapping_add(load.file_offset);
             if file_off >= view.blob_size {
                 return None;
             }
@@ -684,12 +681,54 @@ mod tests {
         put_u32(&mut bytes, HASH_OFF, 1);
         put_u32(&mut bytes, HASH_OFF + 4, 4);
 
-        put_rela(&mut bytes, RELA_OFF, 0, WRITE_BASE, r_info(0, R_RISCV_RELATIVE), 0x33);
-        put_rela(&mut bytes, RELA_OFF, 1, WRITE_BASE + 0x08, r_info(1, R_RISCV_64), 7);
-        put_rela(&mut bytes, RELA_OFF, 2, WRITE_BASE + 0x10, r_info(2, R_RISCV_64), 9);
-        put_rela(&mut bytes, RELA_OFF, 3, WRITE_BASE + 0x18, r_info(3, R_RISCV_64), 0);
-        put_rela(&mut bytes, RELA_OFF, 4, WRITE_BASE + 0x20, r_info(0, R_RISCV_UNKNOWN), 0);
-        put_rela(&mut bytes, JMPREL_OFF, 0, WRITE_BASE + 0x28, r_info(2, R_RISCV_JUMP_SLOT), 11);
+        put_rela(
+            &mut bytes,
+            RELA_OFF,
+            0,
+            WRITE_BASE,
+            r_info(0, R_RISCV_RELATIVE),
+            0x33,
+        );
+        put_rela(
+            &mut bytes,
+            RELA_OFF,
+            1,
+            WRITE_BASE + 0x08,
+            r_info(1, R_RISCV_64),
+            7,
+        );
+        put_rela(
+            &mut bytes,
+            RELA_OFF,
+            2,
+            WRITE_BASE + 0x10,
+            r_info(2, R_RISCV_64),
+            9,
+        );
+        put_rela(
+            &mut bytes,
+            RELA_OFF,
+            3,
+            WRITE_BASE + 0x18,
+            r_info(3, R_RISCV_64),
+            0,
+        );
+        put_rela(
+            &mut bytes,
+            RELA_OFF,
+            4,
+            WRITE_BASE + 0x20,
+            r_info(0, R_RISCV_UNKNOWN),
+            0,
+        );
+        put_rela(
+            &mut bytes,
+            JMPREL_OFF,
+            0,
+            WRITE_BASE + 0x28,
+            r_info(2, R_RISCV_JUMP_SLOT),
+            11,
+        );
 
         let view = TmElfView {
             blob: bytes.as_ptr().cast::<c_void>(),
@@ -829,8 +868,15 @@ mod tests {
         expect_write(&state, WRITE_BASE + 0x08, TARGET_BIAS as u64 + 0x1234 + 7);
         expect_write(&state, WRITE_BASE + 0x10, RESOLVER_BIAS as u64 + 0x5678 + 9);
         expect_write(&state, WRITE_BASE + 0x18, 0);
-        expect_write(&state, WRITE_BASE + 0x28, RESOLVER_BIAS as u64 + 0x5678 + 11);
-        assert_eq!(find_write(&state, TARGET_BIAS as u64 + WRITE_BASE + 0x20), None);
+        expect_write(
+            &state,
+            WRITE_BASE + 0x28,
+            RESOLVER_BIAS as u64 + 0x5678 + 11,
+        );
+        assert_eq!(
+            find_write(&state, TARGET_BIAS as u64 + WRITE_BASE + 0x20),
+            None
+        );
     }
 
     #[test]
