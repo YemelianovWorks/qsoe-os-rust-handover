@@ -227,7 +227,12 @@ ensure_provider_count_has_tm_log() {
     tmp=$(mktemp)
     awk -v after="$after" '
         /^TM_RUST_PROVIDER_COUNT :=/ {
-            sub(after, after " $(QSOE_RUST_TM_LOG)")
+            pos = index($0, after)
+            if (pos) {
+                $0 = substr($0, 1, pos + length(after) - 1) \
+                     " $(QSOE_RUST_TM_LOG)" \
+                     substr($0, pos + length(after))
+            }
         }
         { print }
     ' "$file" > "$tmp"
