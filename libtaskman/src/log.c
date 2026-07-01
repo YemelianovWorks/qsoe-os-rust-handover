@@ -164,52 +164,130 @@ static void out_num(struct tm_out *o, unsigned long long v, unsigned base,
 /* Length-modifier states for the %-spec parser below. */
 enum tm_len_mod { LEN_INT, LEN_LONG, LEN_LLONG, LEN_SIZE };
 
-static void tm_vfmt(struct tm_out *o, const char *fmt, tm_log_va_list ap)
+static const char *parse_spec(const char *fmt, enum tm_len_mod *len,
+                              char *conv, unsigned *width, char *pad)
 {
+    *pad = ' ';
+    *width = 0;
+    *len = LEN_INT;
+
+    if (*fmt == '0') {
+        *pad = '0';
+        fmt++;
+    }
+    while (*fmt >= '0' && *fmt <= '9')
+        *width = *width * 10 + (unsigned) (*fmt++ - '0');
+
+    if (*fmt == 'l') {
+        *len = LEN_LONG;
+        fmt++;
+        if (*fmt == 'l') {
+            *len = LEN_LLONG;
+            fmt++;
+        }
+    } else if (*fmt == 'z') {
+        *len = LEN_SIZE;
+        fmt++;
+    }
+
+    *conv = *fmt;
+    if (*conv == '\0')
+        return fmt;
+    return fmt + 1;
+}
+
+static void set_arg_str(tm_log_arg_t *arg, const char *s)
+{
+    arg->kind = TM_LOG_ARG_STR;
+    arg->signed_value = 0;
+    arg->unsigned_value = 0;
+    arg->str_value = s;
+    arg->ptr_value = 0;
+}
+
+static void set_arg_char(tm_log_arg_t *arg, int c)
+{
+    arg->kind = TM_LOG_ARG_CHAR;
+    arg->signed_value = c;
+    arg->unsigned_value = 0;
+    arg->str_value = 0;
+    arg->ptr_value = 0;
+}
+
+static void set_arg_signed(tm_log_arg_t *arg, long long v)
+{
+    arg->kind = TM_LOG_ARG_SIGNED;
+    arg->signed_value = v;
+    arg->unsigned_value = 0;
+    arg->str_value = 0;
+    arg->ptr_value = 0;
+}
+
+static void set_arg_unsigned(tm_log_arg_t *arg, unsigned long long v)
+{
+    arg->kind = TM_LOG_ARG_UNSIGNED;
+    arg->signed_value = 0;
+    arg->unsigned_value = v;
+    arg->str_value = 0;
+    arg->ptr_value = 0;
+}
+
+static void set_arg_ptr(tm_log_arg_t *arg, const void *p)
+{
+    arg->kind = TM_LOG_ARG_PTR;
+    arg->signed_value = 0;
+    arg->unsigned_value = 0;
+    arg->str_value = 0;
+    arg->ptr_value = p;
+}
+
+static tm_log_arg_t *next_store(tm_log_arg_t *args, unsigned cap,
+                                unsigned *n, int *overflow)
+{
+    if (*n < cap)
+        return &args[(*n)++];
+    *overflow = 1;
+    return 0;
+}
+
+static unsigned tm_marshal_args(const char *fmt, tm_log_va_list ap,
+                                tm_log_arg_t *args, unsigned cap,
+                                int *overflow)
+{
+    unsigned n = 0;
+    *overflow = 0;
+
     while (*fmt != '\0') {
         char c = *fmt++;
-        if (c != '%') {
-            out_ch(o, c);
+        if (c != '%')
             continue;
-        }
 
-        /* flags + width: only '0' padding and a plain decimal width */
-        char pad = ' ';
-        unsigned width = 0;
-        if (*fmt == '0') {
-            pad = '0';
-            fmt++;
-        }
-        while (*fmt >= '0' && *fmt <= '9')
-            width = width * 10 + (unsigned) (*fmt++ - '0');
-
-        enum tm_len_mod len = LEN_INT;
-        if (*fmt == 'l') {
-            len = LEN_LONG;
-            fmt++;
-            if (*fmt == 'l') {
-                len = LEN_LLONG;
-                fmt++;
-            }
-        } else if (*fmt == 'z') {
-            len = LEN_SIZE;
-            fmt++;
-        }
-
-        char conv = *fmt;
+        char pad;
+        unsigned width;
+        enum tm_len_mod len;
+        char conv;
+        fmt = parse_spec(fmt, &len, &conv, &width, &pad);
+        (void) width;
+        (void) pad;
         if (conv == '\0')
-            break;                  /* dangling '%' at end of format */
-        fmt++;
+            break;
 
+        tm_log_arg_t *arg;
         switch (conv) {
         case 's': {
             const char *s = va_arg(ap, const char *);
-            out_str(o, s != 0 ? s : "(null)");
+            arg = next_store(args, cap, &n, overflow);
+            if (arg != 0)
+                set_arg_str(arg, s);
             break;
         }
-        case 'c':
-            out_ch(o, (char) va_arg(ap, int));
+        case 'c': {
+            int ch = va_arg(ap, int);
+            arg = next_store(args, cap, &n, overflow);
+            if (arg != 0)
+                set_arg_char(arg, ch);
             break;
+        }
         case 'd':
         case 'i': {
             long long v;
@@ -221,11 +299,9 @@ static void tm_vfmt(struct tm_out *o, const char *fmt, tm_log_va_list ap)
                 v = (long long) va_arg(ap, unsigned long);
             else
                 v = va_arg(ap, int);
-            /* Negate in unsigned space: -LLONG_MIN is UB in signed. */
-            if (v < 0)
-                out_num(o, 0ULL - (unsigned long long) v, 10, 1, width, pad);
-            else
-                out_num(o, (unsigned long long) v, 10, 0, width, pad);
+            arg = next_store(args, cap, &n, overflow);
+            if (arg != 0)
+                set_arg_signed(arg, v);
             break;
         }
         case 'u':
@@ -237,14 +313,117 @@ static void tm_vfmt(struct tm_out *o, const char *fmt, tm_log_va_list ap)
                 v = va_arg(ap, unsigned long);
             else
                 v = va_arg(ap, unsigned int);
+            arg = next_store(args, cap, &n, overflow);
+            if (arg != 0)
+                set_arg_unsigned(arg, v);
+            break;
+        }
+        case 'p': {
+            const void *p = va_arg(ap, void *);
+            arg = next_store(args, cap, &n, overflow);
+            if (arg != 0)
+                set_arg_ptr(arg, p);
+            break;
+        }
+        case '%':
+        default:
+            break;
+        }
+    }
+
+    return n;
+}
+
+static const tm_log_arg_t *take_arg(const tm_log_arg_t *args,
+                                    unsigned nargs, unsigned *idx)
+{
+    if (*idx >= nargs)
+        return 0;
+    return &args[(*idx)++];
+}
+
+static void out_bad_arg(struct tm_out *o)
+{
+    out_str(o, "(badarg)");
+}
+
+static void tm_fmt_args(struct tm_out *o, const char *fmt,
+                        const tm_log_arg_t *args, unsigned nargs)
+{
+    unsigned idx = 0;
+
+    while (*fmt != '\0') {
+        char c = *fmt++;
+        if (c != '%') {
+            out_ch(o, c);
+            continue;
+        }
+
+        char pad;
+        unsigned width;
+        enum tm_len_mod len;
+        char conv;
+        fmt = parse_spec(fmt, &len, &conv, &width, &pad);
+        (void) len;
+        if (conv == '\0')
+            break;                  /* dangling '%' at end of format */
+
+        switch (conv) {
+        case 's': {
+            const tm_log_arg_t *arg = take_arg(args, nargs, &idx);
+            if (arg == 0 || arg->kind != TM_LOG_ARG_STR) {
+                out_bad_arg(o);
+                break;
+            }
+            out_str(o, arg->str_value != 0 ? arg->str_value : "(null)");
+            break;
+        }
+        case 'c': {
+            const tm_log_arg_t *arg = take_arg(args, nargs, &idx);
+            if (arg == 0 || arg->kind != TM_LOG_ARG_CHAR) {
+                out_bad_arg(o);
+                break;
+            }
+            out_ch(o, (char) arg->signed_value);
+            break;
+        }
+        case 'd':
+        case 'i': {
+            const tm_log_arg_t *arg = take_arg(args, nargs, &idx);
+            if (arg == 0 || arg->kind != TM_LOG_ARG_SIGNED) {
+                out_bad_arg(o);
+                break;
+            }
+            long long v = arg->signed_value;
+            /* Negate in unsigned space: -LLONG_MIN is UB in signed. */
+            if (v < 0)
+                out_num(o, 0ULL - (unsigned long long) v, 10, 1, width, pad);
+            else
+                out_num(o, (unsigned long long) v, 10, 0, width, pad);
+            break;
+        }
+        case 'u':
+        case 'x': {
+            const tm_log_arg_t *arg = take_arg(args, nargs, &idx);
+            if (arg == 0 || arg->kind != TM_LOG_ARG_UNSIGNED) {
+                out_bad_arg(o);
+                break;
+            }
+            unsigned long long v = arg->unsigned_value;
             out_num(o, v, conv == 'x' ? 16 : 10, 0, width, pad);
             break;
         }
-        case 'p':
+        case 'p': {
+            const tm_log_arg_t *arg = take_arg(args, nargs, &idx);
+            if (arg == 0 || arg->kind != TM_LOG_ARG_PTR) {
+                out_bad_arg(o);
+                break;
+            }
             out_str(o, "0x");
-            out_num(o, (unsigned long long) (unsigned long) va_arg(ap, void *),
+            out_num(o, (unsigned long long) (unsigned long) arg->ptr_value,
                     16, 0, 0, ' ');
             break;
+        }
         case '%':
             out_ch(o, '%');
             break;
@@ -258,7 +437,8 @@ static void tm_vfmt(struct tm_out *o, const char *fmt, tm_log_va_list ap)
     }
 }
 
-void tm_vlog(int level, const char *fmt, tm_log_va_list ap)
+void tm_log_emit_args(int level, const char *fmt,
+                      const tm_log_arg_t *args, unsigned nargs)
 {
     if (!tm_log_enabled(level))
         return;
@@ -266,10 +446,27 @@ void tm_vlog(int level, const char *fmt, tm_log_va_list ap)
     char line[TM_LOG_LINE_MAX];
     struct tm_out o = { line, sizeof line, 0 };
 
-    tm_vfmt(&o, fmt, ap);
+    tm_fmt_args(&o, fmt, args, nargs);
 
     unsigned n = o.pos < o.cap ? o.pos : o.cap;
     tm_log_emit(level, line, n);
+}
+
+void tm_vlog(int level, const char *fmt, tm_log_va_list ap)
+{
+    if (!tm_log_enabled(level))
+        return;
+
+    tm_log_arg_t args[TM_LOG_ARGS_MAX];
+    int overflow;
+    unsigned nargs = tm_marshal_args(fmt, ap, args, TM_LOG_ARGS_MAX, &overflow);
+    if (overflow) {
+        static const char msg[] = "tm_log: too many format arguments";
+        tm_log_emit(level, msg, sizeof msg - 1);
+        return;
+    }
+
+    tm_log_emit_args(level, fmt, args, nargs);
 }
 
 void tm_log(int level, const char *fmt, ...)

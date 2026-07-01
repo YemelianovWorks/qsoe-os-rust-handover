@@ -61,6 +61,32 @@ int  tm_log_apply_cmdline(const char *cmdline);
  * bytes when `len` is non-zero; no NUL terminator is required. */
 void tm_log_emit(int level, const char *buf, unsigned len);
 
+/* Typed argument boundary for printf-subset formatting.  The C variadic
+ * wrapper owns va_list consumption and marshals into this representation;
+ * future Rust formatter work can target this non-variadic ABI without
+ * exporting or consuming a C variadic function. */
+#define TM_LOG_ARGS_MAX         24
+
+enum tm_log_arg_kind {
+    TM_LOG_ARG_STR = 1,
+    TM_LOG_ARG_CHAR,
+    TM_LOG_ARG_SIGNED,
+    TM_LOG_ARG_UNSIGNED,
+    TM_LOG_ARG_PTR
+};
+
+typedef struct tm_log_arg {
+    int kind;
+    long long signed_value;
+    unsigned long long unsigned_value;
+    const char *str_value;
+    const void *ptr_value;
+} tm_log_arg_t;
+
+void tm_log_emit_args(int level, const char *fmt,
+                      const tm_log_arg_t *args, unsigned nargs)
+    __attribute__((format(printf, 2, 0)));
+
 /* C-owned va_list shim behind the public variadic wrapper.  Keep this
  * boundary in C: stable no_std Rust should not consume a C va_list. */
 typedef __builtin_va_list tm_log_va_list;
