@@ -13,7 +13,7 @@ on:
       lq_ref:
         description: Branch, tag, or commit to fetch from the LQ source.
         required: true
-        default: codex/tm-spawn-plan-seam
+        default: codex/tm-spawn-plan-seam-v0.14
 
 concurrency:
   group: qsoe-lq-ref-evidence-${{ github.ref }}-${{ inputs.lq_repository }}-${{ inputs.lq_ref }}
