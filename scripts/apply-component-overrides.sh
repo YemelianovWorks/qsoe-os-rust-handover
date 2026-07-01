@@ -213,6 +213,36 @@ ensure_line_after_each() {
     mv "$tmp" "$file"
 }
 
+ensure_lq_taskman_bridge_rule() {
+    local file=$1
+    local tmp
+
+    grep -Fq '$(TASKMAN_ELF): | taskman' "$file" && return 0
+
+    tmp=$(mktemp)
+    awk '
+        $0 == "FORCE:" && !done {
+            print "$(TASKMAN_ELF): | taskman"
+            print "\t@true"
+            print ""
+            print
+            done = 1
+            next
+        }
+        { print }
+        END {
+            if (!done) {
+                print ""
+                print "$(TASKMAN_ELF): | taskman"
+                print "\t@true"
+                print ""
+                print "FORCE:"
+            }
+        }
+    ' "$file" > "$tmp"
+    mv "$tmp" "$file"
+}
+
 ensure_line_between() {
     local file=$1
     local first=$2
@@ -272,6 +302,88 @@ ensure_provider_count_has_tm_log() {
                      " $(QSOE_RUST_TM_LOG)" \
                      substr($0, pos + length(after))
             }
+        }
+        { print }
+    ' "$file" > "$tmp"
+    mv "$tmp" "$file"
+}
+
+ensure_provider_count_has_tm_reloc() {
+    local file=$1
+    local after=$2
+    local tmp
+
+    if grep -F 'TM_RUST_PROVIDER_COUNT :=' "$file" |
+        grep -Fq '$(QSOE_RUST_TM_RELOC)'; then
+        return 0
+    fi
+
+    tmp=$(mktemp)
+    awk -v after="$after" '
+        /^TM_RUST_PROVIDER_COUNT :=/ {
+            pos = index($0, after)
+            if (pos) {
+                $0 = substr($0, 1, pos + length(after) - 1) \
+                     " $(QSOE_RUST_TM_RELOC)" \
+                     substr($0, pos + length(after))
+            }
+        }
+        { print }
+    ' "$file" > "$tmp"
+    mv "$tmp" "$file"
+}
+
+ensure_tm_reloc_env_continuations() {
+    local file=$1
+    local tmp
+
+    tmp=$(mktemp)
+    awk '
+        index($0, "QSOE_RUST_TM_SYSFS=$(QSOE_RUST_TM_SYSFS)") &&
+            $0 !~ /\\[[:space:]]*$/ {
+            $0 = $0 " \\"
+        }
+        { print }
+    ' "$file" > "$tmp"
+    mv "$tmp" "$file"
+}
+
+ensure_tm_reloc_env_lines() {
+    local file=$1
+    local tmp
+
+    tmp=$(mktemp)
+    awk '
+        function reloc_line_for(nextline) {
+            if (nextline ~ /^[[:space:]]/) {
+                return "    QSOE_RUST_TM_RELOC=$(QSOE_RUST_TM_RELOC) \\"
+            }
+            return "    QSOE_RUST_TM_RELOC=$(QSOE_RUST_TM_RELOC)"
+        }
+
+        index($0, "QSOE_RUST_TM_SYSFS=$(QSOE_RUST_TM_SYSFS)") {
+            line = $0
+            if (line !~ /\\[[:space:]]*$/) {
+                line = line " \\"
+            }
+            print line
+
+            if ((getline nextline) > 0) {
+                if (index(nextline, "QSOE_RUST_TM_RELOC=$(QSOE_RUST_TM_RELOC)")) {
+                    if ((getline following) > 0) {
+                        print reloc_line_for(following)
+                        print following
+                    } else {
+                        print "    QSOE_RUST_TM_RELOC=$(QSOE_RUST_TM_RELOC)"
+                    }
+                } else {
+                    print reloc_line_for(nextline)
+                    print nextline
+                }
+            } else {
+                print "    QSOE_RUST_TM_RELOC=$(QSOE_RUST_TM_RELOC)"
+            }
+            next
         }
         { print }
     ' "$file" > "$tmp"
@@ -365,6 +477,7 @@ apply_patch_if_possible_or_present lq lq-makefile-rust-tm-provider-exclusive.pat
 apply_patch_if_possible_or_present lq lq-makefile-force-target.patch \
     "$ROOT/lq/Makefile" \
     'FORCE:'
+ensure_lq_taskman_bridge_rule "$ROOT/lq/Makefile"
 apply_patch_if_possible_or_present lq lq-makefile-rust-tm-pseudodev.patch \
     "$ROOT/lq/Makefile" \
     'QSOE_RUST_TM_PSEUDODEV=$(QSOE_RUST_TM_PSEUDODEV)'
@@ -861,6 +974,7 @@ require_adjacent_contains "$ROOT/lq/Makefile" \
     'QSOE_RUST_TM_SYSFS=$(QSOE_RUST_TM_SYSFS)'
 require_absent "$ROOT/lq/Makefile" 'select at most one taskman Rust provider until they share one staticlib'
 require_line "$ROOT/lq/Makefile" '$(LIBTASKMAN_A): FORCE'
+require_line "$ROOT/lq/Makefile" '$(TASKMAN_ELF): | taskman'
 require_line "$ROOT/lq/Makefile" 'FORCE:'
 require_line "$ROOT/lq/taskman/Makefile" 'QSOE_RUST_TM_CPIO ?= 1'
 require_line "$ROOT/lq/taskman/Makefile" 'QSOE_RUST_TM_CPIO must be 1 after C tm_cpio retirement'
@@ -981,5 +1095,22 @@ require_line "$ROOT/quser/test/pseudodev_probe/Makefile" 'PROGRAM := pseudodev_p
 require_line "$ROOT/quser/test/pseudodev_probe/main.c" 'tm-pseudodev-runtime-smoke: pseudodev probe ok'
 require_line "$ROOT/quser/test/suite/msgpass_test.c" '(void) ProcessTerminate(nr_pid, 0);'
 require_line "$ROOT/quser/test/suite/sync.c" 'rc_unlock == EOK || (rc_unlock == -1 && errno == EPERM)'
+
+# Keep tm_reloc as an explicit opt-in provider candidate.  This is normalized
+# after the historical component patches so both fresh release checkouts and
+# already-patched self-hosted workspaces get the same selector surface.
+ensure_line_after_first "$ROOT/lq/Makefile" 'QSOE_RUST_TM_SYSFS ?= 0' 'QSOE_RUST_TM_RELOC ?= 0'
+ensure_line_after_first "$ROOT/lq/Makefile" 'QSOE_RUST_TM_SYSFS ?= 1' 'QSOE_RUST_TM_RELOC ?= 0'
+ensure_provider_count_has_tm_reloc "$ROOT/lq/Makefile" '$(QSOE_RUST_TM_SYSFS)'
+ensure_tm_reloc_env_lines "$ROOT/lq/Makefile"
+require_line "$ROOT/lq/Makefile" 'QSOE_RUST_TM_RELOC ?= 0'
+require_line_contains "$ROOT/lq/Makefile" 'TM_RUST_PROVIDER_COUNT :=' '$(QSOE_RUST_TM_RELOC)'
+
+ensure_line_after_first "$ROOT/lq/taskman/Makefile" 'QSOE_RUST_TM_SYSFS ?= 0' 'QSOE_RUST_TM_RELOC ?= 0'
+ensure_line_after_first "$ROOT/lq/taskman/Makefile" 'QSOE_RUST_TM_SYSFS ?= 1' 'QSOE_RUST_TM_RELOC ?= 0'
+ensure_provider_count_has_tm_reloc "$ROOT/lq/taskman/Makefile" '$(QSOE_RUST_TM_SYSFS)'
+ensure_tm_reloc_env_lines "$ROOT/lq/taskman/Makefile"
+require_line "$ROOT/lq/taskman/Makefile" 'QSOE_RUST_TM_RELOC ?= 0'
+require_line_contains "$ROOT/lq/taskman/Makefile" 'TM_RUST_PROVIDER_COUNT :=' '$(QSOE_RUST_TM_RELOC)'
 
 echo "apply-component-overrides.sh: component overrides ready"
