@@ -1032,3 +1032,11 @@ virtio: fsqrv-image
 	else \
 		echo "make virtio: $(VIRTIO_IMG) not built"; \
 	fi
+
+.PHONY: spawn-loader-c-evidence container-spawn-loader-c-evidence
+
+spawn-loader-c-evidence:
+	@scripts/spawn-loader-c-evidence.sh
+
+container-spawn-loader-c-evidence:
+	@scripts/container-toolchain.sh run make spawn-loader-c-evidence
