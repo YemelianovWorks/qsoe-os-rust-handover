@@ -38,6 +38,14 @@ unsafe fn tm_log_emit(_level: c_int, _buf: *const c_char, _len: c_uint) {}
 #[no_mangle]
 pub extern "C" fn qsoe_tm_log_provider_anchor() {}
 
+/// Format typed taskman log arguments and emit the finished line.
+///
+/// # Safety
+///
+/// `fmt` must point to a valid NUL-terminated C string. When `nargs` is
+/// non-zero, `args` must point to at least `nargs` valid `TmLogArg` entries.
+/// Any `TM_LOG_ARG_STR` entry must either be null or point to a valid
+/// NUL-terminated C string for the duration of the call.
 #[no_mangle]
 pub unsafe extern "C" fn tm_log_emit_args(
     level: c_int,
