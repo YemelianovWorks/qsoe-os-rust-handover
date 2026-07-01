@@ -26,7 +26,7 @@ QSOE_RUST_TM_PROCFS ?= 1
 QSOE_RUST_TM_SCRIPT ?= 1
 QSOE_RUST_TM_SYSCFG ?= 1
 QSOE_RUST_TM_SYSFS ?= 1
-QSOE_RUST_TM_LOG ?= 0
+QSOE_RUST_TM_LOG ?= 1
 
 O           ?= build
 LIBC_INC    ?= ../libc/include

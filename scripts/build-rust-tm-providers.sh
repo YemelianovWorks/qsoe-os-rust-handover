@@ -217,6 +217,7 @@ add_feature QSOE_RUST_TM_CPIO tm-cpio
 add_feature QSOE_RUST_TM_CRED tm-cred
 add_feature QSOE_RUST_TM_ELF tm-elf
 add_feature QSOE_RUST_TM_FDT tm-fdt
+QSOE_RUST_TM_LOG=${QSOE_RUST_TM_LOG:-1}
 add_feature QSOE_RUST_TM_LOG tm-log
 add_feature QSOE_RUST_TM_PATHMGR tm-pathmgr
 add_feature QSOE_RUST_TM_PROCFS tm-procfs
