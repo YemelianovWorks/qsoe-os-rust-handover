@@ -32,7 +32,7 @@ QSOE_RUST_TM_SYSCFG ?= 1
 QSOE_RUST_TM_SYSMAP ?= 1
 QSOE_RUST_TM_SYSFS ?= 1
 QSOE_RUST_TM_LOG ?= 1
-QSOE_RUST_TM_RELOC ?= 0
+QSOE_RUST_TM_RELOC ?= 1
 QSOE_RUST_TREEQRVFS ?= 1
 QSOE_RUST_MKFS_QRV ?= 1
 
@@ -1067,7 +1067,7 @@ container-spawn-loader-c-stress-evidence:
 .PHONY: reloc-c-evidence container-reloc-c-evidence
 
 reloc-c-evidence:
-	@scripts/reloc-c-evidence.sh
+	@$(MAKE) --no-print-directory tm-reloc-provider-evidence
 
 container-reloc-c-evidence:
-	@scripts/container-toolchain.sh run make reloc-c-evidence
+	@$(MAKE) --no-print-directory container-tm-reloc-provider-evidence

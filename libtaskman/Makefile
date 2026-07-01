@@ -27,7 +27,7 @@ QSOE_RUST_TM_SCRIPT ?= 1
 QSOE_RUST_TM_SYSCFG ?= 1
 QSOE_RUST_TM_SYSFS ?= 1
 QSOE_RUST_TM_LOG ?= 1
-QSOE_RUST_TM_RELOC ?= 0
+QSOE_RUST_TM_RELOC ?= 1
 
 O           ?= build
 LIBC_INC    ?= ../libc/include
@@ -87,6 +87,9 @@ endif
 ifneq ($(QSOE_RUST_TM_SYSFS),1)
 $(error QSOE_RUST_TM_SYSFS must be 1 after C tm_sysfs retirement)
 endif
+ifneq ($(QSOE_RUST_TM_RELOC),1)
+$(error QSOE_RUST_TM_RELOC must be 1 after C tm_reloc retirement)
+endif
 
 SRCS_ALL := $(wildcard src/*.c)
 SRCS := $(SRCS_ALL)
@@ -111,9 +114,7 @@ endif
 ifeq ($(QSOE_RUST_TM_SYSFS),1)
 SRCS := $(filter-out src/tm_sysfs.c,$(SRCS))
 endif
-ifeq ($(QSOE_RUST_TM_RELOC),1)
 SRCS := $(filter-out src/reloc.c,$(SRCS))
-endif
 OBJS := $(addprefix $(O)/,$(notdir $(SRCS:.c=.o)))
 DEPS := $(OBJS:.o=.d)
 

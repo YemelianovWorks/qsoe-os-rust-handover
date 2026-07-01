@@ -271,11 +271,7 @@ jobs:
         if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
         run: make container-spawn-loader-c-stress-evidence
 
-      - name: Run relocation C evidence
-        if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
-        run: make container-reloc-c-evidence
-
-      - name: Run tm_reloc Rust opt-in provider evidence
+      - name: Run tm_reloc Rust-default retirement evidence
         if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
         run: make container-tm-reloc-provider-evidence
 
