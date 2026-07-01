@@ -1,3 +1,24 @@
+## 2026-07-02 CEST - tm_cap_plan C Seam Evidence
+
+Scope:
+
+- Added a C-only `tm_cap_plan` seam for child CSpace publication operations in
+  `spawn.c`.
+- Covered taskman endpoint, child untyped, CNode self, and stdio connection cap
+  publication through a typed cap operation list with a C-owned commit helper.
+- Added `spawn-cap-plan-c-evidence`, CI wiring, and the LQ component patch while
+  keeping TCB setup, objcnode relocation, resume, and broader authority paths in
+  C.
+
+Commands:
+
+- Not run locally; PR CI is the formal evidence path.
+
+Result:
+
+- #154 has a second narrow C-owned planning seam. Broader spawn/capability/
+  loader ownership remains deferred.
+
 ## 2026-07-02 CEST - tm_spawn_argpack C Seam Evidence
 
 Scope:

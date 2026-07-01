@@ -651,6 +651,9 @@ apply_patch_if_possible_or_present lq lq-msgpass-mcs-teardown-and-bulk-copy.patc
 apply_patch_if_possible_or_present lq lq-taskman-spawn-argpack-seam.patch \
     "$ROOT/lq/taskman/proc/spawn.c" \
     'tm_spawn_argpack_prepare'
+apply_patch_if_possible_or_present lq lq-taskman-spawn-cap-plan-seam.patch \
+    "$ROOT/lq/taskman/proc/spawn.c" \
+    'tm_cap_plan_prepare'
 apply_patch_if_possible_or_present quser quser-retire-test-msgpass-c.patch \
     "$ROOT/quser/Makefile" \
     'test_msgpass-rs'
