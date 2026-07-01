@@ -142,7 +142,10 @@ inputs and explicit rollback/evidence:
 - `tm_reloc_provider`: pure relocation walk result or callback-compatible
   relocation writer, isolated from spawn.
 - `tm_cap_plan`: declarative list of object creates, cap mints/copies/moves,
-  rights, badges, destination CSpaces, and cleanup edges.
+  rights, badges, destination CSpaces, and cleanup edges.  The first C-owned
+  seam now covers child CSpace publication for taskman endpoint, child untyped,
+  CNode self, and stdio connection caps; `spawn-cap-plan-c-evidence` keeps
+  authority-owned commit in C.
 - `tm_vspace_plan`: declarative list of page-table and frame mappings with
   rights/attributes.
 - `tm_teardown_plan`: explicit reverse-order resource graph for process exit.
@@ -167,8 +170,8 @@ Before moving any subcomponent from deferred to opt-in:
 
 1. Keep `tm_spawn_argpack` source evidence running next to the current
    spawn/loader runtime evidence.
-2. Split `tm_spawn(...)` internally into plan/build/commit phases while staying
-   C-only.
+2. Keep `tm_cap_plan` source evidence running next to argpack and spawn/loader
+   runtime evidence while follow-on cap/object relocation seams stay C-only.
 3. Keep the now-retired/default `qsoe-tm-reloc` provider isolated behind the
    existing callback ABI.
 4. Reassess spawn planning after the C plan seams are stable.
