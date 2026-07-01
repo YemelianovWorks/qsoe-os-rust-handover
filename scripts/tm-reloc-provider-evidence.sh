@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Capture opt-in Rust tm_reloc provider evidence while keeping C default.
+# Capture retired/default Rust tm_reloc provider evidence.
 
 set -eu
 
@@ -15,9 +15,10 @@ usage() {
     cat <<'EOU'
 usage: scripts/tm-reloc-provider-evidence.sh
 
-Builds and audits the opt-in Rust tm_reloc provider, runs host parity tests,
-verifies LQ links the Rust provider without C reloc.o when QSOE_RUST_TM_RELOC=1,
-and boots LQ to require libc.so/rtld/main relocation logs.
+Builds and audits the retired/default Rust tm_reloc provider, runs host parity
+tests, verifies QSOE_RUST_TM_RELOC=0 is rejected, verifies LQ links the Rust
+provider without C reloc.o by default, and boots LQ to require libc.so/rtld/main
+relocation logs.
 EOU
 }
 
@@ -67,6 +68,18 @@ object_count() {
     "$AR" t "$archive" | awk -v object="$object" '$0 == object { n++ } END { print n + 0 }'
 }
 
+require_retired_selector_rejected() {
+    local label=$1
+    shift
+    local log="$WORKDIR/$label-retired-selector-rejection.txt"
+
+    if "$@" > "$log" 2>&1; then
+        fail "$label unexpectedly accepted QSOE_RUST_TM_RELOC=0"
+    fi
+    grep -Fq 'QSOE_RUST_TM_RELOC must be 1 after C tm_reloc retirement' "$log" ||
+        fail "$label rejection did not mention retired tm_reloc selector"
+}
+
 audit_provider_archive() {
     local header="$WORKDIR/rust-provider-archive-readelf-header.txt"
     local sections="$WORKDIR/rust-provider-archive-readelf-sections.txt"
@@ -112,7 +125,7 @@ audit_lq_opt_in_link() {
 
     reloc_count=$(object_count "$libtaskman" reloc.o)
     printf 'lq rust tm_reloc reloc.o count: %s\n' "$reloc_count" | tee "$membership"
-    [ "$reloc_count" -eq 0 ] || fail "LQ opt-in expected 0 C reloc.o members, got $reloc_count"
+    [ "$reloc_count" -eq 0 ] || fail "LQ default expected 0 C reloc.o members, got $reloc_count"
 
     "$NM" -g --defined-only "$taskman" > "$symbols"
     grep -Eq '[[:space:]]tm_reloc_apply$' "$symbols" || fail "LQ taskman is missing linked Rust symbol tm_reloc_apply"
@@ -129,11 +142,15 @@ qsoe_cargo_set_target_dir "$ROOT" taskman-reloc-host
 cargo test --manifest-path "$ROOT/rust/Cargo.toml" -p qsoe-tm-reloc --features host-tests
 
 printf 'tm-reloc-provider-evidence.sh: building Rust provider archive\n'
-QSOE_RUST_TM_RELOC=1 "$MAKE" -C "$ROOT" --no-print-directory rust-tm-reloc-provider
+"$MAKE" -C "$ROOT" --no-print-directory rust-tm-reloc-provider
 audit_provider_archive
 
-printf 'tm-reloc-provider-evidence.sh: building LQ with opt-in Rust tm_reloc\n'
-"$MAKE" -C "$ROOT/lq" --no-print-directory QSOE_RUST_TM_RELOC=1
+printf 'tm-reloc-provider-evidence.sh: verifying retired selector rejection\n'
+require_retired_selector_rejected libtaskman "$MAKE" -C "$ROOT/libtaskman" --no-print-directory QSOE_RUST_TM_RELOC=0
+require_retired_selector_rejected lq "$MAKE" -C "$ROOT/lq" --no-print-directory QSOE_RUST_TM_RELOC=0
+
+printf 'tm-reloc-provider-evidence.sh: building LQ with default Rust tm_reloc\n'
+"$MAKE" -C "$ROOT/lq" --no-print-directory
 audit_lq_opt_in_link
 
 QSOE_BOOT_EXTRA_PATTERNS="$(printf '%s\n' \
@@ -154,11 +171,11 @@ reject_log_fixed 'spawn: libc.so resolver init failed' 'resolver init failure'
 reject_log_fixed 'tm_spawn returned non-zero' 'spawn failure'
 
 {
-    printf 'tm_reloc Rust provider evidence complete\n'
+    printf 'tm_reloc Rust retirement evidence complete\n'
     printf 'provider_archive=%s\n' "$RUST_PROVIDER_A"
     printf 'boot_log=%s\n' "$BOOT_LOG"
-    printf 'selector=QSOE_RUST_TM_RELOC=1\n'
-    printf 'observed=Rust host parity tests, provider ABI symbols, LQ no C reloc.o, and LQ libc/rtld/main relocation runtime logs\n'
+    printf 'selector=QSOE_RUST_TM_RELOC=1 default/required\n'
+    printf 'observed=Rust host parity tests, retired selector rejection, provider ABI symbols, LQ no C reloc.o, and LQ libc/rtld/main relocation runtime logs\n'
 } > "$SUMMARY"
 
 printf 'tm-reloc-provider-evidence.sh: wrote %s\n' "$SUMMARY"

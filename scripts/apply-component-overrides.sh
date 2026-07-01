@@ -390,6 +390,40 @@ ensure_tm_reloc_env_lines() {
     mv "$tmp" "$file"
 }
 
+ensure_tm_reloc_retirement_guard() {
+    local file=$1
+    local tmp
+
+    grep -Fq 'QSOE_RUST_TM_RELOC must be 1 after C tm_reloc retirement' "$file" && return 0
+
+    tmp=$(mktemp)
+    awk '
+        index($0, "QSOE_RUST_TM_SYSFS must be 1 after C tm_sysfs retirement") {
+            pending = 1
+            print
+            next
+        }
+        pending && $0 == "endif" {
+            print
+            print "ifneq ($(QSOE_RUST_TM_RELOC),1)"
+            print "$(error QSOE_RUST_TM_RELOC must be 1 after C tm_reloc retirement)"
+            print "endif"
+            pending = 0
+            done = 1
+            next
+        }
+        { print }
+        END {
+            if (!done) {
+                print "ifneq ($(QSOE_RUST_TM_RELOC),1)"
+                print "$(error QSOE_RUST_TM_RELOC must be 1 after C tm_reloc retirement)"
+                print "endif"
+            }
+        }
+    ' "$file" > "$tmp"
+    mv "$tmp" "$file"
+}
+
 # Older self-hosted workspaces may already have the selector patch but with
 # earlier link paths or timestamp-only Rust archive rules. Normalize those
 # first so required full patches can be recognized as already applied.
@@ -1041,6 +1075,8 @@ fi
 require_line "$ROOT/libtaskman/Makefile" 'QSOE_RUST_TM_SYSFS must be 1 after C tm_sysfs retirement'
 require_line "$ROOT/libtaskman/Makefile" 'QSOE_RUST_TM_CRED must be 1 after C tm_cred retirement'
 require_line "$ROOT/libtaskman/Makefile" 'QSOE_RUST_TM_PATHMGR must be 1 after C tm_pathmgr retirement'
+require_line "$ROOT/libtaskman/Makefile" 'QSOE_RUST_TM_RELOC ?= 1'
+require_line "$ROOT/libtaskman/Makefile" 'QSOE_RUST_TM_RELOC must be 1 after C tm_reloc retirement'
 if [ -e "$ROOT/libtaskman/src/pathmgr.c" ]; then
     fail "libtaskman/src/pathmgr.c should be retired"
 fi
@@ -1049,6 +1085,9 @@ if [ -e "$ROOT/libtaskman/src/tm_sysfs.c" ]; then
 fi
 if [ -e "$ROOT/libtaskman/src/cred.c" ]; then
     fail "libtaskman/src/cred.c should be retired"
+fi
+if [ -e "$ROOT/libtaskman/src/reloc.c" ]; then
+    fail "libtaskman/src/reloc.c should be retired"
 fi
 require_absent "$ROOT/lq/taskman/Makefile" 'select at most one taskman Rust provider until they share one staticlib'
 require_line "$ROOT/lq/taskman/Makefile" 'FORCE:'
@@ -1096,21 +1135,29 @@ require_line "$ROOT/quser/test/pseudodev_probe/main.c" 'tm-pseudodev-runtime-smo
 require_line "$ROOT/quser/test/suite/msgpass_test.c" '(void) ProcessTerminate(nr_pid, 0);'
 require_line "$ROOT/quser/test/suite/sync.c" 'rc_unlock == EOK || (rc_unlock == -1 && errno == EPERM)'
 
-# Keep tm_reloc as an explicit opt-in provider candidate.  This is normalized
-# after the historical component patches so both fresh release checkouts and
+# Keep tm_reloc as a retired/default Rust provider.  This is normalized after
+# the historical component patches so both fresh release checkouts and
 # already-patched self-hosted workspaces get the same selector surface.
-ensure_line_after_first "$ROOT/lq/Makefile" 'QSOE_RUST_TM_SYSFS ?= 0' 'QSOE_RUST_TM_RELOC ?= 0'
-ensure_line_after_first "$ROOT/lq/Makefile" 'QSOE_RUST_TM_SYSFS ?= 1' 'QSOE_RUST_TM_RELOC ?= 0'
+ensure_line_replace_or_after_first "$ROOT/lq/Makefile" \
+    'QSOE_RUST_TM_SYSFS ?= 1' \
+    'QSOE_RUST_TM_RELOC ?= 0' \
+    'QSOE_RUST_TM_RELOC ?= 1'
+ensure_tm_reloc_retirement_guard "$ROOT/lq/Makefile"
 ensure_provider_count_has_tm_reloc "$ROOT/lq/Makefile" '$(QSOE_RUST_TM_SYSFS)'
 ensure_tm_reloc_env_lines "$ROOT/lq/Makefile"
-require_line "$ROOT/lq/Makefile" 'QSOE_RUST_TM_RELOC ?= 0'
+require_line "$ROOT/lq/Makefile" 'QSOE_RUST_TM_RELOC ?= 1'
+require_line "$ROOT/lq/Makefile" 'QSOE_RUST_TM_RELOC must be 1 after C tm_reloc retirement'
 require_line_contains "$ROOT/lq/Makefile" 'TM_RUST_PROVIDER_COUNT :=' '$(QSOE_RUST_TM_RELOC)'
 
-ensure_line_after_first "$ROOT/lq/taskman/Makefile" 'QSOE_RUST_TM_SYSFS ?= 0' 'QSOE_RUST_TM_RELOC ?= 0'
-ensure_line_after_first "$ROOT/lq/taskman/Makefile" 'QSOE_RUST_TM_SYSFS ?= 1' 'QSOE_RUST_TM_RELOC ?= 0'
+ensure_line_replace_or_after_first "$ROOT/lq/taskman/Makefile" \
+    'QSOE_RUST_TM_SYSFS ?= 1' \
+    'QSOE_RUST_TM_RELOC ?= 0' \
+    'QSOE_RUST_TM_RELOC ?= 1'
+ensure_tm_reloc_retirement_guard "$ROOT/lq/taskman/Makefile"
 ensure_provider_count_has_tm_reloc "$ROOT/lq/taskman/Makefile" '$(QSOE_RUST_TM_SYSFS)'
 ensure_tm_reloc_env_lines "$ROOT/lq/taskman/Makefile"
-require_line "$ROOT/lq/taskman/Makefile" 'QSOE_RUST_TM_RELOC ?= 0'
+require_line "$ROOT/lq/taskman/Makefile" 'QSOE_RUST_TM_RELOC ?= 1'
+require_line "$ROOT/lq/taskman/Makefile" 'QSOE_RUST_TM_RELOC must be 1 after C tm_reloc retirement'
 require_line_contains "$ROOT/lq/taskman/Makefile" 'TM_RUST_PROVIDER_COUNT :=' '$(QSOE_RUST_TM_RELOC)'
 
 echo "apply-component-overrides.sh: component overrides ready"
