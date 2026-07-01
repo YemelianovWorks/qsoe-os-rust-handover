@@ -1,7 +1,7 @@
 diff --git a/taskman/Makefile b/taskman/Makefile
 --- a/taskman/Makefile
 +++ b/taskman/Makefile
-@@ -64,5 +64,8 @@ ifneq ($(QSOE_RUST_TM_ELF),1)
+@@ -78,5 +78,8 @@ ifneq ($(QSOE_RUST_TM_ELF),1)
  $(error QSOE_RUST_TM_ELF must be 1 after C tm_elf retirement)
  endif
 +ifneq ($(QSOE_RUST_TM_FDT),1)
