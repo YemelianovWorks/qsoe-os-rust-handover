@@ -165,6 +165,30 @@ ensure_line_after_first() {
     mv "$tmp" "$file"
 }
 
+ensure_line_replace_or_after_first() {
+    local file=$1
+    local anchor=$2
+    local old_line=$3
+    local new_line=$4
+    local tmp
+
+    if grep -Fxq -- "$new_line" "$file"; then
+        return 0
+    fi
+
+    if grep -Fxq -- "$old_line" "$file"; then
+        tmp=$(mktemp)
+        awk -v old_line="$old_line" -v new_line="$new_line" '
+            $0 == old_line { print new_line; next }
+            { print }
+        ' "$file" > "$tmp"
+        mv "$tmp" "$file"
+        return 0
+    fi
+
+    ensure_line_after_first "$file" "$anchor" "$new_line"
+}
+
 ensure_line_after_each() {
     local file=$1
     local anchor=$2
@@ -609,18 +633,20 @@ remove_component_file lq taskman/sys/fdt.c
 
 TM_LOG_ENV_LINE=$(printf '\t    QSOE_RUST_TM_LOG=$(QSOE_RUST_TM_LOG) \\')
 
-ensure_line_after_first "$ROOT/nq/taskman/Makefile" \
+ensure_line_replace_or_after_first "$ROOT/nq/taskman/Makefile" \
     'QSOE_RUST_TM_SYSFS ?= 1' \
-    'QSOE_RUST_TM_LOG ?= 0'
+    'QSOE_RUST_TM_LOG ?= 0' \
+    'QSOE_RUST_TM_LOG ?= 1'
 ensure_provider_count_has_tm_log "$ROOT/nq/taskman/Makefile" \
     '$(QSOE_RUST_TM_ELF)'
 ensure_line_after_each "$ROOT/nq/taskman/Makefile" \
     'QSOE_RUST_TM_ELF=$(QSOE_RUST_TM_ELF)' \
     "$TM_LOG_ENV_LINE"
 
-ensure_line_after_first "$ROOT/lq/Makefile" \
+ensure_line_replace_or_after_first "$ROOT/lq/Makefile" \
     'QSOE_RUST_TM_SYSFS ?= 1' \
-    'QSOE_RUST_TM_LOG ?= 0'
+    'QSOE_RUST_TM_LOG ?= 0' \
+    'QSOE_RUST_TM_LOG ?= 1'
 ensure_provider_count_has_tm_log "$ROOT/lq/Makefile" \
     '$(QSOE_RUST_TM_FDT)'
 ensure_line_between "$ROOT/lq/Makefile" \
@@ -631,9 +657,10 @@ ensure_line_after_each "$ROOT/lq/Makefile" \
     'QSOE_RUST_TM_FDT=$(QSOE_RUST_TM_FDT)' \
     "$TM_LOG_ENV_LINE"
 
-ensure_line_after_first "$ROOT/lq/taskman/Makefile" \
+ensure_line_replace_or_after_first "$ROOT/lq/taskman/Makefile" \
     'QSOE_RUST_TM_SYSFS ?= 1' \
-    'QSOE_RUST_TM_LOG ?= 0'
+    'QSOE_RUST_TM_LOG ?= 0' \
+    'QSOE_RUST_TM_LOG ?= 1'
 ensure_provider_count_has_tm_log "$ROOT/lq/taskman/Makefile" \
     '$(QSOE_RUST_TM_FDT)'
 ensure_line_after_each "$ROOT/lq/taskman/Makefile" \
@@ -656,7 +683,7 @@ require_line "$ROOT/nq/taskman/Makefile" 'QSOE_RUST_TM_PATHMGR ?= 1'
 require_line "$ROOT/nq/taskman/Makefile" 'QSOE_RUST_TM_SCRIPT ?= 1'
 require_line "$ROOT/nq/taskman/Makefile" 'QSOE_RUST_TM_SYSCFG ?= 1'
 require_line "$ROOT/nq/taskman/Makefile" 'QSOE_RUST_TM_SYSFS ?= 1'
-require_line "$ROOT/nq/taskman/Makefile" 'QSOE_RUST_TM_LOG ?= 0'
+require_line "$ROOT/nq/taskman/Makefile" 'QSOE_RUST_TM_LOG ?= 1'
 require_line_contains "$ROOT/nq/taskman/Makefile" \
     'TM_RUST_PROVIDER_COUNT :=' \
     '$(QSOE_RUST_TM_LOG)'
@@ -749,7 +776,7 @@ require_line "$ROOT/lq/Makefile" 'QSOE_RUST_TM_SCRIPT ?= 1'
 require_line "$ROOT/lq/Makefile" 'QSOE_RUST_TM_SYSCFG ?= 1'
 require_line "$ROOT/lq/Makefile" 'QSOE_RUST_TM_SYSMAP ?= 1'
 require_line "$ROOT/lq/Makefile" 'QSOE_RUST_TM_SYSFS ?= 1'
-require_line "$ROOT/lq/Makefile" 'QSOE_RUST_TM_LOG ?= 0'
+require_line "$ROOT/lq/Makefile" 'QSOE_RUST_TM_LOG ?= 1'
 require_line_contains "$ROOT/lq/Makefile" \
     'TM_RUST_PROVIDER_COUNT :=' \
     '$(QSOE_RUST_TM_LOG)'
@@ -838,7 +865,7 @@ require_line "$ROOT/lq/taskman/Makefile" 'QSOE_RUST_TM_SCRIPT ?= 1'
 require_line "$ROOT/lq/taskman/Makefile" 'QSOE_RUST_TM_SYSCFG ?= 1'
 require_line "$ROOT/lq/taskman/Makefile" 'QSOE_RUST_TM_SYSMAP ?= 1'
 require_line "$ROOT/lq/taskman/Makefile" 'QSOE_RUST_TM_SYSFS ?= 1'
-require_line "$ROOT/lq/taskman/Makefile" 'QSOE_RUST_TM_LOG ?= 0'
+require_line "$ROOT/lq/taskman/Makefile" 'QSOE_RUST_TM_LOG ?= 1'
 require_line_contains "$ROOT/lq/taskman/Makefile" \
     'TM_RUST_PROVIDER_COUNT :=' \
     '$(QSOE_RUST_TM_LOG)'

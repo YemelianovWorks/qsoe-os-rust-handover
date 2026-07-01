@@ -216,6 +216,10 @@ jobs:
         if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
         run: make container-tm-sysmap-rc-smoke
 
+      - name: Run tm_log Rust-default RC evidence
+        if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+        run: make container-tm-log-evidence
+
       - name: Run tm_procfs Rust-only evidence
         if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
         run: make container-tm-procfs-evidence
