@@ -37,6 +37,11 @@ edition = "2021"
 license = "Apache-2.0"
 publish = false
 
+[workspace.metadata.qsoe-security-gates]
+dependency_review_baseline = "issue-202"
+dependency_review_scope = "Trigger GitHub dependency review on a manifest-only PR without changing dependency versions."
+cargo_deny_scope = "Keep cargo-deny as the Rust dependency policy gate; dependency review records GitHub advisory and manifest-diff signal."
+
 [profile.dev]
 panic = "abort"
 
