@@ -135,7 +135,7 @@ capture_lq_taskman_plan() {
         QSOE_RUST_TM_CPIO=1 \
         QSOE_RUST_TM_CRED=1 \
         QSOE_RUST_TM_ELF=1 \
-        QSOE_RUST_TM_FDT=0 \
+        QSOE_RUST_TM_FDT=1 \
         QSOE_RUST_TM_PROCFS=1 \
         QSOE_RUST_TM_PSEUDODEV=1 \
         QSOE_RUST_TM_RSRCDB=1 \
@@ -174,7 +174,7 @@ build_lq_taskman() {
         QSOE_RUST_TM_CPIO=1 \
         QSOE_RUST_TM_CRED=1 \
         QSOE_RUST_TM_ELF=1 \
-        QSOE_RUST_TM_FDT=0 \
+        QSOE_RUST_TM_FDT=1 \
         QSOE_RUST_TM_PROCFS=1 \
         QSOE_RUST_TM_PSEUDODEV=1 \
         QSOE_RUST_TM_RSRCDB=1 \

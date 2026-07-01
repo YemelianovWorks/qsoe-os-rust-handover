@@ -235,10 +235,11 @@ small reviewable change unless it explicitly says otherwise.
 - [x] Retire one C implementation after proving parity.
   - Acceptance: removal is approved only after at least one release candidate
     with Rust default and C rollback available.
-  - Status: complete for the first exercises. `test_msgpass`, `slogger`, and
-    `pipe` have retired C implementations after Rust-default RC evidence; see
-    `RETIREMENT.md` for current status and the checklist future removals must
-    repeat.
+  - Status: complete for the current exercises. `test_msgpass`, `slogger`,
+    `pipe`, `devb-virtio`, and multiple task-manager providers including
+    `tm_fdt` have retired C implementations after Rust-default RC evidence;
+    see `RETIREMENT.md` for current status and the checklist future removals
+    must repeat.
 
 ## Phase 9: Task Manager Readiness
 

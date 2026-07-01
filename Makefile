@@ -44,6 +44,9 @@ endif
 ifneq ($(QSOE_RUST_TM_ELF),1)
 $(error QSOE_RUST_TM_ELF must be 1 after C tm_elf retirement)
 endif
+ifneq ($(QSOE_RUST_TM_FDT),1)
+$(error QSOE_RUST_TM_FDT must be 1 after C tm_fdt retirement)
+endif
 ifneq ($(QSOE_RUST_TM_PATHMGR),1)
 $(error QSOE_RUST_TM_PATHMGR must be 1 after C tm_pathmgr retirement)
 endif
@@ -82,7 +85,7 @@ SELECTED_PIPE_ELF ?= build/rust/selected/sbin/pipe.elf
         check-qrvfs-rust-writer-fixture \
         check-qrvfs-rust-writer-production-root \
         check-elf-reloc-fixture check-gpt-fixture \
-        check-tm-cpio-model check-tm-cred-model check-tm-elf-model check-tm-fdt-model check-tm-pathmgr-model check-tm-procfs-model check-tm-rsrcdb-model \
+        check-tm-cpio-model check-tm-cred-model check-tm-elf-model check-tm-pathmgr-model check-tm-procfs-model check-tm-rsrcdb-model \
         check-tm-script-model check-tm-syscfg-model check-tm-sysmap-model check-tm-sysfs-model \
         slog-readback-smoke \
         rust-slog-readback-smoke slogger-rc-boot-smoke \
@@ -100,7 +103,7 @@ SELECTED_PIPE_ELF ?= build/rust/selected/sbin/pipe.elf
         rust-tm-cpio-provider rust-tm-cred-provider rust-tm-elf-provider rust-tm-fdt-provider rust-tm-pathmgr-provider rust-tm-procfs-provider \
         rust-tm-rsrcdb-provider rust-tm-script-provider rust-tm-syscfg-provider rust-tm-sysmap-provider rust-tm-sysfs-provider \
         rust-tm-pseudodev-provider rust-tm-providers \
-        tm-cpio-evidence tm-cpio-runtime-smoke tm-cpio-rc-smoke tm-cred-evidence tm-cred-runtime-smoke tm-cred-rc-smoke tm-elf-evidence tm-elf-runtime-smoke tm-elf-rc-smoke tm-fdt-evidence tm-fdt-runtime-smoke tm-fdt-rc-smoke tm-fdt-rc-rollback-smoke tm-pathmgr-evidence tm-pathmgr-runtime-smoke tm-pathmgr-rc-smoke tm-procfs-evidence tm-providers-evidence tm-rsrcdb-evidence tm-rsrcdb-runtime-smoke tm-rsrcdb-rc-smoke tm-script-evidence tm-script-runtime-smoke tm-script-rc-smoke \
+        tm-cpio-evidence tm-cpio-runtime-smoke tm-cpio-rc-smoke tm-cred-evidence tm-cred-runtime-smoke tm-cred-rc-smoke tm-elf-evidence tm-elf-runtime-smoke tm-elf-rc-smoke tm-fdt-evidence tm-fdt-runtime-smoke tm-fdt-rc-smoke tm-pathmgr-evidence tm-pathmgr-runtime-smoke tm-pathmgr-rc-smoke tm-procfs-evidence tm-providers-evidence tm-rsrcdb-evidence tm-rsrcdb-runtime-smoke tm-rsrcdb-rc-smoke tm-script-evidence tm-script-runtime-smoke tm-script-rc-smoke \
         tm-syscfg-evidence tm-syscfg-runtime-smoke tm-syscfg-rc-smoke tm-sysmap-evidence tm-sysmap-runtime-smoke tm-sysmap-rc-smoke tm-sysfs-evidence tm-sysfs-runtime-smoke tm-sysfs-rc-smoke tm-pseudodev-evidence tm-pseudodev-runtime-smoke tm-pseudodev-rc-smoke \
         rust-slogger-boot-smoke \
         rust-virtio-boot-smoke rust-virtio-file-smoke \
@@ -126,7 +129,7 @@ SELECTED_PIPE_ELF ?= build/rust/selected/sbin/pipe.elf
         container-rust-tm-elf-provider container-rust-tm-fdt-provider container-rust-tm-pathmgr-provider container-rust-tm-procfs-provider container-rust-tm-rsrcdb-provider container-rust-tm-script-provider \
         container-rust-tm-syscfg-provider container-rust-tm-sysmap-provider container-rust-tm-sysfs-provider \
         container-rust-tm-pseudodev-provider container-rust-tm-providers \
-        container-tm-cpio-evidence container-tm-cpio-runtime-smoke container-tm-cpio-rc-smoke container-tm-cred-evidence container-tm-cred-runtime-smoke container-tm-cred-rc-smoke container-tm-elf-evidence container-tm-elf-runtime-smoke container-tm-elf-rc-smoke container-tm-fdt-evidence container-tm-fdt-runtime-smoke container-tm-fdt-rc-smoke container-tm-fdt-rc-rollback-smoke container-tm-pathmgr-evidence container-tm-pathmgr-runtime-smoke container-tm-pathmgr-rc-smoke container-tm-procfs-evidence container-tm-providers-evidence \
+        container-tm-cpio-evidence container-tm-cpio-runtime-smoke container-tm-cpio-rc-smoke container-tm-cred-evidence container-tm-cred-runtime-smoke container-tm-cred-rc-smoke container-tm-elf-evidence container-tm-elf-runtime-smoke container-tm-elf-rc-smoke container-tm-fdt-evidence container-tm-fdt-runtime-smoke container-tm-fdt-rc-smoke container-tm-pathmgr-evidence container-tm-pathmgr-runtime-smoke container-tm-pathmgr-rc-smoke container-tm-procfs-evidence container-tm-providers-evidence \
         container-tm-rsrcdb-evidence container-tm-rsrcdb-runtime-smoke container-tm-rsrcdb-rc-smoke container-tm-script-evidence container-tm-script-runtime-smoke container-tm-script-rc-smoke container-tm-syscfg-evidence container-tm-syscfg-runtime-smoke container-tm-syscfg-rc-smoke \
         container-tm-sysmap-evidence container-tm-sysmap-runtime-smoke container-tm-sysmap-rc-smoke container-tm-sysfs-evidence container-tm-sysfs-runtime-smoke container-tm-sysfs-rc-smoke container-tm-pseudodev-evidence container-tm-pseudodev-runtime-smoke container-tm-pseudodev-rc-smoke \
         container-rust-virtio-boot-smoke \
@@ -287,7 +290,7 @@ tree: $(TREEQRVFS) fsqrv-image
 
 check-host-tools: check-qrvfs-fixture check-gpt-fixture \
     check-tm-cpio-model check-tm-cred-model check-tm-elf-model check-tm-pathmgr-model check-tm-procfs-model \
-    check-tm-fdt-model check-tm-rsrcdb-model check-tm-script-model check-tm-syscfg-model \
+    check-tm-rsrcdb-model check-tm-script-model check-tm-syscfg-model \
     check-tm-sysmap-model check-tm-sysfs-model
 
 check-qrvfs-fixture:
@@ -319,9 +322,6 @@ check-tm-cred-model:
 
 check-tm-elf-model:
 	@scripts/check-tm-elf-model.sh
-
-check-tm-fdt-model:
-	@scripts/check-tm-fdt-model.sh
 
 check-tm-pathmgr-model:
 	@scripts/check-tm-pathmgr-model.sh
@@ -553,9 +553,6 @@ tm-fdt-runtime-smoke:
 
 tm-fdt-rc-smoke:
 	@scripts/tm-fdt-rc-smoke.sh
-
-tm-fdt-rc-rollback-smoke:
-	@TM_FDT_RC_ROLLBACK=1 scripts/tm-fdt-rc-smoke.sh
 
 tm-pathmgr-evidence:
 	@scripts/tm-pathmgr-evidence.sh
@@ -831,9 +828,6 @@ container-tm-fdt-runtime-smoke:
 
 container-tm-fdt-rc-smoke:
 	@scripts/container-toolchain.sh run make tm-fdt-rc-smoke
-
-container-tm-fdt-rc-rollback-smoke:
-	@scripts/container-toolchain.sh run make tm-fdt-rc-rollback-smoke
 
 container-tm-pathmgr-evidence:
 	@scripts/container-toolchain.sh run make tm-pathmgr-evidence

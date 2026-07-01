@@ -194,7 +194,7 @@ echo "tm-elf-evidence.sh: verifying LQ Rust-only membership"
     QSOE_RUST_TM_CPIO=1 \
     QSOE_RUST_TM_CRED=1 \
     QSOE_RUST_TM_ELF=1 \
-    QSOE_RUST_TM_FDT=0 \
+    QSOE_RUST_TM_FDT=1 \
     QSOE_RUST_TM_PATHMGR=1 \
     QSOE_RUST_TM_PROCFS=1 \
     QSOE_RUST_TM_PSEUDODEV=1 \

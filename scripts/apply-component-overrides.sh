@@ -488,13 +488,20 @@ apply_patch_if_possible_or_present lq lq-taskman-rust-tm-pseudodev-retired.patch
 apply_patch_if_possible_or_present lq lq-makefile-rust-tm-rsrcdb-retired.patch \
     "$ROOT/lq/Makefile" \
     'QSOE_RUST_TM_RSRCDB must be 1 after C tm_rsrcdb retirement'
+apply_patch_if_possible_or_present lq lq-makefile-rust-tm-fdt-retired.patch \
+    "$ROOT/lq/Makefile" \
+    'QSOE_RUST_TM_FDT must be 1 after C tm_fdt retirement'
 apply_patch_if_possible_or_present lq lq-taskman-rust-tm-rsrcdb-retired.patch \
     "$ROOT/lq/taskman/Makefile" \
     'QSOE_RUST_TM_RSRCDB must be 1 after C tm_rsrcdb retirement'
+apply_patch_if_possible_or_present lq lq-taskman-rust-tm-fdt-retired.patch \
+    "$ROOT/lq/taskman/Makefile" \
+    'QSOE_RUST_TM_FDT must be 1 after C tm_fdt retirement'
 
 remove_component_file lq taskman/sys/devnull.c
 remove_component_file lq taskman/sys/devzero.c
 remove_component_file lq taskman/sys/rsrcdb.c
+remove_component_file lq taskman/sys/fdt.c
 
 require_line "$ROOT/nq/taskman/Makefile" 'QSOE_RUST_TM_CPIO ?= 1'
 require_line "$ROOT/nq/taskman/Makefile" 'QSOE_RUST_TM_CPIO must be 1 after C tm_cpio retirement'
@@ -579,6 +586,7 @@ require_line "$ROOT/lq/Makefile" 'QSOE_RUST_TM_CRED must be 1 after C tm_cred re
 require_line "$ROOT/lq/Makefile" 'QSOE_RUST_TM_PROCFS ?= 1'
 require_line "$ROOT/lq/Makefile" 'QSOE_RUST_TM_PROCFS must be 1 after C tm_procfs retirement'
 require_line "$ROOT/lq/Makefile" 'QSOE_RUST_TM_ELF must be 1 after C tm_elf retirement'
+require_line "$ROOT/lq/Makefile" 'QSOE_RUST_TM_FDT must be 1 after C tm_fdt retirement'
 require_line "$ROOT/lq/Makefile" 'QSOE_RUST_TM_PATHMGR must be 1 after C tm_pathmgr retirement'
 require_line "$ROOT/lq/Makefile" 'QSOE_RUST_TM_PSEUDODEV must be 1 after C tm_pseudodev retirement'
 require_line "$ROOT/lq/Makefile" 'QSOE_RUST_TM_RSRCDB must be 1 after C tm_rsrcdb retirement'
@@ -659,6 +667,7 @@ require_line "$ROOT/lq/taskman/Makefile" 'QSOE_RUST_TM_CRED must be 1 after C tm
 require_line "$ROOT/lq/taskman/Makefile" 'QSOE_RUST_TM_PROCFS ?= 1'
 require_line "$ROOT/lq/taskman/Makefile" 'QSOE_RUST_TM_PROCFS must be 1 after C tm_procfs retirement'
 require_line "$ROOT/lq/taskman/Makefile" 'QSOE_RUST_TM_ELF must be 1 after C tm_elf retirement'
+require_line "$ROOT/lq/taskman/Makefile" 'QSOE_RUST_TM_FDT must be 1 after C tm_fdt retirement'
 require_line "$ROOT/lq/taskman/Makefile" 'QSOE_RUST_TM_PATHMGR must be 1 after C tm_pathmgr retirement'
 require_line "$ROOT/lq/taskman/Makefile" 'QSOE_RUST_TM_PSEUDODEV must be 1 after C tm_pseudodev retirement'
 require_line "$ROOT/lq/taskman/Makefile" 'QSOE_RUST_TM_RSRCDB must be 1 after C tm_rsrcdb retirement'
@@ -701,7 +710,8 @@ require_line "$ROOT/lq/taskman/Makefile" '$(TASKMAN_RSRCDB_OBJS)'
 require_missing "$ROOT/lq/taskman/sys/devnull.c"
 require_missing "$ROOT/lq/taskman/sys/devzero.c"
 require_missing "$ROOT/lq/taskman/sys/rsrcdb.c"
-require_line "$ROOT/lq/taskman/Makefile" 'TASKMAN_FDT_OBJS += $(OBJDIR)/sys/fdt.o'
+require_missing "$ROOT/lq/taskman/sys/fdt.c"
+require_absent "$ROOT/lq/taskman/Makefile" 'TASKMAN_FDT_OBJS += $(OBJDIR)/sys/fdt.o'
 require_line "$ROOT/lq/taskman/Makefile" '$(TASKMAN_FDT_OBJS)'
 require_absent "$ROOT/lq/taskman/Makefile" 'TASKMAN_SYSMAP_OBJS += $(OBJDIR)/sys/sysmap.o'
 require_line "$ROOT/lq/taskman/Makefile" '$(TASKMAN_SYSMAP_OBJS)'

@@ -8,8 +8,8 @@ Rust-default release-candidate path and C rollback drill before its retirement
 PR removed the C helper. The next removals were production services
 `/sbin/slogger`, `/sbin/pipe`, and `/sbin/devb-virtio` after their own
 Rust-default RC evidence. The current retired task-manager providers are
-`tm_procfs`, `tm_cpio`, `tm_cred`, `tm_script`, `tm_elf`, `tm_syscfg`,
-`tm_sysmap`, `tm_sysfs`, `tm_pathmgr`, `tm_pseudodev`, and `tm_rsrcdb` after their own
+`tm_procfs`, `tm_cpio`, `tm_cred`, `tm_script`, `tm_elf`, `tm_fdt`,
+`tm_syscfg`, `tm_sysmap`, `tm_sysfs`, `tm_pathmgr`, `tm_pseudodev`, and `tm_rsrcdb` after their own
 Rust-default RC evidence and rollback drills. All remaining Rust pilots stay
 either opt-in or Rust-default RC paths, and each non-retired C implementation
 remains the rollback path until the release-candidate evidence below exists.
@@ -78,6 +78,7 @@ require their own separate removal PRs after RC evidence and rollback drills.
 | `tm_cred` | `TASK_MANAGER_CRED_RETIREMENT.md` | `TASK_MANAGER_CRED_RC.md`, `make tm-cred-rc-smoke`, previous `make tm-cred-rc-rollback-smoke` evidence | No C rollback target remains; Rust `qsoe-tm-cred` is mandatory in taskman through the shared provider archive. |
 | `tm_script` | `TASK_MANAGER_SCRIPT_RETIREMENT.md` | `TASK_MANAGER_SCRIPT_RC.md`, `make tm-script-rc-smoke`, previous `make tm-script-rc-rollback-smoke` evidence | No C rollback target remains; Rust `qsoe-tm-script` is mandatory in taskman through the shared provider archive. |
 | `tm_elf` | `TASK_MANAGER_ELF_RETIREMENT.md` | `TASK_MANAGER_ELF_RC.md`, `make tm-elf-rc-smoke`, previous `make tm-elf-rc-rollback-smoke` evidence | No C rollback target remains; Rust `qsoe-tm-elf` is mandatory in taskman through the shared provider archive. |
+| `tm_fdt` | `TASK_MANAGER_FDT_RETIREMENT.md` | `TASK_MANAGER_FDT_RC.md`, `make tm-fdt-rc-smoke`, previous `make tm-fdt-rc-rollback-smoke` evidence | No C rollback target remains for the LQ FDT parser provider; Rust `qsoe-tm-fdt` is mandatory in taskman through the shared provider archive. |
 | `tm_syscfg` | `TASK_MANAGER_SYSCFG_RETIREMENT.md` | `TASK_MANAGER_SYSCFG_RC.md`, `make tm-syscfg-rc-smoke`, previous `make tm-syscfg-rc-rollback-smoke` evidence | No C rollback target remains for the portable `libtaskman` provider; Rust `qsoe-tm-syscfg` is mandatory in taskman through the shared provider archive. |
 | `tm_sysmap` | `TASK_MANAGER_SYSMAP_RETIREMENT.md` | `TASK_MANAGER_SYSMAP_RC.md`, `make tm-sysmap-rc-smoke`, previous `make tm-sysmap-rc-rollback-smoke` evidence | No C rollback target remains for the LQ sysmap page builder; Rust `qsoe-tm-sysmap` is mandatory in taskman through the shared provider archive. |
 | `tm_sysfs` | `TASK_MANAGER_SYSFS_RETIREMENT.md` | `TASK_MANAGER_SYSFS_RC.md`, `make tm-sysfs-rc-smoke`, previous `make tm-sysfs-rc-rollback-smoke` evidence | No C rollback target remains for the portable `/sys` provider; Rust `qsoe-tm-sysfs` is mandatory in taskman through the shared provider archive. |
