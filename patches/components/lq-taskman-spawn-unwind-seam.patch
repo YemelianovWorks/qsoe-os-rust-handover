@@ -2,7 +2,7 @@ diff --git a/taskman/proc/spawn.c b/taskman/proc/spawn.c
 index 580413b..82c6db8 100644
 --- a/taskman/proc/spawn.c
 +++ b/taskman/proc/spawn.c
-@@ -1503,6 +1503,34 @@ typedef struct tm_spawn_objcnode_plan {
+@@ -1503,6 +1503,142 @@ typedef struct tm_spawn_objcnode_plan {
      int max_mprot;
  } tm_spawn_objcnode_plan_t;
  
@@ -33,15 +33,6 @@ index 580413b..82c6db8 100644
 +    int stack_pages;
 +    int committed;
 +} tm_spawn_unwind_plan_t;
-+
- 
- 
- 
-@@ -1920,5 +1920,113 @@ static int tm_spawn_objcnode_bind(tm_spawn_objcnode_plan_t *objc_plan,
-     objc_plan->status = TM_SPAWN_OBJCNODE_BOUND;
-     return 0;
- }
- 
 +static int tm_spawn_unwind_prepare(tm_spawn_unwind_plan_t *unwind, pid_t pid)
 +{
 +    if (!unwind)
@@ -150,7 +141,10 @@ index 580413b..82c6db8 100644
 +    return 0;
 +}
 +
- static int tm_spawn_plan_prepare(tm_spawn_plan_t *plan,
++
+ 
+ 
+ 
 @@ -1978,4 +2086,8 @@ int tm_spawn(const void *elf_blob, unsigned long elf_len,
               const char *elf_name)
  {
