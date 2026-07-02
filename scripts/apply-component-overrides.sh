@@ -690,7 +690,7 @@ apply_patch_if_possible_or_present lq lq-taskman-spawn-unwind-seam.patch \
     'tm_spawn_unwind_plan'
 apply_patch_if_possible_or_present lq lq-taskman-spawn-unwind-cleanup-seam.patch \
     "$ROOT/lq/taskman/proc/spawn.c" \
-    'tm_spawn_unwind_cleanup_plan'
+    'tm_spawn_unwind_return(&unwind_plan, -ENOMEM)'
 apply_patch_if_possible_or_present quser quser-retire-test-msgpass-c.patch \
     "$ROOT/quser/Makefile" \
     'test_msgpass-rs'

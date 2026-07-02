@@ -2,7 +2,7 @@ diff --git a/taskman/proc/spawn.c b/taskman/proc/spawn.c
 index 580413b..82c6db8 100644
 --- a/taskman/proc/spawn.c
 +++ b/taskman/proc/spawn.c
-@@ -1503,6 +1503,142 @@ typedef struct tm_spawn_objcnode_plan {
+@@ -1503,6 +1503,289 @@ typedef struct tm_spawn_objcnode_plan {
      int max_mprot;
  } tm_spawn_objcnode_plan_t;
  
@@ -32,6 +32,8 @@ index 580413b..82c6db8 100644
 +    int relro_count;
 +    int stack_pages;
 +    int committed;
++    int failure_rc;
++    int cleanup_planned;
 +} tm_spawn_unwind_plan_t;
 +static int tm_spawn_unwind_prepare(tm_spawn_unwind_plan_t *unwind, pid_t pid)
 +{
@@ -140,6 +142,151 @@ index 580413b..82c6db8 100644
 +    unwind->status = TM_SPAWN_UNWIND_COMMITTED;
 +    return 0;
 +}
++typedef enum tm_spawn_cleanup_status {
++    TM_SPAWN_CLEANUP_EMPTY,
++    TM_SPAWN_CLEANUP_NOT_REQUIRED,
++    TM_SPAWN_CLEANUP_REQUIRED,
++    TM_SPAWN_CLEANUP_BAD_UNWIND,
++    TM_SPAWN_CLEANUP_TOO_MANY,
++} tm_spawn_cleanup_status_t;
++
++typedef enum tm_spawn_cleanup_op_kind {
++    TM_SPAWN_CLEANUP_OP_RECLAIM_RECORDED_FRAMES,
++    TM_SPAWN_CLEANUP_OP_RECLAIM_RECORDED_PTS,
++    TM_SPAWN_CLEANUP_OP_DELETE_FAULT_ENDPOINT,
++    TM_SPAWN_CLEANUP_OP_REVOKE_SCHED_CONTEXT,
++    TM_SPAWN_CLEANUP_OP_REVOKE_CHILD_UNTYPED,
++    TM_SPAWN_CLEANUP_OP_REVOKE_CHILD_CNODE,
++} tm_spawn_cleanup_op_kind_t;
++
++typedef struct tm_spawn_cleanup_op {
++    tm_spawn_cleanup_op_kind_t kind;
++    seL4_CPtr cap;
++    int count;
++    const char *label;
++} tm_spawn_cleanup_op_t;
++
++#define TM_SPAWN_CLEANUP_MAX_OPS 8
++
++typedef struct tm_spawn_unwind_cleanup_plan {
++    tm_spawn_cleanup_status_t status;
++    pid_t pid;
++    int failure_rc;
++    unsigned op_count;
++    tm_spawn_cleanup_op_t ops[TM_SPAWN_CLEANUP_MAX_OPS];
++} tm_spawn_unwind_cleanup_plan_t;
++
++static int tm_spawn_unwind_cleanup_add(tm_spawn_unwind_cleanup_plan_t *cleanup,
++                                       tm_spawn_cleanup_op_kind_t kind,
++                                       seL4_CPtr cap,
++                                       int count,
++                                       const char *label)
++{
++    if (!cleanup || cleanup->op_count >= TM_SPAWN_CLEANUP_MAX_OPS) {
++        if (cleanup)
++            cleanup->status = TM_SPAWN_CLEANUP_TOO_MANY;
++        return -E2BIG;
++    }
++
++    tm_spawn_cleanup_op_t *op = &cleanup->ops[cleanup->op_count++];
++    op->kind = kind;
++    op->cap = cap;
++    op->count = count;
++    op->label = label;
++    return 0;
++}
++
++static int tm_spawn_unwind_cleanup_prepare(tm_spawn_unwind_plan_t *unwind,
++                                           tm_spawn_unwind_cleanup_plan_t *cleanup,
++                                           int failure_rc)
++{
++    if (!unwind || !cleanup)
++        return -EINVAL;
++
++    qmemset(cleanup, 0, sizeof *cleanup);
++    cleanup->status = TM_SPAWN_CLEANUP_EMPTY;
++    cleanup->pid = unwind->pid;
++    cleanup->failure_rc = failure_rc;
++
++    if (unwind->status == TM_SPAWN_UNWIND_COMMITTED || unwind->committed) {
++        cleanup->status = TM_SPAWN_CLEANUP_NOT_REQUIRED;
++        return 0;
++    }
++    if (unwind->status != TM_SPAWN_UNWIND_READY || !unwind->pid) {
++        cleanup->status = TM_SPAWN_CLEANUP_BAD_UNWIND;
++        return -EINVAL;
++    }
++
++    if (unwind->frame_count > 0 &&
++        tm_spawn_unwind_cleanup_add(cleanup,
++                                    TM_SPAWN_CLEANUP_OP_RECLAIM_RECORDED_FRAMES,
++                                    0, unwind->frame_count,
++                                    "recorded frame slots") != 0)
++        return -E2BIG;
++    if (unwind->pt_count > 0 &&
++        tm_spawn_unwind_cleanup_add(cleanup,
++                                    TM_SPAWN_CLEANUP_OP_RECLAIM_RECORDED_PTS,
++                                    0, unwind->pt_count,
++                                    "recorded page-table slots") != 0)
++        return -E2BIG;
++    if (unwind->fault_ep &&
++        tm_spawn_unwind_cleanup_add(cleanup,
++                                    TM_SPAWN_CLEANUP_OP_DELETE_FAULT_ENDPOINT,
++                                    unwind->fault_ep, 1,
++                                    "fault endpoint slot") != 0)
++        return -E2BIG;
++    if (unwind->sc &&
++        tm_spawn_unwind_cleanup_add(cleanup,
++                                    TM_SPAWN_CLEANUP_OP_REVOKE_SCHED_CONTEXT,
++                                    unwind->sc, 1,
++                                    "scheduler context") != 0)
++        return -E2BIG;
++    if (unwind->child_untyped &&
++        tm_spawn_unwind_cleanup_add(cleanup,
++                                    TM_SPAWN_CLEANUP_OP_REVOKE_CHILD_UNTYPED,
++                                    unwind->child_untyped, 1,
++                                    "child untyped") != 0)
++        return -E2BIG;
++    if (unwind->cnode &&
++        tm_spawn_unwind_cleanup_add(cleanup,
++                                    TM_SPAWN_CLEANUP_OP_REVOKE_CHILD_CNODE,
++                                    unwind->cnode, 1,
++                                    "child cnode") != 0)
++        return -E2BIG;
++
++    cleanup->status = cleanup->op_count ? TM_SPAWN_CLEANUP_REQUIRED
++                                        : TM_SPAWN_CLEANUP_NOT_REQUIRED;
++    unwind->failure_rc = failure_rc;
++    unwind->cleanup_planned = (cleanup->status == TM_SPAWN_CLEANUP_REQUIRED);
++    return 0;
++}
++
++static int tm_spawn_unwind_cleanup_commit(const tm_spawn_unwind_cleanup_plan_t *cleanup)
++{
++    if (!cleanup)
++        return -EINVAL;
++    if (cleanup->status == TM_SPAWN_CLEANUP_NOT_REQUIRED)
++        return 0;
++    if (cleanup->status != TM_SPAWN_CLEANUP_REQUIRED)
++        return -EINVAL;
++
++    /* Authority remains C-owned and deferred to the follow-up implementation:
++     * this seam commits the bounded cleanup action ordering, not the seL4
++     * revoke/delete/free calls themselves. */
++    return 0;
++}
++
++static int tm_spawn_unwind_return(tm_spawn_unwind_plan_t *unwind,
++                                  int failure_rc)
++{
++    tm_spawn_unwind_cleanup_plan_t cleanup;
++    int cleanup_rc = tm_spawn_unwind_cleanup_prepare(unwind, &cleanup,
++                                                     failure_rc);
++    if (cleanup_rc == 0)
++        (void)tm_spawn_unwind_cleanup_commit(&cleanup);
++    return failure_rc;
++}
++
 +
 +
  
