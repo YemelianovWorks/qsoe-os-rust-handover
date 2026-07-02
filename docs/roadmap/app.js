@@ -1,4 +1,4 @@
-const REPO_OWNER = "YemelianovWorks";
+const REPO_OWNER = "dmytro-yemelianov";
 const REPO_NAME = "qsoe-os-rust-handover";
 const ROADMAP_LABEL = "roadmap";
 const ISSUES_API_URL = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/issues?state=all&labels=${ROADMAP_LABEL}&per_page=100`;
