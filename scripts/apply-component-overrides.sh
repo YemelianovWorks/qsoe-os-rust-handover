@@ -670,6 +670,9 @@ apply_patch_if_possible_or_present lq lq-taskman-spawn-loader-admit-seam.patch \
 apply_patch_if_possible_or_present lq lq-taskman-spawn-loader-map-seam.patch \
     "$ROOT/lq/taskman/proc/spawn.c" \
     'tm_loader_map_plan'
+apply_patch_if_possible_or_present lq lq-taskman-spawn-loader-auxv-seam.patch \
+    "$ROOT/lq/taskman/proc/spawn.c" \
+    'tm_loader_auxv_plan'
 apply_patch_if_possible_or_present quser quser-retire-test-msgpass-c.patch \
     "$ROOT/quser/Makefile" \
     'test_msgpass-rs'
