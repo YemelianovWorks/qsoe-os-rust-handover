@@ -157,6 +157,7 @@ inputs and explicit rollback/evidence:
 - `tm_loader_auxv_plan` captures dynamic-loader auxv entries before argpack stack construction.
 - `tm_loader_entry_plan` captures initial PC/SP/GP/TP/a0 register inputs before the C-owned TCB write.
 - `tm_tcb_handoff_plan` captures TCB configure, scheduling, fault-cap, and reply-object inputs before C-owned authority calls.
+- `tm_spawn_publication_plan` captures process registration inputs, process-record metadata, taskman connection inputs, object-relocation ownership, and final resume gating before C-owned publication and liftoff calls.
   normalized `PT_INTERP`, runtime-linker lookup, libc lookup, and
   missing-loader diagnostics before mapping and relocation authority continues
   in C.
@@ -183,7 +184,7 @@ Before moving any subcomponent from deferred to opt-in:
    spawn/loader runtime evidence.
 2. Keep `tm_cap_plan` source evidence running next to argpack and spawn/loader
    runtime evidence while follow-on cap/object relocation seams stay C-only.
-3. Keep `tm_loader_proto` and `tm_loader_admit` source evidence running next, then `tm_loader_map_plan` for mapping/ELF-view state, then `tm_loader_auxv_plan` for auxv emission state, then `tm_loader_entry_plan` for entry-register handoff state, then `tm_tcb_handoff_plan` for TCB handoff state
+3. Keep `tm_loader_proto` and `tm_loader_admit` source evidence running next, then `tm_loader_map_plan` for mapping/ELF-view state, then `tm_loader_auxv_plan` for auxv emission state, then `tm_loader_entry_plan` for entry-register handoff state, then `tm_tcb_handoff_plan` for TCB handoff state, then `tm_spawn_publication_plan` for process publication and resume gating
    to the vspace and teardown plan evidence while broader spawn/loader
    authority stays C-only.
 4. Keep the now-retired/default `qsoe-tm-reloc` provider isolated behind the
@@ -319,3 +320,26 @@ Formal source evidence now covers this seam with
 `make spawn-tcb-handoff-c-evidence`. The next useful split is process
 publication shaping or another bounded C-owned spawn sub-seam; it is not Rust
 ownership of spawn/capability/loader authority.
+
+
+### tm_spawn_publication_plan C seam
+
+The 2026-07-02 publication follow-up splits process publication and final
+resume gating out of the spawn body without moving authority:
+
+- `tm_spawn_publication_plan` records the process-table registration inputs,
+  child untyped/fault/scheduling metadata, process basename, taskman primary
+  connection inputs, object-relocation owner pid, and TCB selected for final
+  resume.
+- `tm_spawn_publication_prepare`,
+  `tm_spawn_publication_bind_taskman_channel`, and
+  `tm_spawn_publication_mark_resume_ready` validate the state sequence before
+  the existing C-owned publication and resume calls consume it.
+- `tm_process_register`, process-record mutation,
+  `tm_connection_register_existing`, `qsoe_cnode_move`,
+  `taskman_free_slot`, and `qsoe_tcb_resume` remain in C.
+
+Formal source evidence now covers this seam with
+`make spawn-publication-c-evidence`. The next useful split is another bounded
+C-owned spawn sub-seam; it is not Rust ownership of spawn/capability/loader
+authority.

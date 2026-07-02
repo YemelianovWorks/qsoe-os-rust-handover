@@ -4923,3 +4923,9 @@ Follow-up:
 - Added a component patch for the `lq` taskman TCB configure/scheduling/fault/reply handoff seam.
 - Added CI evidence for bounded C-owned TCB configure inputs, scheduling defaults, fault-cap mint inputs, and reply-slot retype inputs.
 - Kept `qsoe_tcb_configure`, `tm_sched_context_create`, `qsoe_cnode_mint`, `qsoe_tcb_set_sched_params`, `qsoe_untyped_retype`, and `qsoe_tcb_write_registers` authority in C while routing handoff state through `tm_tcb_handoff_plan`.
+
+## 2026-07-02 - tm_spawn_publication_plan C Seam Evidence
+
+- Added a component patch for the `lq` taskman process publication and resume-gating seam.
+- Added CI evidence for bounded process-register inputs, process-record metadata, taskman connection registration inputs, object-cap relocation ownership, and final resume gating.
+- Kept `tm_process_register`, process-record mutation, `tm_connection_register_existing`, `qsoe_cnode_move`, `taskman_free_slot`, and `qsoe_tcb_resume` authority in C while routing publication state through `tm_spawn_publication_plan`.

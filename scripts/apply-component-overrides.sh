@@ -679,6 +679,9 @@ apply_patch_if_possible_or_present lq lq-taskman-spawn-loader-entry-seam.patch \
 apply_patch_if_possible_or_present lq lq-taskman-spawn-tcb-handoff-seam.patch \
     "$ROOT/lq/taskman/proc/spawn.c" \
     'tm_tcb_handoff_plan'
+apply_patch_if_possible_or_present lq lq-taskman-spawn-publication-seam.patch \
+    "$ROOT/lq/taskman/proc/spawn.c" \
+    'tm_spawn_publication_plan'
 apply_patch_if_possible_or_present quser quser-retire-test-msgpass-c.patch \
     "$ROOT/quser/Makefile" \
     'test_msgpass-rs'
