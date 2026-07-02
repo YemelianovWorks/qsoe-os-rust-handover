@@ -4895,3 +4895,10 @@ Follow-up:
 - Added a component patch for the `lq` taskman loader admission/failure-state seam.
 - Added CI evidence for normalized `PT_INTERP`, runtime-linker lookup, libc lookup, and missing-loader failure states.
 - Kept ELF loading, VSpace mapping, relocation, auxv, TCB, and capability authority in C while routing dynamic-loader admission through `tm_loader_admit`.
+
+
+## 2026-07-02 - tm_loader_map_plan C Seam Evidence
+
+- Added a component patch for the `lq` taskman loader mapping/ELF-view seam.
+- Added CI evidence for libc/rtld load bases, libc/rtld/main ELF view parsing, and load/parse failure states.
+- Kept `load_elf_segments`, `tm_reloc_apply`, auxv, TCB, VSpace, and capability authority in C while routing dynamic-loader mapping state through `tm_loader_map_plan`.
