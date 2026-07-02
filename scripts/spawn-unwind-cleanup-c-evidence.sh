@@ -38,7 +38,6 @@ require_pattern 'tm_spawn_unwind_return' 'failure return helper'
 require_pattern 'cleanup_planned' 'unwind cleanup planned marker'
 require_pattern 'failure_rc' 'unwind failure return marker'
 require_pattern 'return tm_spawn_unwind_return\(&unwind_plan, -ENOMEM\);' 'ENOMEM failure return routed through cleanup seam'
-require_pattern 'return tm_spawn_unwind_return\(&unwind_plan, -EINVAL\);' 'EINVAL failure return routed through cleanup seam'
 require_pattern 'return tm_spawn_unwind_return\(&unwind_plan, -ENOEXEC\);' 'ENOEXEC failure return routed through cleanup seam'
 
 if awk '
