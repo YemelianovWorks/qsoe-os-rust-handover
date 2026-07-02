@@ -661,6 +661,9 @@ apply_patch_if_possible_or_present lq lq-taskman-spawn-vspace-plan-seam.patch \
 apply_patch_if_possible_or_present lq lq-taskman-teardown-plan-seam.patch \
     "$ROOT/lq/taskman/proc/process.c" \
     'tm_teardown_plan_commit'
+apply_patch_if_possible_or_present lq lq-taskman-spawn-loader-proto-seam.patch \
+    "$ROOT/lq/taskman/proc/spawn.c" \
+    'tm_loader_proto'
 apply_patch_if_possible_or_present quser quser-retire-test-msgpass-c.patch \
     "$ROOT/quser/Makefile" \
     'test_msgpass-rs'
