@@ -78,9 +78,9 @@
 +    return 0;
 +}
 +
- static void tm_spawn_state_reset(void)
- {
-     /* Reset per-spawn state.  Frame table is rebuilt as PT_LOAD pages
+ int tm_spawn(const void *elf_blob, unsigned long elf_len,
+              pid_t pid, seL4_CPtr primary_ep,
+              int argc, const char *const *argv,
 @@ -2557,18 +2624,33 @@
      {
          tm_process_t *op = tm_process_lookup(publication.pid);
