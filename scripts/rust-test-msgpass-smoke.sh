@@ -116,8 +116,24 @@ fi
 log_has_marker() {
     local marker=$1
 
-    grep -Fq "$marker" "$log" ||
-        tr -d '\r\n' < "$log" | grep -Fq "$marker"
+    if grep -Fq "$marker" "$log" ||
+        tr -d '\r\n' < "$log" | grep -Fq "$marker"; then
+        return 0
+    fi
+
+    # The spawned helper can print its "alive" banner while the suite is
+    # writing the spawn PASS line, splitting "...test_msgpass" into
+    # "...test_msg[test_msgpass-rs]...pass".  Treat that as the same
+    # milestone when the line prefix and helper identity are both present.
+    if [ "$marker" = "PASS  msgpass: spawn /bin/test_msgpass" ]; then
+        local joined
+        joined=$(tr -d '\r\n' < "$log")
+        printf '%s' "$joined" | grep -Fq "PASS  msgpass: spawn /bin/test_msg" &&
+            printf '%s' "$joined" | grep -Fq "[test_msgpass-rs]" &&
+            return 0
+    fi
+
+    return 1
 }
 
 cleanup() {
