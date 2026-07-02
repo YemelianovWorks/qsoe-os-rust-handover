@@ -1056,7 +1056,7 @@ spawn-loader-c-evidence:
 container-spawn-loader-c-evidence:
 	@scripts/container-toolchain.sh run make spawn-loader-c-evidence
 
-.PHONY: spawn-loader-proto-c-evidence container-spawn-loader-proto-c-evidence container-spawn-loader-admit-c-evidence container-spawn-loader-map-c-evidence container-spawn-loader-auxv-c-evidence container-spawn-loader-entry-c-evidence container-spawn-tcb-handoff-c-evidence spawn-publication-c-evidence container-spawn-publication-c-evidence
+.PHONY: spawn-loader-proto-c-evidence container-spawn-loader-proto-c-evidence container-spawn-loader-admit-c-evidence container-spawn-loader-map-c-evidence container-spawn-loader-auxv-c-evidence container-spawn-loader-entry-c-evidence container-spawn-tcb-handoff-c-evidence spawn-publication-c-evidence container-spawn-publication-c-evidence spawn-objcnode-c-evidence container-spawn-objcnode-c-evidence
 
 spawn-loader-proto-c-evidence:
 	@scripts/spawn-loader-proto-c-evidence.sh
@@ -1099,6 +1099,12 @@ spawn-publication-c-evidence:
 
 container-spawn-publication-c-evidence:
 	@scripts/container-toolchain.sh run make spawn-publication-c-evidence
+
+spawn-objcnode-c-evidence:
+	@scripts/spawn-objcnode-c-evidence.sh
+
+container-spawn-objcnode-c-evidence:
+	@scripts/container-toolchain.sh run make spawn-objcnode-c-evidence
 
 .PHONY: spawn-argpack-c-evidence container-spawn-argpack-c-evidence
 

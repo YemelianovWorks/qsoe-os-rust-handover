@@ -4929,3 +4929,9 @@ Follow-up:
 - Added a component patch for the `lq` taskman process publication and resume-gating seam.
 - Added CI evidence for bounded process-register inputs, process-record metadata, taskman connection registration inputs, object-cap relocation ownership, and final resume gating.
 - Kept `tm_process_register`, process-record mutation, `tm_connection_register_existing`, `qsoe_cnode_move`, `taskman_free_slot`, and `qsoe_tcb_resume` authority in C while routing publication state through `tm_spawn_publication_plan`.
+
+## 2026-07-02 - tm_spawn_objcnode_plan C Seam Evidence
+
+- Added a component patch for the `lq` taskman object-CNode relocation seam.
+- Added CI evidence for bounded frame/PT relocation counts, RELRO-retained cap bounds, and objcnode binding state.
+- Kept `alloc_object`, `qsoe_cnode_move`, `taskman_free_slot`, process-record mutation, and RELRO tracker mutation authority in C while routing relocation bounds through `tm_spawn_objcnode_plan`.

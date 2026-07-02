@@ -158,6 +158,7 @@ inputs and explicit rollback/evidence:
 - `tm_loader_entry_plan` captures initial PC/SP/GP/TP/a0 register inputs before the C-owned TCB write.
 - `tm_tcb_handoff_plan` captures TCB configure, scheduling, fault-cap, and reply-object inputs before C-owned authority calls.
 - `tm_spawn_publication_plan` captures process registration inputs, process-record metadata, taskman connection inputs, object-relocation ownership, and final resume gating before C-owned publication and liftoff calls.
+- `tm_spawn_objcnode_plan` captures object-CNode relocation owner state, frame/PT relocation counts, RELRO retained-cap bounds, and objcnode binding before C-owned cap moves and slot frees.
   normalized `PT_INTERP`, runtime-linker lookup, libc lookup, and
   missing-loader diagnostics before mapping and relocation authority continues
   in C.
@@ -184,7 +185,7 @@ Before moving any subcomponent from deferred to opt-in:
    spawn/loader runtime evidence.
 2. Keep `tm_cap_plan` source evidence running next to argpack and spawn/loader
    runtime evidence while follow-on cap/object relocation seams stay C-only.
-3. Keep `tm_loader_proto` and `tm_loader_admit` source evidence running next, then `tm_loader_map_plan` for mapping/ELF-view state, then `tm_loader_auxv_plan` for auxv emission state, then `tm_loader_entry_plan` for entry-register handoff state, then `tm_tcb_handoff_plan` for TCB handoff state, then `tm_spawn_publication_plan` for process publication and resume gating
+3. Keep `tm_loader_proto` and `tm_loader_admit` source evidence running next, then `tm_loader_map_plan` for mapping/ELF-view state, then `tm_loader_auxv_plan` for auxv emission state, then `tm_loader_entry_plan` for entry-register handoff state, then `tm_tcb_handoff_plan` for TCB handoff state, then `tm_spawn_publication_plan` for process publication and resume gating, then `tm_spawn_objcnode_plan` for object-CNode relocation bounds
    to the vspace and teardown plan evidence while broader spawn/loader
    authority stays C-only.
 4. Keep the now-retired/default `qsoe-tm-reloc` provider isolated behind the
@@ -341,5 +342,23 @@ resume gating out of the spawn body without moving authority:
 
 Formal source evidence now covers this seam with
 `make spawn-publication-c-evidence`. The next useful split is another bounded
+C-owned spawn sub-seam; it is not Rust ownership of spawn/capability/loader
+authority.
+
+### tm_spawn_objcnode_plan C seam
+
+The 2026-07-02 object-CNode follow-up splits relocation bounds and retained-cap
+state out of the spawn body without moving authority:
+
+- `tm_spawn_objcnode_plan` records the process owner, main-thread scheduling
+  cap, frame relocation count, page-table relocation count, RELRO retained-cap
+  count, and RELRO tracker limit before object-CNode relocation begins.
+- `tm_spawn_objcnode_prepare` and `tm_spawn_objcnode_bind` validate the state
+  sequence before the existing C-owned relocation loops consume it.
+- `alloc_object`, `qsoe_cnode_move`, `taskman_free_slot`, process-record
+  mutation, and RELRO tracker mutation remain in C.
+
+Formal source evidence now covers this seam with
+`make spawn-objcnode-c-evidence`. The next useful split remains another bounded
 C-owned spawn sub-seam; it is not Rust ownership of spawn/capability/loader
 authority.
