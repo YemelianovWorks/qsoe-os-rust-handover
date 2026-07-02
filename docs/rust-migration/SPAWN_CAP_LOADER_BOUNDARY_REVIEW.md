@@ -153,6 +153,7 @@ inputs and explicit rollback/evidence:
   `AT_BASE`, `AT_ENTRY`, entry PC, and dyn-link admission after the existing
   C-owned load/reloc sequence.
 - `tm_loader_admit`: explicit dynamic-loader admission and failure state for
+- `tm_loader_map_plan` captures dynamic-loader load bases, ELF views, and load/parse failure states before relocation and auxv handoff.
   normalized `PT_INTERP`, runtime-linker lookup, libc lookup, and
   missing-loader diagnostics before mapping and relocation authority continues
   in C.
@@ -179,7 +180,7 @@ Before moving any subcomponent from deferred to opt-in:
    spawn/loader runtime evidence.
 2. Keep `tm_cap_plan` source evidence running next to argpack and spawn/loader
    runtime evidence while follow-on cap/object relocation seams stay C-only.
-3. Keep `tm_loader_proto` and `tm_loader_admit` source evidence running next
+3. Keep `tm_loader_proto` and `tm_loader_admit` source evidence running next, then `tm_loader_map_plan` for mapping/ELF-view state
    to the vspace and teardown plan evidence while broader spawn/loader
    authority stays C-only.
 4. Keep the now-retired/default `qsoe-tm-reloc` provider isolated behind the
@@ -238,3 +239,23 @@ Formal source evidence now covers this seam with
 `make spawn-loader-admit-c-evidence`. The next useful split remains another
 narrow C-owned spawn-loader failure/admission sub-seam or cap/object relocation
 plan; it is not Rust ownership of spawn/capability/loader authority.
+
+
+### tm_loader_map_plan C seam
+
+The 2026-07-02 loader-mapping follow-up splits dynamic-loader image mapping
+and ELF-view parse state out of the spawn body without moving authority:
+
+- `tm_loader_map_plan` records libc/rtld load bases and the parsed ELF views
+  for libc.so, rtld, and the main image.
+- `tm_loader_map_dynamic` consumes already-admitted loader blobs, performs the
+  existing C-owned `load_elf_segments` calls for libc.so and rtld, captures
+  load/parse failure states, and prepares the views consumed by relocation.
+- `tm_reloc_apply`, `tm_reloc_init_resolver`, auxv emission,
+  `TCB_WriteRegisters`, VSpace mapping, and capability publication remain in C
+  and consume the map plan only after it reaches `TM_LOADER_MAP_READY`.
+
+Formal source evidence now covers this seam with
+`make spawn-loader-map-c-evidence`. The next useful split is auxv emission or
+another bounded C-owned spawn-loader sub-seam; it is not Rust ownership of
+spawn/capability/loader authority.
