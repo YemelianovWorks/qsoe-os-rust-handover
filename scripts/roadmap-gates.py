@@ -18,7 +18,7 @@ from typing import Any
 
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
-DEFAULT_REPO = "dmytro-yemelianov/qsoe-os-rust-handover"
+DEFAULT_REPO = "YemelianovWorks/qsoe-os-rust-handover"
 ROADMAP_LABEL = "roadmap"
 META_RE = re.compile(r"<!--\s*qsoe-roadmap:v1\s*(.*?)\s*-->", re.S)
 VALID_KINDS = {"component", "phase", "backlog", "tooling"}
