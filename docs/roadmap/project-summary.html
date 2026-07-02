@@ -23,6 +23,15 @@
       <section class="summary-hero">
         <p class="eyebrow">Project State</p>
         <h2>Public handover snapshot with a deliberate Rust stop boundary.</h2>
+        <div class="summary-tldr">
+          <strong>TL;DR:</strong>
+          <span>
+            Rust migration is complete for the practical low-risk scope:
+            tools, services, parsers, and task-manager providers. Kernel,
+            spawn, capability, loader, and seL4 authority boundaries remain in
+            C by design.
+          </span>
+        </div>
         <p>
           The repository is a measurable Rust migration handover for QSOE OS,
           not a rewrite. Rust now owns the low-risk leaf logic, parsers, host

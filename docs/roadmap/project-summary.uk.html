@@ -23,6 +23,14 @@
       <section class="summary-hero">
         <p class="eyebrow">Стан проєкту</p>
         <h2>Публічний handover snapshot із навмисно зафіксованою межею Rust-міграції.</h2>
+        <div class="summary-tldr">
+          <strong>Коротко:</strong>
+          <span>
+            Rust-міграцію завершено для практичної низькоризикової частини:
+            tools, services, parsers та task-manager providers. Kernel, spawn,
+            capability, loader і seL4 authority межі навмисно залишаються в C.
+          </span>
+        </div>
         <p>
           Репозиторій є вимірюваним handover для Rust-міграції QSOE OS, а не
           переписуванням системи заради самого Rust. Rust тепер відповідає за
