@@ -2,19 +2,13 @@ diff --git a/taskman/proc/spawn.c b/taskman/proc/spawn.c
 index 82c6db8..628e86d 100644
 --- a/taskman/proc/spawn.c
 +++ b/taskman/proc/spawn.c
-@@ -1529,6 +1529,8 @@ typedef struct tm_spawn_unwind_plan {
+@@ -1529,6 +1529,153 @@ typedef struct tm_spawn_unwind_plan {
      int relro_count;
      int stack_pages;
      int committed;
 +    int failure_rc;
 +    int cleanup_planned;
  } tm_spawn_unwind_plan_t;
- 
- 
-@@ -2056,6 +2058,151 @@ static int tm_spawn_unwind_mark_committed(tm_spawn_unwind_plan_t *unwind)
-     return 0;
- }
- 
 +typedef enum tm_spawn_cleanup_status {
 +    TM_SPAWN_CLEANUP_EMPTY,
 +    TM_SPAWN_CLEANUP_NOT_REQUIRED,
@@ -160,9 +154,8 @@ index 82c6db8..628e86d 100644
 +    return failure_rc;
 +}
 +
- static void tm_spawn_state_reset(void)
- {
-     /* Reset per-spawn state.  Frame table is rebuilt as PT_LOAD pages
+ 
+ 
 @@ -2146,7 +2293,7 @@ int tm_spawn(const void *elf_blob, unsigned long elf_len,
                                      opt_arg, sizeof opt_arg) == 0) {
              if (interp_path[0] != '/') {
