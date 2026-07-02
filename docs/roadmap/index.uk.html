@@ -1,80 +1,80 @@
 <!doctype html>
-<html lang="en">
+<html lang="uk">
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>QSOE Rust Migration Roadmap</title>
+    <title>Roadmap Rust-міграції QSOE</title>
     <link rel="stylesheet" href="styles.css">
   </head>
   <body>
     <header class="app-header">
       <div>
         <p class="eyebrow">QSOE OS</p>
-        <h1>Rust Migration Roadmap</h1>
+        <h1>Roadmap Rust-міграції</h1>
       </div>
-      <nav class="doc-links" aria-label="Roadmap navigation">
-        <a href="https://github.com/dmytro-yemelianov/qsoe-os-rust-handover/blob/main/docs/rust-migration/STATUS.md">Status</a>
-        <a href="https://github.com/dmytro-yemelianov/qsoe-os-rust-handover/blob/main/docs/rust-migration/PLAN.md">Plan</a>
+      <nav class="doc-links" aria-label="Навігація roadmap">
+        <a href="./">English version</a>
+        <a href="https://github.com/dmytro-yemelianov/qsoe-os-rust-handover/blob/main/docs/rust-migration/STATUS.md">Статус</a>
+        <a href="https://github.com/dmytro-yemelianov/qsoe-os-rust-handover/blob/main/docs/rust-migration/PLAN.md">План</a>
         <a href="https://github.com/dmytro-yemelianov/qsoe-os-rust-handover/blob/main/docs/rust-migration/TASK_MANAGER.md">Task Manager</a>
         <a href="https://github.com/dmytro-yemelianov/qsoe-os-rust-handover/blob/main/docs/rust-migration/RETIREMENT.md">Retirement</a>
-        <a href="project-summary.html">Project summary</a>
-        <a href="index.uk.html" lang="uk">Українська версія</a>
+        <a href="project-summary.uk.html">Підсумок проєкту</a>
       </nav>
     </header>
 
     <main>
       <section class="summary-band" aria-labelledby="summary-title">
         <div class="summary-copy">
-          <h2 id="summary-title">Current Migration State</h2>
-          <p id="purpose">Loading roadmap data...</p>
+          <h2 id="summary-title">Поточний стан міграції</h2>
+          <p id="purpose">Завантаження roadmap-даних...</p>
         </div>
-        <div class="metric-grid" id="metrics" aria-label="Roadmap metrics"></div>
+        <div class="metric-grid" id="metrics" aria-label="Метрики roadmap"></div>
       </section>
 
       <section class="why-section" aria-labelledby="why-title">
         <div class="why-copy">
-          <p class="eyebrow">Project Rationale</p>
-          <h2 id="why-title">WHY?</h2>
+          <p class="eyebrow">Навіщо це потрібно</p>
+          <h2 id="why-title">ЧОМУ?</h2>
           <p id="why-summary"></p>
           <p id="why-rule"></p>
         </div>
-        <div class="why-grid" id="why-points" aria-label="Why Rust migration exists"></div>
+        <div class="why-grid" id="why-points" aria-label="Причини Rust-міграції"></div>
       </section>
 
       <section class="progress-section" aria-labelledby="progress-title">
         <div class="section-heading">
           <div>
-            <h2 id="progress-title">Progress Dashboard</h2>
+            <h2 id="progress-title">Дашборд прогресу</h2>
             <p id="progress-note"></p>
           </div>
         </div>
-        <div class="gauge-grid" id="progress-gauges" aria-label="Progress gauges"></div>
-        <div class="chart-grid" aria-label="Roadmap charts">
+        <div class="gauge-grid" id="progress-gauges" aria-label="Індикатори прогресу"></div>
+        <div class="chart-grid" aria-label="Графіки roadmap">
           <article class="chart-card">
             <div class="chart-heading">
-              <h3>Component State</h3>
-              <p>Tracked migration targets</p>
+              <h3>Стан компонентів</h3>
+              <p>Відстежувані цілі міграції</p>
             </div>
             <div class="bar-chart" id="state-chart"></div>
           </article>
           <article class="chart-card">
             <div class="chart-heading">
-              <h3>Risk / Priority Mix</h3>
-              <p>Components, candidates, and tooling gates</p>
+              <h3>Ризики / пріоритети</h3>
+              <p>Компоненти, кандидати та tooling gates</p>
             </div>
             <div class="bar-chart" id="risk-chart"></div>
           </article>
           <article class="chart-card">
             <div class="chart-heading">
-              <h3>Phase Progress</h3>
-              <p>Roadmap status distribution</p>
+              <h3>Прогрес фаз</h3>
+              <p>Розподіл статусів roadmap</p>
             </div>
             <div class="bar-chart" id="phase-chart"></div>
           </article>
           <article class="chart-card">
             <div class="chart-heading">
-              <h3>Backlog Posture</h3>
-              <p>Remaining migration candidates</p>
+              <h3>Стан backlog</h3>
+              <p>Залишкові кандидати міграції</p>
             </div>
             <div class="bar-chart" id="backlog-chart"></div>
           </article>
@@ -84,51 +84,51 @@
       <section class="architecture-section" aria-labelledby="architecture-title">
         <div class="section-heading">
           <div>
-            <h2 id="architecture-title">Microkernel / Module Map</h2>
-            <p>Same issue-backed component set, shown as conservative and Rust-migrated system postures.</p>
+            <h2 id="architecture-title">Мапа microkernel / модулів</h2>
+            <p>Той самий issue-backed набір компонентів, показаний як консервативна та Rust-мігрована конфігурації системи.</p>
           </div>
         </div>
         <div class="architecture-grid">
           <article class="architecture-card">
             <div class="chart-heading">
-              <h3>Conservative</h3>
-              <p>C defaults, rollback paths, and deferred kernel-adjacent boundaries</p>
+              <h3>Консервативна</h3>
+              <p>C defaults, rollback paths і відкладені kernel-adjacent межі</p>
             </div>
             <div class="architecture-map" id="architecture-conservative"></div>
           </article>
           <article class="architecture-card">
             <div class="chart-heading">
-              <h3>Rust-Migrated</h3>
-              <p>Rust defaults, opt-in providers, and retired C implementations</p>
+              <h3>Rust-мігрована</h3>
+              <p>Rust defaults, opt-in providers і retired C implementations</p>
             </div>
             <div class="architecture-map" id="architecture-rust"></div>
           </article>
         </div>
-        <div class="architecture-legend" id="architecture-legend" aria-label="Architecture legend"></div>
+        <div class="architecture-legend" id="architecture-legend" aria-label="Легенда архітектури"></div>
       </section>
 
-      <section class="controls" aria-label="Roadmap filters">
+      <section class="controls" aria-label="Фільтри roadmap">
         <div class="control-field">
-          <label for="search">Search</label>
-          <input id="search" type="search" placeholder="component, command, file">
+          <label for="search">Пошук</label>
+          <input id="search" type="search" placeholder="компонент, команда, файл">
         </div>
         <div class="control-field">
-          <label for="state-filter">State</label>
+          <label for="state-filter">Стан</label>
           <select id="state-filter"></select>
         </div>
         <div class="control-field">
-          <label for="area-filter">Area</label>
+          <label for="area-filter">Область</label>
           <select id="area-filter"></select>
         </div>
         <div class="control-field">
-          <label for="risk-filter">Risk</label>
+          <label for="risk-filter">Ризик</label>
           <select id="risk-filter"></select>
         </div>
       </section>
 
       <section aria-labelledby="components-title">
         <div class="section-heading">
-          <h2 id="components-title">Tracked Components</h2>
+          <h2 id="components-title">Відстежувані компоненти</h2>
           <p id="component-count"></p>
         </div>
         <div class="component-grid" id="components"></div>
@@ -137,13 +137,13 @@
       <section class="split-layout">
         <div>
           <div class="section-heading">
-            <h2>Phase Roadmap</h2>
+            <h2>Roadmap фаз</h2>
           </div>
           <div class="phase-list" id="phases"></div>
         </div>
         <div>
           <div class="section-heading">
-            <h2>Policy Gates</h2>
+            <h2>Policy gates</h2>
           </div>
           <div class="policy-list" id="policies"></div>
         </div>
@@ -151,17 +151,17 @@
 
       <section aria-labelledby="tooling-title">
         <div class="section-heading">
-          <h2 id="tooling-title">Tooling Gates</h2>
+          <h2 id="tooling-title">Tooling gates</h2>
           <p id="tooling-count"></p>
         </div>
         <div class="backlog-table-wrap">
           <table>
             <thead>
               <tr>
-                <th>Name</th>
-                <th>Area</th>
-                <th>Priority</th>
-                <th>Status</th>
+                <th>Назва</th>
+                <th>Область</th>
+                <th>Пріоритет</th>
+                <th>Статус</th>
                 <th>Tools</th>
                 <th>Acceptance</th>
                 <th>Issue</th>
@@ -174,18 +174,18 @@
 
       <section aria-labelledby="backlog-title">
         <div class="section-heading">
-          <h2 id="backlog-title">Remaining Candidate Inventory</h2>
+          <h2 id="backlog-title">Залишковий список кандидатів</h2>
           <p id="backlog-count"></p>
         </div>
         <div class="backlog-table-wrap">
           <table>
             <thead>
               <tr>
-                <th>Name</th>
-                <th>Area</th>
-                <th>Risk</th>
+                <th>Назва</th>
+                <th>Область</th>
+                <th>Ризик</th>
                 <th>Posture</th>
-                <th>Files</th>
+                <th>Файли</th>
                 <th>Issue</th>
               </tr>
             </thead>
