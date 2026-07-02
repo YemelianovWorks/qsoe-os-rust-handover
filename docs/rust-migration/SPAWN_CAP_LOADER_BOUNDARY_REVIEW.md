@@ -154,6 +154,7 @@ inputs and explicit rollback/evidence:
   C-owned load/reloc sequence.
 - `tm_loader_admit`: explicit dynamic-loader admission and failure state for
 - `tm_loader_map_plan` captures dynamic-loader load bases, ELF views, and load/parse failure states before relocation and auxv handoff.
+- `tm_loader_auxv_plan` captures dynamic-loader auxv entries before argpack stack construction.
   normalized `PT_INTERP`, runtime-linker lookup, libc lookup, and
   missing-loader diagnostics before mapping and relocation authority continues
   in C.
@@ -180,7 +181,7 @@ Before moving any subcomponent from deferred to opt-in:
    spawn/loader runtime evidence.
 2. Keep `tm_cap_plan` source evidence running next to argpack and spawn/loader
    runtime evidence while follow-on cap/object relocation seams stay C-only.
-3. Keep `tm_loader_proto` and `tm_loader_admit` source evidence running next, then `tm_loader_map_plan` for mapping/ELF-view state
+3. Keep `tm_loader_proto` and `tm_loader_admit` source evidence running next, then `tm_loader_map_plan` for mapping/ELF-view state, then `tm_loader_auxv_plan` for auxv emission state
    to the vspace and teardown plan evidence while broader spawn/loader
    authority stays C-only.
 4. Keep the now-retired/default `qsoe-tm-reloc` provider isolated behind the
@@ -259,3 +260,22 @@ Formal source evidence now covers this seam with
 `make spawn-loader-map-c-evidence`. The next useful split is auxv emission or
 another bounded C-owned spawn-loader sub-seam; it is not Rust ownership of
 spawn/capability/loader authority.
+
+
+### tm_loader_auxv_plan C seam
+
+The 2026-07-02 auxv follow-up splits dynamic-loader auxv emission state out of
+the spawn body without moving authority:
+
+- `tm_loader_auxv_plan` owns the bounded auxv pair array and count consumed by
+  `tm_spawn_argpack_prepare`.
+- `tm_loader_auxv_admit_dynamic` consumes `tm_loader_proto` and
+  `tm_loader_map_plan`, checks dynamic-link/map readiness, and records
+  AT_PHDR, AT_PHENT, AT_PHNUM, AT_BASE, AT_ENTRY, AT_PAGESZ, and AT_KPRELOAD.
+- Stack image construction, child stack writes, `TCB_WriteRegisters`, VSpace
+  mapping, relocation, and capability publication remain in C.
+
+Formal source evidence now covers this seam with
+`make spawn-loader-auxv-c-evidence`. The next useful split is entry-register
+handoff shaping or another bounded C-owned spawn-loader sub-seam; it is not
+Rust ownership of spawn/capability/loader authority.

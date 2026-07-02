@@ -4902,3 +4902,10 @@ Follow-up:
 - Added a component patch for the `lq` taskman loader mapping/ELF-view seam.
 - Added CI evidence for libc/rtld load bases, libc/rtld/main ELF view parsing, and load/parse failure states.
 - Kept `load_elf_segments`, `tm_reloc_apply`, auxv, TCB, VSpace, and capability authority in C while routing dynamic-loader mapping state through `tm_loader_map_plan`.
+
+
+## 2026-07-02 - tm_loader_auxv_plan C Seam Evidence
+
+- Added a component patch for the `lq` taskman loader auxv seam.
+- Added CI evidence for bounded dynamic-loader auxv entries sourced from `tm_loader_proto` and `tm_loader_map_plan`.
+- Kept `tm_spawn_argpack_prepare`, stack writes, `qsoe_tcb_write_registers`, VSpace, relocation, and capability authority in C while routing auxv state through `tm_loader_auxv_plan`.

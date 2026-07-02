@@ -8,7 +8,7 @@ stack byte accounting validated before child stack writes.
 `tm_cap_plan` now adds a second C-owned seam for child CSpace publication while
 seL4 authority operations remain committed in C.
 `tm_vspace_plan`, `tm_teardown_plan`, `tm_loader_proto`, and
-`tm_loader_admit` and `tm_loader_map_plan` now split VSpace mapping, process cleanup, dynamic-loader
+`tm_loader_admit` and `tm_loader_map_plan` and `tm_loader_auxv_plan` now split VSpace mapping, process cleanup, dynamic-loader
 protocol state, and loader admission/failure state into bounded C-owned seams
 with dedicated source evidence.
 
@@ -72,3 +72,9 @@ mapping and relocation continue in C.
 now records libc/rtld load bases, libc/rtld/main ELF views, and loader
 load/parse failure states as bounded C-owned state before relocation, auxv, and
 TCB authority continue in C.
+
+
+2026-07-02: Added `tm_loader_auxv_plan` C seam evidence. Dynamic-loader auxv
+emission state now records bounded AT_PHDR/AT_PHENT/AT_PHNUM/AT_BASE/AT_ENTRY/
+AT_PAGESZ/AT_KPRELOAD entries from loader protocol and map plans before
+argpack stack construction, while stack writes and TCB authority continue in C.
