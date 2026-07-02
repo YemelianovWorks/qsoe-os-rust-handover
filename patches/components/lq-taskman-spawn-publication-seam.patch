@@ -1,8 +1,96 @@
-diff --git a/taskman/proc/spawn.c b/taskman/proc/spawn.c
-index 71ef255..acd35ce 100644
 --- a/taskman/proc/spawn.c
 +++ b/taskman/proc/spawn.c
-@@ -1453,6 +1453,36 @@ typedef struct tm_tcb_handoff_plan {
+@@ -1124,41 +1124,53 @@
+     while (done < len) {
+         unsigned long sva = src_va + done;
+         unsigned long dva = dst_va + done;
+-        seL4_CPtr fs = tm_process_find_frame(src_proc, sva);
+-        seL4_CPtr fd = tm_process_find_frame(dst_proc, dva);
+-        if (!fs || !fd) {
++        seL4_CPtr src_cnode, src_slot;
++        seL4_Uint8 src_depth;
++        int src_is_mega;
++        seL4_CPtr dst_cnode, dst_slot;
++        seL4_Uint8 dst_depth;
++        int dst_is_mega;
++
++        if (tm_process_resolve_frame(src_proc, sva, &src_cnode, &src_slot, &src_depth, &src_is_mega) != 0 ||
++            tm_process_resolve_frame(dst_proc, dva, &dst_cnode, &dst_slot, &dst_depth, &dst_is_mega) != 0) {
+             tm_err("tm_bulk_copy: unmapped VA (src pid %ld va=%08lx -> %lu, "
+                    "dst pid %ld va=%08lx -> %lu)",
+-                   (long)src_proc->pid, sva, (unsigned long)fs,
+-                   (long)dst_proc->pid, dva, (unsigned long)fd);
++                   (long)src_proc->pid, sva, 0UL,
++                   (long)dst_proc->pid, dva, 0UL);
+             return -EFAULT;
+         }
+-        /* Chunk = bytes left in whichever megaframe (src or dst) ends
+-         * first -- the two buffers may carry independent in-page offsets. */
+-        unsigned long so   = sva & (QSOE_MEGA_PAGE - 1);
+-        unsigned long dof  = dva & (QSOE_MEGA_PAGE - 1);
++
++        unsigned long src_page_size = src_is_mega ? QSOE_MEGA_PAGE : QSOE_PAGE_4K;
++        unsigned long dst_page_size = dst_is_mega ? QSOE_MEGA_PAGE : QSOE_PAGE_4K;
++
++        unsigned long so  = sva & (src_page_size - 1);
++        unsigned long dof = dva & (dst_page_size - 1);
++
+         unsigned long chunk = len - done;
+-        if (chunk > QSOE_MEGA_PAGE - so)  chunk = QSOE_MEGA_PAGE - so;
+-        if (chunk > QSOE_MEGA_PAGE - dof) chunk = QSOE_MEGA_PAGE - dof;
++        if (chunk > src_page_size - so)  chunk = src_page_size - so;
++        if (chunk > dst_page_size - dof) chunk = dst_page_size - dof;
+ 
+         seL4_Word err = qsoe_cnode_copy(s_cnode_root, s_bulk_slot_src,
+-                                         TM_BULK_CNODE_DEPTH, s_cnode_root, fs,
+-                                         TM_BULK_CNODE_DEPTH, QSOE_RIGHTS_ALL);
++                                         TM_BULK_CNODE_DEPTH, src_cnode, src_slot,
++                                         src_depth, QSOE_RIGHTS_ALL);
+         if (err) return -ENOMEM;
+         err = qsoe_cnode_copy(s_cnode_root, s_bulk_slot_dst,
+-                              TM_BULK_CNODE_DEPTH, s_cnode_root, fd,
+-                              TM_BULK_CNODE_DEPTH, QSOE_RIGHTS_ALL);
++                              TM_BULK_CNODE_DEPTH, dst_cnode, dst_slot,
++                              dst_depth, QSOE_RIGHTS_ALL);
+         if (err) {
+             qsoe_cnode_delete(s_cnode_root, s_bulk_slot_src, TM_BULK_CNODE_DEPTH);
+             return -ENOMEM;
+         }
+ 
++        unsigned long src_scratch_va = src_is_mega ? TM_SCRATCH_MEGA_VADDR : TM_SCRATCH_VADDR;
++        unsigned long dst_scratch_va = dst_is_mega ? TM_SCRATCH_MEGA_VADDR_B : (TM_SCRATCH_VADDR + 0x1000UL);
++
+         err = qsoe_riscv_page_map(s_bulk_slot_src, seL4_CapInitThreadVSpace,
+-                                  TM_SCRATCH_MEGA_VADDR, QSOE_RIGHTS_ALL,
++                                  src_scratch_va, QSOE_RIGHTS_ALL,
+                                   QSOE_VM_ATTR_DEFAULT);
+         if (!err)
+             err = qsoe_riscv_page_map(s_bulk_slot_dst, seL4_CapInitThreadVSpace,
+-                                      TM_SCRATCH_MEGA_VADDR_B, QSOE_RIGHTS_ALL,
++                                      dst_scratch_va, QSOE_RIGHTS_ALL,
+                                       QSOE_VM_ATTR_DEFAULT);
+         if (err) {
+             qsoe_riscv_page_unmap(s_bulk_slot_src);
+@@ -1167,8 +1179,8 @@
+             return -ENOMEM;
+         }
+ 
+-        qmemcpy((void *)(TM_SCRATCH_MEGA_VADDR_B + dof),
+-                (const void *)(TM_SCRATCH_MEGA_VADDR + so), chunk);
++        qmemcpy((void *)(dst_scratch_va + dof),
++                (const void *)(src_scratch_va + so), chunk);
+         __asm__ volatile ("fence rw, rw" ::: "memory");
+ 
+         qsoe_riscv_page_unmap(s_bulk_slot_src);
+@@ -1334,7 +1346,6 @@
+     return 0;
+ }
+ 
+-
+ typedef struct tm_loader_proto {
+     int dyn_link;
+     unsigned long entry_pc;
+@@ -1442,10 +1453,49 @@
      seL4_CPtr reply_slot;
  } tm_tcb_handoff_plan_t;
  
@@ -35,14 +123,40 @@ index 71ef255..acd35ce 100644
 +    seL4_Word taskman_flags;
 +    int primary_idx;
 +} tm_spawn_publication_plan_t;
+ 
+ 
+ 
+ 
++typedef struct tm_spawn_plan {
++    const void *elf_blob;
++    unsigned long elf_len;
++    const char *elf_name;
++    const struct elf64_hdr *eh;
++    const struct elf64_phdr *ph;
++    const struct elf64_phdr *interp_ph;
++    tm_loader_proto_t loader_proto;
++} tm_spawn_plan_t;
 +
- 
- 
- 
-@@ -1746,6 +1776,83 @@ static int tm_tcb_handoff_bind_sched_fault(tm_tcb_handoff_plan_t *handoff,
+ static int tm_loader_proto_admit_dynamic(tm_loader_proto_t *proto,
+                                          const struct elf64_hdr *eh,
+                                          const struct elf64_phdr *ph,
+@@ -1510,7 +1560,6 @@
      return 0;
  }
  
+-
+ static int tm_loader_map_dynamic(tm_loader_map_plan_t *map_plan,
+                                  seL4_CPtr vspace,
+                                  const tm_loader_admit_t *admit,
+@@ -1727,17 +1776,141 @@
+     return 0;
+ }
+ 
+-int tm_spawn(const void *elf_blob, unsigned long elf_len,
+-             pid_t pid, seL4_CPtr primary_ep,
+-             int argc, const char *const *argv,
+-             int envc, const char *const *envp,
+-             const char *elf_name)
 +static int tm_spawn_publication_prepare(tm_spawn_publication_plan_t *publication,
 +                                        pid_t pid,
 +                                        seL4_CPtr cnode,
@@ -120,10 +234,190 @@ index 71ef255..acd35ce 100644
 +    return 0;
 +}
 +
- static void tm_spawn_state_reset(void)
++static void tm_spawn_state_reset(void)
  {
      /* Reset per-spawn state.  Frame table is rebuilt as PT_LOAD pages
-@@ -2363,31 +2470,41 @@ int tm_spawn(const void *elf_blob, unsigned long elf_len,
+      * are mapped; the reloc walker consults it to find write targets. */
+     s_frame_count = 0;
+     s_pt_count    = 0;
+     s_relro_count = 0;
++}
++
++static int tm_spawn_plan_prepare(tm_spawn_plan_t *plan,
++                                 const void *elf_blob,
++                                 unsigned long elf_len,
++                                 const char *elf_name)
++{
++    (void)elf_len;
++    qmemset(plan, 0, sizeof *plan);
++    plan->elf_blob = elf_blob;
++    plan->elf_len = elf_len;
++    plan->elf_name = elf_name;
++
++    const struct elf64_hdr *eh = elf_blob;
++
++    /* Sanity-check the ELF header. */
++    if (eh->e_ident[0] != 0x7f || eh->e_ident[1] != 'E' ||
++        eh->e_ident[2] != 'L'  || eh->e_ident[3] != 'F') {
++        tm_err("spawn: not an ELF");
++        return -EINVAL;
++    }
++    if (eh->e_ident[4] != 2 /* ELFCLASS64 */) {
++        tm_err("spawn: not ELF64");
++        return -EINVAL;
++    }
++
++    plan->eh = eh;
++    plan->ph = (const struct elf64_phdr *)
++               ((const u8 *)elf_blob + eh->e_phoff);
++    for (u16 i = 0; i < eh->e_phnum; ++i) {
++        if (plan->ph[i].p_type == PT_INTERP) {
++            plan->interp_ph = &plan->ph[i];
++            break;
++        }
++    }
++
++    plan->loader_proto.entry_pc = eh->e_entry;
++
++    tm_dbg("spawn: %s e_type=%u e_phnum=%u interp=%s", elf_name,
++            eh->e_type, eh->e_phnum, plan->interp_ph ? "yes" : "no");
++
++    return 0;
++}
++
++int tm_spawn(const void *elf_blob, unsigned long elf_len,
++             pid_t pid, seL4_CPtr primary_ep,
++             int argc, const char *const *argv,
++             int envc, const char *const *envp,
++             const char *elf_name)
++{
++    tm_spawn_state_reset();
+ 
+     /* The L1 PT covering [0x40000000, 0x80000000).  In dyn-linked
+      * spawns we install it below as `dl_l1` (so libc.so + rtld + the
+@@ -1817,19 +1990,21 @@
+         }
+     }
+ 
+-    (void)elf_len;
+-    const struct elf64_hdr *eh = elf_blob;
++    tm_spawn_plan_t plan;
++    int plan_rc = tm_spawn_plan_prepare(&plan, elf_blob, elf_len, elf_name);
++    if (plan_rc != 0) return plan_rc;
++
++    const struct elf64_hdr *eh = plan.eh;
++    const struct elf64_phdr *ph = plan.ph;
++    const struct elf64_phdr *interp_ph = plan.interp_ph;
++    tm_loader_proto_t loader_proto = plan.loader_proto;
++    tm_loader_auxv_plan_t loader_auxv;
++    int auxv_init_rc = tm_loader_auxv_init_static(&loader_auxv);
++    if (auxv_init_rc != 0)
++        return auxv_init_rc;
+ 
+-    /* Sanity-check the ELF header. */
+-    if (eh->e_ident[0] != 0x7f || eh->e_ident[1] != 'E' ||
+-        eh->e_ident[2] != 'L'  || eh->e_ident[3] != 'F') {
+-        tm_err("spawn: not an ELF");
+-        return -EINVAL;
+-    }
+-    if (eh->e_ident[4] != 2 /* ELFCLASS64 */) {
+-        tm_err("spawn: not ELF64");
+-        return -EINVAL;
+-    }
++    /* BUILD phase: allocate child objects, map image/address-space state,
++     * and prepare the initial user stack without publishing process state. */
+ 
+     /* 1. Allocate the child's kernel objects.
+      *
+@@ -1873,8 +2048,6 @@
+      *    For ET_EXEC like our current binaries, p_vaddr is the final
+      *    address; for ET_DYN PIE we'd pass a non-zero load_offset.
+      *    We only spawn ET_EXEC main images, so 0 is correct. */
+-    const struct elf64_phdr *ph = (const struct elf64_phdr *)
+-                                  ((const u8 *)elf_blob + eh->e_phoff);
+     int load_rc = load_elf_segments(vspace, elf_blob, /*load_offset=*/0);
+     if (load_rc != 0) return load_rc;
+ 
+@@ -1898,23 +2071,6 @@
+      *     resolves to it without a duplicate filesystem load), then
+      *     applies relocations to qsh and libc.so, then jumps to qsh's
+      *     entry (AT_ENTRY) with the original sp.                    */
+-    const struct elf64_phdr *interp_ph = 0;
+-    for (u16 i = 0; i < eh->e_phnum; ++i) {
+-        if (ph[i].p_type == PT_INTERP) { interp_ph = &ph[i]; break; }
+-    }
+-    tm_dbg("spawn: %s e_type=%u e_phnum=%u interp=%s", elf_name,
+-            eh->e_type, eh->e_phnum, interp_ph ? "yes" : "no");
+-
+-    tm_loader_proto_t loader_proto;
+-    loader_proto.dyn_link = 0;
+-    loader_proto.entry_pc = eh->e_entry;
+-    loader_proto.main_phdr_va = 0;
+-    loader_proto.rtld_load_base = 0;
+-    tm_loader_auxv_plan_t loader_auxv;
+-    int auxv_init_rc = tm_loader_auxv_init_static(&loader_auxv);
+-    if (auxv_init_rc != 0)
+-        return auxv_init_rc;
+-
+     if (interp_ph) {
+         tm_loader_admit_t loader_admit;
+         int admit_rc = tm_loader_admit_dynamic(&loader_admit, elf_blob,
+@@ -1953,6 +2109,8 @@
+         if (err) return err;
+         workers_l1_cap = dl_l1;
+ 
++        /* PT_LOAD-walk libc.so at the fixed VA, then rtld at its base.
++         * Parse all three ELF views for the relocation pass. */
+         tm_loader_map_plan_t loader_map;
+         int map_rc = tm_loader_map_dynamic(&loader_map, vspace,
+                                            &loader_admit, elf_blob, elf_len);
+@@ -1984,7 +2142,8 @@
+         extern void tm_reloc_skip_warn(void *user, const char *name);
+ 
+         unsigned long ap = 0, tot = 0, sk = 0;
+-        if (tm_reloc_apply(&loader_map.libc_view, loader_map.libc_load_base, /*ext=*/0,
++        if (tm_reloc_apply(&loader_map.libc_view,
++                            loader_map.libc_load_base, /*ext=*/0,
+                             reloc_write_cb, tm_reloc_skip_warn,
+                             (void *)"libc.so",
+                             &ap, &tot, &sk) != 0) {
+@@ -1994,13 +2153,15 @@
+         tm_dbg("spawn: libc.so relocs %lu/%lu (%lu skipped)", ap, tot, sk);
+ 
+         tm_reloc_resolver_t libc_resolver;
+-        if (tm_reloc_init_resolver(&loader_map.libc_view, loader_map.libc_load_base,
++        if (tm_reloc_init_resolver(&loader_map.libc_view,
++                                    loader_map.libc_load_base,
+                                     &libc_resolver) != 0) {
+             tm_err("spawn: libc.so resolver init failed");
+             return -ENOEXEC;
+         }
+ 
+-        if (tm_reloc_apply(&loader_map.rtld_view, loader_map.rtld_load_base, &libc_resolver,
++        if (tm_reloc_apply(&loader_map.rtld_view,
++                            loader_map.rtld_load_base, &libc_resolver,
+                             reloc_write_cb, tm_reloc_skip_warn,
+                             (void *)"rtld",
+                             &ap, &tot, &sk) != 0) {
+@@ -2042,6 +2203,7 @@
+          * have done the new image's relocs and rtld needs to step
+          * back into the picture. */
+         (void)rtld_eh;
++
+         const unsigned char *rb = (const unsigned char *)loader_admit.rtld_blob;
+         tm_dbg("spawn: skip rtld magic=%02x%02x%02x%02x rtld_entry=%08lx pc=%08lx phdr_va=%08lx",
+                 rb[0], rb[1], rb[2], rb[3],
+@@ -2170,6 +2332,9 @@
+     err = tm_vspace_plan_commit(&vspace_plan);
+     if (err) return err;
+ 
++    /* COMMIT phase: publish caps/process records and resume only after
++     * the address space, stack, and loader state have been built. */
++
+     /* 5. Populate the child's CSpace from a prepared C-owned cap plan.
+      *    Slot 1 = Send cap to taskman's primary endpoint, badged with
+      *    the child's pid. The child's CNode is freshly retyped -- depth
+@@ -2305,31 +2470,41 @@
      err = qsoe_tcb_write_registers(tcb, 0, &ctx);
      if (err) { tm_err("spawn: TCB_WriteRegisters failed"); return -ENOMEM; }
  
@@ -175,7 +469,7 @@ index 71ef255..acd35ce 100644
              ++ni;
          }
          prec->name[ni] = '\0';
-@@ -2398,7 +2515,8 @@ int tm_spawn(const void *elf_blob, unsigned long elf_len,
+@@ -2340,7 +2515,8 @@
      }
      /* Hand the dyn-link L1 PT to the worker-region allocator (same
       * L2[1] slot covers libc.so/rtld AND the worker region at 0x40000000). */
@@ -185,7 +479,7 @@ index 71ef255..acd35ce 100644
  
      /* 8b. Register the connection record for the SYSMGR_COID cap we
       *     minted in step 5. The badge we used was `pid` itself, so the
-@@ -2409,16 +2527,21 @@ int tm_spawn(const void *elf_blob, unsigned long elf_len,
+@@ -2351,16 +2527,21 @@
       * tm_channel_index matches owner_chid as stored, so we use the
       * raw index here -- NOT the encoded TASKMAN_CHID = (gen<<16)|idx
       * the user-facing ABI exposes (see <sys/qsoe.h>).               */
@@ -214,7 +508,7 @@ index 71ef255..acd35ce 100644
      if (cnreg) {
          tm_err("spawn: tm_connection_register_existing failed");
          return cnreg;
-@@ -2432,9 +2555,9 @@ int tm_spawn(const void *elf_blob, unsigned long elf_len,
+@@ -2374,9 +2555,9 @@
       * lives in the frame cap, so it survives the move; safe now that the
       * loads and the relocation pass have finished touching the frames. */
      {
@@ -226,7 +520,22 @@ index 71ef255..acd35ce 100644
              seL4_CPtr objc = alloc_object(seL4_CapTableObject, TM_OBJCNODE_RADIX);
              if (!objc) { tm_err("spawn: objcnode alloc failed"); return -ENOMEM; }
              op->objcnode      = objc;
-@@ -2491,8 +2614,12 @@ int tm_spawn(const void *elf_blob, unsigned long elf_len,
+@@ -2407,6 +2588,7 @@
+                            (unsigned long)merr);
+                     return -ENOMEM;
+                 }
++                op->objcnode_va[op->objcnode_next] = s_frames[i].va_page;
+                 op->objcnode_next++;
+                 taskman_free_slot(src);
+             }
+@@ -2425,14 +2607,19 @@
+                            (unsigned long)merr);
+                     return -ENOMEM;
+                 }
++                op->objcnode_va[op->objcnode_next] = 0;
+                 op->objcnode_next++;
+                 taskman_free_slot(src);
+             }
          }
      }
  
