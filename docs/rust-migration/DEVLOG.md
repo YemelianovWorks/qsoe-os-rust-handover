@@ -4941,3 +4941,9 @@ Follow-up:
 - Added a component patch for the `lq` taskman spawn failure-unwind inventory seam.
 - Added CI evidence for bounded resource inventory tracking across core objects, VSpace roots, runtime frames, publication caps, frame/PT/RELRO counts, and committed-state gating.
 - Kept cleanup authority and failure returns in C while routing the resource inventory through `tm_spawn_unwind_plan` for the follow-up cleanup commit seam.
+
+## 2026-07-02 - tm_spawn_unwind_cleanup_plan C Seam Evidence
+
+- Added a component patch for the `lq` taskman spawn failure cleanup-plan seam.
+- Added CI evidence for bounded cleanup action ordering sourced from `tm_spawn_unwind_plan` inventory.
+- Kept seL4 cleanup authority and failure return semantics in C while routing failure returns through `tm_spawn_unwind_return` and `tm_spawn_unwind_cleanup_commit`.
