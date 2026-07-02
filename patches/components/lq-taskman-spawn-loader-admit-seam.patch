@@ -129,7 +129,9 @@
              tm_err("spawn: rtld re-parse failed");
              return -ENOEXEC;
          }
-@@ -1726,7 +1769,7 @@
+@@ -1725,8 +1768,8 @@
+-        const struct elf64_hdr *rtld_eh = rtld_blob;
++        const struct elf64_hdr *rtld_eh = loader_admit.rtld_blob;
           * have done the new image's relocs and rtld needs to step
           * back into the picture. */
          (void)rtld_eh;
