@@ -1,5 +1,5 @@
 diff --git a/taskman/proc/process.c b/taskman/proc/process.c
-index 533c1f6..d44d5a6 100644
+index 533c1f6..7285a6b 100644
 --- a/taskman/proc/process.c
 +++ b/taskman/proc/process.c
 @@ -924,6 +924,75 @@ int tm_sched_get(pid_t caller_pid, pid_t pid, int tid,
@@ -28,7 +28,7 @@ index 533c1f6..d44d5a6 100644
 +
 +static void tm_teardown_plan_reset(tm_teardown_plan_t *plan)
 +{
-+    qmemset(plan, 0, sizeof *plan);
++    plan->op_count = 0;
 +}
 +
 +static int tm_teardown_plan_add(tm_teardown_plan_t *plan,
