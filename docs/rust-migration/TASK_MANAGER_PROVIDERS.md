@@ -1,6 +1,6 @@
 # Shared Task Manager Rust Provider Archive
 
-Captured: 2026-06-29 CEST.
+Captured: 2026-07-02 CEST.
 
 Task-manager Rust providers now link through one selected static archive:
 
@@ -12,6 +12,9 @@ The archive is produced by the `qsoe-tm-providers` crate. Individual provider
 crates remain `rlib` crates and export the existing C ABI symbols. The wrapper
 crate owns the `staticlib` artifact, the single no-std panic handler, and a
 small anchor symbol that keeps selected provider crates present in the archive.
+`tm_log` also uses the shared provider path for its Rust-default formatter, but
+its exported C variadic ABI and fallback selector remain an accepted
+stop-boundary rather than a retirement target.
 
 ## Why This Exists
 
@@ -42,6 +45,7 @@ QSOE_RUST_TM_CPIO=1
 QSOE_RUST_TM_CRED=1   # mandatory after C retirement
 QSOE_RUST_TM_ELF=1
 QSOE_RUST_TM_FDT=1
+QSOE_RUST_TM_LOG=1    # default; QSOE_RUST_TM_LOG=0 fallback remains supported
 QSOE_RUST_TM_PATHMGR=1 # mandatory after C retirement
 QSOE_RUST_TM_PROCFS=1  # mandatory after C retirement
 QSOE_RUST_TM_PSEUDODEV=1 # mandatory after C retirement
@@ -56,6 +60,11 @@ NQ/LQ taskman always omit retired C provider objects and link
 `libqsoe_tm_providers.a`. Non-retired selectors omit their matching C objects
 when enabled. The build script maps selectors to `qsoe-tm-providers` Cargo
 features and rejects rollback selectors for retired C providers.
+
+For `tm_log`, `QSOE_RUST_TM_LOG=1` is the default formatter path while
+`QSOE_RUST_TM_LOG=0` remains a supported fallback. The C `tm_log(...)`
+variadic entry point, `va_list` marshalling, and LQ debug-console sink are not
+retirement candidates in the current migration scope.
 
 Legacy targets such as `make rust-tm-cpio-provider` still work for focused
 evidence and compatibility. They delegate to the shared builder with the
@@ -90,9 +99,11 @@ The current gate selects the shared provider set including `tm_cpio`,
   milestones.
 
 Use per-provider evidence targets for single-provider behavior and regression
-coverage. Use `make tm-providers-evidence` when changing the shared archive,
-provider selection plumbing, panic handler ownership, or component patches that
-affect taskman link composition.
+coverage. Use `make tm-log-evidence` when changing the task-manager logging
+formatter selector, ABI marshalling, or fallback posture. Use
+`make tm-providers-evidence` when changing the shared archive, provider
+selection plumbing, panic handler ownership, or component patches that affect
+taskman link composition.
 
 ## Formal evidence run on 2026-06-30
 
