@@ -4909,3 +4909,10 @@ Follow-up:
 - Added a component patch for the `lq` taskman loader auxv seam.
 - Added CI evidence for bounded dynamic-loader auxv entries sourced from `tm_loader_proto` and `tm_loader_map_plan`.
 - Kept `tm_spawn_argpack_prepare`, stack writes, `qsoe_tcb_write_registers`, VSpace, relocation, and capability authority in C while routing auxv state through `tm_loader_auxv_plan`.
+
+
+## 2026-07-02 - tm_loader_entry_plan C Seam Evidence
+
+- Added a component patch for the `lq` taskman entry-register handoff seam.
+- Added CI evidence for bounded PC/SP/GP/TP/a0 state sourced from loader protocol, initial stack, and pid.
+- Kept `qsoe_tcb_write_registers`, TCB configuration/scheduling, VSpace, relocation, stack writes, and capability authority in C while routing register inputs through `tm_loader_entry_plan`.

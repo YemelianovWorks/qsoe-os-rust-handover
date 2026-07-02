@@ -155,6 +155,7 @@ inputs and explicit rollback/evidence:
 - `tm_loader_admit`: explicit dynamic-loader admission and failure state for
 - `tm_loader_map_plan` captures dynamic-loader load bases, ELF views, and load/parse failure states before relocation and auxv handoff.
 - `tm_loader_auxv_plan` captures dynamic-loader auxv entries before argpack stack construction.
+- `tm_loader_entry_plan` captures initial PC/SP/GP/TP/a0 register inputs before the C-owned TCB write.
   normalized `PT_INTERP`, runtime-linker lookup, libc lookup, and
   missing-loader diagnostics before mapping and relocation authority continues
   in C.
@@ -181,7 +182,7 @@ Before moving any subcomponent from deferred to opt-in:
    spawn/loader runtime evidence.
 2. Keep `tm_cap_plan` source evidence running next to argpack and spawn/loader
    runtime evidence while follow-on cap/object relocation seams stay C-only.
-3. Keep `tm_loader_proto` and `tm_loader_admit` source evidence running next, then `tm_loader_map_plan` for mapping/ELF-view state, then `tm_loader_auxv_plan` for auxv emission state
+3. Keep `tm_loader_proto` and `tm_loader_admit` source evidence running next, then `tm_loader_map_plan` for mapping/ELF-view state, then `tm_loader_auxv_plan` for auxv emission state, then `tm_loader_entry_plan` for entry-register handoff state
    to the vspace and teardown plan evidence while broader spawn/loader
    authority stays C-only.
 4. Keep the now-retired/default `qsoe-tm-reloc` provider isolated behind the
@@ -279,3 +280,21 @@ Formal source evidence now covers this seam with
 `make spawn-loader-auxv-c-evidence`. The next useful split is entry-register
 handoff shaping or another bounded C-owned spawn-loader sub-seam; it is not
 Rust ownership of spawn/capability/loader authority.
+
+
+### tm_loader_entry_plan C seam
+
+The 2026-07-02 entry-register follow-up splits initial register handoff state
+out of the spawn body without moving authority:
+
+- `tm_loader_entry_plan` records PC, SP, GP, TP, and initial a0 from the loader
+  protocol, initial stack, TCB page contract, and pid.
+- `tm_loader_entry_prepare` validates nonzero entry PC and stack pointer before
+  the values are copied into the seL4 user context.
+- `TCB_WriteRegisters`, TCB configuration, scheduling context setup, VSpace
+  mapping, relocation, stack writes, and capability publication remain in C.
+
+Formal source evidence now covers this seam with
+`make spawn-loader-entry-c-evidence`. The next useful split is another bounded
+C-owned spawn-loader sub-seam; it is not Rust ownership of spawn/capability/
+loader authority.
