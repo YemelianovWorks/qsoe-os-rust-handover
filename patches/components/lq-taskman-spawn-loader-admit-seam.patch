@@ -1,5 +1,5 @@
---- a/taskman/proc/spawn.c
-+++ b/taskman/proc/spawn.c
+--- taskman/proc/spawn.c	2026-07-02 07:15:39.795783283 +0200
++++ taskman/proc/spawn.c	2026-07-02 07:15:39.801783125 +0200
 @@ -1364,6 +1364,23 @@
      unsigned long rtld_load_base;
  } tm_loader_proto_t;
@@ -129,9 +129,16 @@
              tm_err("spawn: rtld re-parse failed");
              return -ENOEXEC;
          }
-@@ -1725,8 +1768,8 @@
+@@ -1712,7 +1755,7 @@
+                                                      DL_RTLD_LOAD_VA);
+         if (proto_rc != 0)
+             return proto_rc;
 -        const struct elf64_hdr *rtld_eh = rtld_blob;
 +        const struct elf64_hdr *rtld_eh = loader_admit.rtld_blob;
+         /* NQ pattern: skip rtld and jump straight to the user image's
+          * entry.  Taskman's pre-reloc pass already resolved every
+          * R_RISCV_RELATIVE / R_RISCV_64 / R_RISCV_JUMP_SLOT in qsh,
+@@ -1726,7 +1769,7 @@
           * have done the new image's relocs and rtld needs to step
           * back into the picture. */
          (void)rtld_eh;
