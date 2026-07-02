@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="uk">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Підсумок Rust-міграції QSOE</title>
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <header class="app-header">
+      <div>
+        <p class="eyebrow">QSOE OS</p>
+        <h1>Підсумок Rust-міграції</h1>
+      </div>
+      <nav class="doc-links" aria-label="Навігація підсумку">
+        <a href="./">Dashboard</a>
+        <a href="project-summary.html">English</a>
+        <a href="https://github.com/dmytro-yemelianov/qsoe-os-rust-handover">Репозиторій</a>
+      </nav>
+    </header>
+
+    <main class="summary-page">
+      <section class="summary-hero">
+        <p class="eyebrow">Стан проєкту</p>
+        <h2>Публічний handover snapshot із навмисно зафіксованою межею Rust-міграції.</h2>
+        <p>
+          Репозиторій є вимірюваним handover для Rust-міграції QSOE OS, а не
+          переписуванням системи заради самого Rust. Rust тепер відповідає за
+          низькоризикову leaf-логіку, парсери, host tools, userland services
+          та task-manager providers, де це реально зменшує конкретні C-ризики.
+          Kernel, spawn, capability, loader та seL4 authority шляхи навмисно
+          залишені в C і мають статус deferred.
+        </p>
+      </section>
+
+      <section class="summary-grid">
+        <article class="summary-panel">
+          <h3>Канонічні адреси</h3>
+          <ul>
+            <li>Репозиторій: <a href="https://github.com/dmytro-yemelianov/qsoe-os-rust-handover">dmytro-yemelianov/qsoe-os-rust-handover</a></li>
+            <li>Roadmap: <a href="https://dmytro-yemelianov.github.io/qsoe-os-rust-handover/">GitHub Pages dashboard</a></li>
+            <li>Roadmap issues: <a href="https://github.com/dmytro-yemelianov/qsoe-os-rust-handover/issues?q=label%3Aroadmap">issue-backed tracker</a></li>
+            <li>NQ mirror branch: <a href="https://github.com/dmytro-yemelianov/nq/pull/1">dmytro-yemelianov/nq PR #1</a></li>
+          </ul>
+        </article>
+
+        <article class="summary-panel">
+          <h3>Завершена міграція</h3>
+          <ul>
+            <li>Host qrvfs tools стали Rust-only: `qrvfs-tree` та `mkfs-qrv-rs`.</li>
+            <li>Userland services `slogger`, `pipe` та `devb-virtio` стали Rust-only.</li>
+            <li>`test_msgpass` став Rust-only у test images.</li>
+            <li>Retired task-manager providers лінкуються через спільний архів `qsoe-tm-providers`.</li>
+          </ul>
+        </article>
+
+        <article class="summary-panel">
+          <h3>Стан task-manager providers</h3>
+          <p>
+            Retired C provider набір включає `tm_procfs`, `tm_cpio`,
+            `tm_cred`, `tm_script`, `tm_elf`, `tm_reloc`, `tm_fdt`,
+            `tm_syscfg`, `tm_sysmap`, `tm_sysfs`, `tm_pathmgr`,
+            `tm_pseudodev` та `tm_rsrcdb`.
+          </p>
+          <p>
+            `tm-log` завершено в межах Rust-default formatter scope. Rust
+            відповідає за typed formatter; C навмисно зберігає variadic ABI,
+            `va_list` marshalling, LQ debug-console sink та explicit fallback
+            selector.
+          </p>
+        </article>
+
+        <article class="summary-panel">
+          <h3>Свідомо відкладено</h3>
+          <ul>
+            <li>Kernel Rust залишається deferred.</li>
+            <li>Spawn, capability, relocation та loader ownership залишаються C-owned.</li>
+            <li>High-risk runtime і kernel-adjacent робота потребує окремого milestone та risk review.</li>
+            <li>Подальше C-to-Rust перенесення не планується лише заради збільшення Rust coverage.</li>
+          </ul>
+        </article>
+      </section>
+
+      <section class="summary-panel summary-wide">
+        <h3>Стан evidence</h3>
+        <p>
+          Після перенесення репозиторію назад у користувацький акаунт було
+          оновлено roadmap dashboard, repository metadata, CI runner
+          configuration та issue metadata для власника `dmytro-yemelianov`.
+          Main CI, CodeQL і Pages deployment пройшли успішно вже в
+          перенесеному репозиторії.
+        </p>
+        <div class="evidence-strip">
+          <span>Main CI: `28619111329`</span>
+          <span>CodeQL: `28619111391`</span>
+          <span>Pages: `28619111337`</span>
+          <span>Merge: `bdefc3cf64668244fba40d3224e2fbd3b4c7c21d`</span>
+        </div>
+        <p>
+          Локальна QEMU-перевірка також пройшла для QSOE/L:
+          `scripts/boot-smoke.sh -k lq -t 180` дійшла до `login:`,
+          `[slogger-rs] alive`, `fs-qrv: mounted qrvfs at /usr` та
+          `[devb-virtio-rs] /dev/vblk0 ready`.
+        </p>
+      </section>
+    </main>
+
+    <footer>
+      <span>Підсумок Rust migration handover для QSOE.</span>
+      <a href="project-summary.html">English version</a>
+    </footer>
+  </body>
+</html>
