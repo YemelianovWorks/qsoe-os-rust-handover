@@ -4935,3 +4935,9 @@ Follow-up:
 - Added a component patch for the `lq` taskman object-CNode relocation seam.
 - Added CI evidence for bounded frame/PT relocation counts, RELRO-retained cap bounds, and objcnode binding state.
 - Kept `alloc_object`, `qsoe_cnode_move`, `taskman_free_slot`, process-record mutation, and RELRO tracker mutation authority in C while routing relocation bounds through `tm_spawn_objcnode_plan`.
+
+## 2026-07-02 - tm_spawn_unwind_plan C Seam Evidence
+
+- Added a component patch for the `lq` taskman spawn failure-unwind inventory seam.
+- Added CI evidence for bounded resource inventory tracking across core objects, VSpace roots, runtime frames, publication caps, frame/PT/RELRO counts, and committed-state gating.
+- Kept cleanup authority and failure returns in C while routing the resource inventory through `tm_spawn_unwind_plan` for the follow-up cleanup commit seam.

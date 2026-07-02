@@ -315,6 +315,10 @@ jobs:
         if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
         run: make container-spawn-objcnode-c-evidence
 
+      - name: Run spawn unwind C seam evidence
+        if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+        run: make container-spawn-unwind-c-evidence
+
       - name: Run spawn/loader C boundary evidence
         if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
         run: make container-spawn-loader-c-evidence
