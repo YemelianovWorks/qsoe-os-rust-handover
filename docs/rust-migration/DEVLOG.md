@@ -1,3 +1,25 @@
+## 2026-07-02 CEST - tm_log Rust Default Stop Boundary
+
+Scope:
+
+- Recorded `tm_log` as complete for its Rust-default formatter scope rather
+  than as a pending C-retirement candidate.
+- Added a dedicated stop-boundary note for the retained C variadic ABI,
+  `va_list` marshalling, LQ debug-console sink, and `QSOE_RUST_TM_LOG=0`
+  fallback selector.
+- Updated status, retirement, and shared-provider docs so the roadmap
+  distinguishes complete stop-boundaries from retired C providers.
+
+Commands:
+
+- Not run locally; this is roadmap/handoff documentation, with PR CI as the
+  formal evidence path.
+
+Result:
+
+- #153 can advance from Rust-default RC/default soak to complete stop-boundary
+  posture without implying that the exported C logging ABI should be removed.
+
 ## 2026-07-02 CEST - tm_cap_plan C Seam Evidence
 
 Scope:

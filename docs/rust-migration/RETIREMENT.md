@@ -1,6 +1,6 @@
 # C Implementation Retirement Gate
 
-Captured: 2026-07-01 CEST.
+Captured: 2026-07-02 CEST.
 
 This document turns the Phase 8 retirement rule into an explicit gate. The
 first removal was the in-guest test helper `test_msgpass`, which had a
@@ -10,9 +10,12 @@ PR removed the C helper. The next removals were production services
 Rust-default RC evidence. Host qrvfs tools `treeqrvfs` and `mkfs-qrv` are also retired after their own inspector and writer RC windows. The current retired task-manager providers are
 `tm_procfs`, `tm_cpio`, `tm_cred`, `tm_script`, `tm_elf`, `tm_fdt`,
 `tm_reloc`, `tm_syscfg`, `tm_sysmap`, `tm_sysfs`, `tm_pathmgr`, `tm_pseudodev`, and `tm_rsrcdb` after their own
-Rust-default RC evidence and rollback drills. All remaining Rust pilots stay
-either opt-in or Rust-default RC paths, and each non-retired C implementation
-remains the rollback path until the release-candidate evidence below exists.
+Rust-default RC evidence and rollback drills. `tm_log` is the current
+non-retirement exception: it is complete for its Rust-default formatter scope,
+but its exported C variadic ABI and fallback selector remain intentional
+boundaries. All remaining Rust pilots stay either opt-in or Rust-default RC
+paths, and each non-retired C implementation remains the rollback path until
+the release-candidate evidence below exists.
 
 ## State Model
 
@@ -23,11 +26,16 @@ Every migrated component moves through these states:
 | C default | Normal images install and run the C artifact. | Required |
 | Rust opt-in | A build flag can replace the artifact with Rust for focused tests. | Required rollback |
 | Rust default RC | Release-candidate images default to Rust while a build flag or release artifact restores C. | Required rollback |
+| Complete stop-boundary | Rust owns the planned default or logic path, but C ABI, authority, sink, or fallback ownership remains deliberately in scope. | Kept intentionally |
 | Retired | The C artifact is removed from normal source and image paths. | Removed for that component |
 
 A component cannot enter `Retired` directly from `Rust opt-in`. It must first
 ship through at least one release candidate with Rust selected by default and a
 documented C rollback path.
+
+A component may instead enter `Complete stop-boundary` when removing the
+remaining C boundary would mean changing ABI, authority ownership, or platform
+sink ownership rather than retiring duplicated component logic.
 
 ## Mandatory Evidence
 
@@ -59,9 +67,10 @@ Host qrvfs tools are retired host paths. `test_msgpass` is the first retired hel
 `devb-virtio` are retired production paths. `tm_procfs` is the first retired
 task-manager provider, followed by `tm_cpio`, `tm_cred`, `tm_script`,
 `tm_elf`, `tm_reloc`, `tm_syscfg`, `tm_sysmap`, `tm_sysfs`, `tm_pathmgr`,
-`tm_pseudodev`, and `tm_rsrcdb`. Remaining production services and
-task-manager providers still
-require their own separate removal PRs after RC evidence and rollback drills.
+`tm_pseudodev`, and `tm_rsrcdb`. `tm_log` is complete for scope at a
+Rust-default stop-boundary and is not waiting for C retirement. Remaining
+production services and task-manager providers still require their own separate
+removal PRs after RC evidence and rollback drills.
 
 ## Retired Components
 
@@ -85,6 +94,12 @@ require their own separate removal PRs after RC evidence and rollback drills.
 | `tm_pathmgr` | `TASK_MANAGER_PATHMGR_RETIREMENT.md` | `TASK_MANAGER_PATHMGR_RC.md`, `make tm-pathmgr-rc-smoke`, previous `make tm-pathmgr-rc-rollback-smoke` evidence | No C rollback target remains for the portable path registry provider; Rust `qsoe-tm-pathmgr` is mandatory in taskman through the shared provider archive. |
 | `tm_pseudodev` | `TASK_MANAGER_PSEUDODEV_RETIREMENT.md` | `TASK_MANAGER_PSEUDODEV_RC.md`, `make tm-pseudodev-rc-smoke`, previous `make tm-pseudodev-rc-rollback-smoke` evidence | No C rollback target remains for the LQ pseudo-device providers; Rust `qsoe-tm-pseudodev` is mandatory in taskman through the shared provider archive. |
 | `tm_rsrcdb` | `TASK_MANAGER_RSRCDB_RETIREMENT.md` | `TASK_MANAGER_RSRCDB_RC.md`, `make tm-rsrcdb-rc-smoke`, previous `make tm-rsrcdb-rc-rollback-smoke` evidence | No C rollback target remains for the LQ resource DB provider; Rust `qsoe-tm-rsrcdb` is mandatory in taskman through the shared provider archive. |
+
+## Accepted Stop-Boundary Components
+
+| Component | Stop-boundary note | Evidence | Retained C boundary |
+| --- | --- | --- | --- |
+| `tm_log` | `TASK_MANAGER_LOG_STOP_BOUNDARY.md` | `make tm-log-evidence`, `make container-tm-log-evidence`, current `main` CI run `28613387852`, and CodeQL run `28613387902` | The exported `tm_log(int level, const char *fmt, ...)` ABI, C `va_list` marshalling, LQ debug-console sink, and `QSOE_RUST_TM_LOG=0` fallback remain intentional boundaries; no C removal PR is planned for this scope. |
 
 ## Removal PR Checklist
 
