@@ -380,3 +380,9 @@ Formal source evidence now covers this seam with
 `make spawn-objcnode-c-evidence`. The next useful split remains another bounded
 C-owned spawn sub-seam; it is not Rust ownership of spawn/capability/loader
 authority.
+
+## tm_spawn_unwind_cleanup_plan seam
+
+`tm_spawn_unwind_cleanup_plan` follows the `tm_spawn_unwind_plan` inventory seam. It records the bounded C-owned cleanup action order for uncommitted spawn failures: recorded frame slots, recorded page-table slots, fault endpoint, scheduler context, child untyped, and child CNode. Failure returns now route through `tm_spawn_unwind_return`, but seL4 revoke/delete/free authority remains in C and is not transferred to Rust.
+
+Required evidence: `scripts/spawn-unwind-cleanup-c-evidence.sh` checks the cleanup plan type, bounded action enum, failure-return routing, and absence of cleanup authority calls inside the cleanup-plan preparation path.

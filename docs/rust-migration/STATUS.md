@@ -110,3 +110,7 @@ in C.
 inventory now records core child objects, VSpace roots, runtime frames,
 publication caps, frame/PT/RELRO counts, stack-page count, and committed-state
 gating while cleanup authority and failure returns remain in C.
+
+## 2026-07-02 - tm_spawn_unwind_cleanup_plan
+
+`tm_spawn_unwind_cleanup_plan` is a C-owned cleanup-plan seam. It represents recorded frame/PT reclamation, fault endpoint cleanup, scheduler context cleanup, child untyped cleanup, and child CNode cleanup as bounded ordered actions sourced from `tm_spawn_unwind_plan`; actual seL4 revoke/delete/free authority remains in C and broader spawn/capability/loader migration stays deferred.
