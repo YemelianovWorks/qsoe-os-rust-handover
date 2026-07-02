@@ -1,5 +1,5 @@
---- taskman/proc/spawn.c	2026-07-02 07:15:39.795783283 +0200
-+++ taskman/proc/spawn.c	2026-07-02 07:15:39.801783125 +0200
+--- a/taskman/proc/spawn.c
++++ b/taskman/proc/spawn.c
 @@ -1364,6 +1364,23 @@
      unsigned long rtld_load_base;
  } tm_loader_proto_t;
