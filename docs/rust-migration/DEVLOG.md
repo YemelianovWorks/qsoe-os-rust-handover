@@ -4916,3 +4916,10 @@ Follow-up:
 - Added a component patch for the `lq` taskman entry-register handoff seam.
 - Added CI evidence for bounded PC/SP/GP/TP/a0 state sourced from loader protocol, initial stack, and pid.
 - Kept `qsoe_tcb_write_registers`, TCB configuration/scheduling, VSpace, relocation, stack writes, and capability authority in C while routing register inputs through `tm_loader_entry_plan`.
+
+
+## 2026-07-02 - tm_tcb_handoff_plan C Seam Evidence
+
+- Added a component patch for the `lq` taskman TCB configure/scheduling/fault/reply handoff seam.
+- Added CI evidence for bounded C-owned TCB configure inputs, scheduling defaults, fault-cap mint inputs, and reply-slot retype inputs.
+- Kept `qsoe_tcb_configure`, `tm_sched_context_create`, `qsoe_cnode_mint`, `qsoe_tcb_set_sched_params`, `qsoe_untyped_retype`, and `qsoe_tcb_write_registers` authority in C while routing handoff state through `tm_tcb_handoff_plan`.

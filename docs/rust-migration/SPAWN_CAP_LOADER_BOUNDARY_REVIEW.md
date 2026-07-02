@@ -156,6 +156,7 @@ inputs and explicit rollback/evidence:
 - `tm_loader_map_plan` captures dynamic-loader load bases, ELF views, and load/parse failure states before relocation and auxv handoff.
 - `tm_loader_auxv_plan` captures dynamic-loader auxv entries before argpack stack construction.
 - `tm_loader_entry_plan` captures initial PC/SP/GP/TP/a0 register inputs before the C-owned TCB write.
+- `tm_tcb_handoff_plan` captures TCB configure, scheduling, fault-cap, and reply-object inputs before C-owned authority calls.
   normalized `PT_INTERP`, runtime-linker lookup, libc lookup, and
   missing-loader diagnostics before mapping and relocation authority continues
   in C.
@@ -182,7 +183,7 @@ Before moving any subcomponent from deferred to opt-in:
    spawn/loader runtime evidence.
 2. Keep `tm_cap_plan` source evidence running next to argpack and spawn/loader
    runtime evidence while follow-on cap/object relocation seams stay C-only.
-3. Keep `tm_loader_proto` and `tm_loader_admit` source evidence running next, then `tm_loader_map_plan` for mapping/ELF-view state, then `tm_loader_auxv_plan` for auxv emission state, then `tm_loader_entry_plan` for entry-register handoff state
+3. Keep `tm_loader_proto` and `tm_loader_admit` source evidence running next, then `tm_loader_map_plan` for mapping/ELF-view state, then `tm_loader_auxv_plan` for auxv emission state, then `tm_loader_entry_plan` for entry-register handoff state, then `tm_tcb_handoff_plan` for TCB handoff state
    to the vspace and teardown plan evidence while broader spawn/loader
    authority stays C-only.
 4. Keep the now-retired/default `qsoe-tm-reloc` provider isolated behind the
@@ -298,3 +299,23 @@ Formal source evidence now covers this seam with
 `make spawn-loader-entry-c-evidence`. The next useful split is another bounded
 C-owned spawn-loader sub-seam; it is not Rust ownership of spawn/capability/
 loader authority.
+
+
+### tm_tcb_handoff_plan C seam
+
+The 2026-07-02 TCB-handoff follow-up splits TCB configure, scheduling,
+fault-cap, and reply-object handoff state out of the spawn body without moving
+authority:
+
+- `tm_tcb_handoff_plan` records TCB configure inputs, scheduling defaults,
+  fault-cap mint inputs, and reply-object retype inputs.
+- `tm_tcb_handoff_prepare` and `tm_tcb_handoff_bind_sched_fault` validate the
+  handoff state before the existing seL4 calls consume it.
+- `qsoe_tcb_configure`, `tm_sched_context_create`, `qsoe_cnode_mint`,
+  `qsoe_tcb_set_sched_params`, `qsoe_untyped_retype`, and
+  `qsoe_tcb_write_registers` remain in C.
+
+Formal source evidence now covers this seam with
+`make spawn-tcb-handoff-c-evidence`. The next useful split is process
+publication shaping or another bounded C-owned spawn sub-seam; it is not Rust
+ownership of spawn/capability/loader authority.

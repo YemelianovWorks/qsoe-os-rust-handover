@@ -1056,7 +1056,7 @@ spawn-loader-c-evidence:
 container-spawn-loader-c-evidence:
 	@scripts/container-toolchain.sh run make spawn-loader-c-evidence
 
-.PHONY: spawn-loader-proto-c-evidence container-spawn-loader-proto-c-evidence container-spawn-loader-admit-c-evidence container-spawn-loader-map-c-evidence container-spawn-loader-auxv-c-evidence container-spawn-loader-entry-c-evidence
+.PHONY: spawn-loader-proto-c-evidence container-spawn-loader-proto-c-evidence container-spawn-loader-admit-c-evidence container-spawn-loader-map-c-evidence container-spawn-loader-auxv-c-evidence container-spawn-loader-entry-c-evidence container-spawn-tcb-handoff-c-evidence
 
 spawn-loader-proto-c-evidence:
 	@scripts/spawn-loader-proto-c-evidence.sh
@@ -1087,6 +1087,12 @@ spawn-loader-entry-c-evidence:
 
 container-spawn-loader-entry-c-evidence:
 	@scripts/container-toolchain.sh run make spawn-loader-entry-c-evidence
+
+spawn-tcb-handoff-c-evidence:
+	@scripts/spawn-tcb-handoff-c-evidence.sh
+
+container-spawn-tcb-handoff-c-evidence:
+	@scripts/container-toolchain.sh run make spawn-tcb-handoff-c-evidence
 
 .PHONY: spawn-argpack-c-evidence container-spawn-argpack-c-evidence
 
