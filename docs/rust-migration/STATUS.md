@@ -10,10 +10,12 @@ seL4 authority operations remain committed in C.
 `tm_vspace_plan`, `tm_teardown_plan`, `tm_loader_proto`, and
 `tm_loader_admit` and `tm_loader_map_plan` and `tm_loader_auxv_plan` and
 `tm_loader_entry_plan` and `tm_tcb_handoff_plan` and
-`tm_spawn_publication_plan` and `tm_spawn_objcnode_plan` now split VSpace
-mapping, process cleanup, dynamic-loader protocol state, loader
-admission/failure state, process publication/resume state, and object-CNode
-relocation bounds into bounded C-owned seams with dedicated source evidence.
+`tm_spawn_publication_plan`, `tm_spawn_objcnode_plan`, and
+`tm_spawn_unwind_plan` now split VSpace mapping, process cleanup,
+dynamic-loader protocol state, loader admission/failure state, process
+publication/resume state, object-CNode relocation bounds, and spawn
+failure-unwind inventory into bounded C-owned seams with dedicated source
+evidence.
 
 This table tracks components whose current C implementation may be replaced by
 Rust. Link-smoke binaries, examples, and reusable parser crates are not listed
@@ -103,3 +105,8 @@ counts, RELRO-retained cap bounds, and objcnode binding state now flow through a
 bounded C-owned plan while `alloc_object`, `qsoe_cnode_move`,
 `taskman_free_slot`, process-record mutation, and RELRO tracker mutation remain
 in C.
+
+2026-07-02: Added `tm_spawn_unwind_plan` C seam evidence. Spawn-owned resource
+inventory now records core child objects, VSpace roots, runtime frames,
+publication caps, frame/PT/RELRO counts, stack-page count, and committed-state
+gating while cleanup authority and failure returns remain in C.

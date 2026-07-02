@@ -159,6 +159,7 @@ inputs and explicit rollback/evidence:
 - `tm_tcb_handoff_plan` captures TCB configure, scheduling, fault-cap, and reply-object inputs before C-owned authority calls.
 - `tm_spawn_publication_plan` captures process registration inputs, process-record metadata, taskman connection inputs, object-relocation ownership, and final resume gating before C-owned publication and liftoff calls.
 - `tm_spawn_objcnode_plan` captures object-CNode relocation owner state, frame/PT relocation counts, RELRO retained-cap bounds, and objcnode binding before C-owned cap moves and slot frees.
+- `tm_spawn_unwind_plan` captures spawn-owned resource inventory, frame/PT/RELRO counts, stack-page count, and committed-state gating before a future C-owned cleanup commit seam replaces direct failure returns.
   normalized `PT_INTERP`, runtime-linker lookup, libc lookup, and
   missing-loader diagnostics before mapping and relocation authority continues
   in C.
@@ -185,7 +186,7 @@ Before moving any subcomponent from deferred to opt-in:
    spawn/loader runtime evidence.
 2. Keep `tm_cap_plan` source evidence running next to argpack and spawn/loader
    runtime evidence while follow-on cap/object relocation seams stay C-only.
-3. Keep `tm_loader_proto` and `tm_loader_admit` source evidence running next, then `tm_loader_map_plan` for mapping/ELF-view state, then `tm_loader_auxv_plan` for auxv emission state, then `tm_loader_entry_plan` for entry-register handoff state, then `tm_tcb_handoff_plan` for TCB handoff state, then `tm_spawn_publication_plan` for process publication and resume gating, then `tm_spawn_objcnode_plan` for object-CNode relocation bounds
+3. Keep `tm_loader_proto` and `tm_loader_admit` source evidence running next, then `tm_loader_map_plan` for mapping/ELF-view state, then `tm_loader_auxv_plan` for auxv emission state, then `tm_loader_entry_plan` for entry-register handoff state, then `tm_tcb_handoff_plan` for TCB handoff state, then `tm_spawn_publication_plan` for process publication and resume gating, then `tm_spawn_objcnode_plan` for object-CNode relocation bounds, then `tm_spawn_unwind_plan` for spawn failure-unwind inventory
    to the vspace and teardown plan evidence while broader spawn/loader
    authority stays C-only.
 4. Keep the now-retired/default `qsoe-tm-reloc` provider isolated behind the
@@ -357,6 +358,23 @@ state out of the spawn body without moving authority:
   sequence before the existing C-owned relocation loops consume it.
 - `alloc_object`, `qsoe_cnode_move`, `taskman_free_slot`, process-record
   mutation, and RELRO tracker mutation remain in C.
+
+### tm_spawn_unwind_plan C seam
+
+The 2026-07-02 unwind follow-up splits spawn failure-unwind inventory out of
+the spawn body without moving cleanup authority:
+
+- `tm_spawn_unwind_plan` records the child CNode, VSpace, TCB, root page-table
+  caps, worker-region L1 page-table cap, IPC frame, TCB frame, child untyped,
+  scheduling context, fault endpoint, frame/PT/RELRO counts, stack-page count,
+  and whether the spawn reached committed state.
+- `tm_spawn_unwind_prepare`, `tm_spawn_unwind_track_core`,
+  `tm_spawn_unwind_track_vspace`, `tm_spawn_unwind_track_runtime`,
+  `tm_spawn_unwind_track_publication`, `tm_spawn_unwind_track_counts`, and
+  `tm_spawn_unwind_mark_committed` validate the state sequence before any
+  follow-up cleanup commit seam consumes it.
+- Cleanup authority and failure returns remain in C; this seam only makes the
+  resource inventory explicit enough for focused rollback evidence.
 
 Formal source evidence now covers this seam with
 `make spawn-objcnode-c-evidence`. The next useful split remains another bounded
