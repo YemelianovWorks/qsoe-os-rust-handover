@@ -152,6 +152,10 @@ inputs and explicit rollback/evidence:
 - `tm_loader_proto`: explicit dynamic-loader protocol state for `AT_PHDR`,
   `AT_BASE`, `AT_ENTRY`, entry PC, and dyn-link admission after the existing
   C-owned load/reloc sequence.
+- `tm_loader_admit`: explicit dynamic-loader admission and failure state for
+  normalized `PT_INTERP`, runtime-linker lookup, libc lookup, and
+  missing-loader diagnostics before mapping and relocation authority continues
+  in C.
 
 These seams must keep C as the seL4 authority owner until the relevant plan is
 validated and committed.
@@ -175,8 +179,9 @@ Before moving any subcomponent from deferred to opt-in:
    spawn/loader runtime evidence.
 2. Keep `tm_cap_plan` source evidence running next to argpack and spawn/loader
    runtime evidence while follow-on cap/object relocation seams stay C-only.
-3. Keep `tm_loader_proto` source evidence running next to the vspace and
-   teardown plan evidence while broader spawn/loader authority stays C-only.
+3. Keep `tm_loader_proto` and `tm_loader_admit` source evidence running next
+   to the vspace and teardown plan evidence while broader spawn/loader
+   authority stays C-only.
 4. Keep the now-retired/default `qsoe-tm-reloc` provider isolated behind the
    existing callback ABI.
 5. Reassess spawn planning after the C plan seams are stable.
@@ -210,6 +215,26 @@ the spawn body without moving authority:
   remain in C.
 
 Formal source evidence now covers this seam with
-`make spawn-loader-proto-c-evidence`. The next useful split remains a narrow
-C-owned spawn-loader admission sub-seam or failure-path plan; it is not Rust
-ownership of spawn/capability/loader authority.
+`make spawn-loader-proto-c-evidence`. The next useful split is the loader
+admission/failure-state seam; it is not Rust ownership of
+spawn/capability/loader authority.
+
+### tm_loader_admit C seam
+
+The 2026-07-02 loader-admission follow-up splits dynamic-loader lookup and
+failure state out of the spawn body without moving authority:
+
+- `tm_loader_admit` records normalized `PT_INTERP`, the runtime-linker CPIO
+  name/blob/size, the libc blob/size, and whether admission is ready or failed
+  due to a missing runtime linker or libc.
+- `tm_loader_admit_dynamic` owns the existing CPIO lookup and diagnostic points
+  for `rtld` and `lib/libc.so`, returning the same C errno values as the prior
+  inline code.
+- Loader page-table setup, `load_elf_segments`, `tm_elf_parse`,
+  `tm_reloc_apply`, auxv emission, and `TCB_WriteRegisters` still run in C and
+  consume admission state only after the lookup/failure seam is ready.
+
+Formal source evidence now covers this seam with
+`make spawn-loader-admit-c-evidence`. The next useful split remains another
+narrow C-owned spawn-loader failure/admission sub-seam or cap/object relocation
+plan; it is not Rust ownership of spawn/capability/loader authority.
