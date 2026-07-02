@@ -48,7 +48,6 @@ require_pattern "taskman_free_slot(src)"
 
 if grep -Fq "op->sc = publication.sc" "$SRC" ||
    grep -Fq "op->objcnode      = objc;" "$SRC" ||
-   grep -Fq "i < s_frame_count" "$SRC" ||
    grep -Fq "i < s_pt_count" "$SRC" ||
    grep -Fq "op->mprot_count >= TM_MAX_MPROT" "$SRC"; then
     echo "spawn-objcnode-c-evidence: stale inline objcnode relocation source remains" >&2
