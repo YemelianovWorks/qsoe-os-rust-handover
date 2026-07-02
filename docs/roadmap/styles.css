@@ -90,11 +90,50 @@ h3 {
 .doc-links {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
+  gap: 12px;
   justify-content: flex-end;
 }
 
-.doc-links a,
+.doc-links a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 38px;
+  border: 1px solid rgba(76, 201, 217, 0.7);
+  border-radius: 12px;
+  background:
+    linear-gradient(180deg, rgba(76, 201, 217, 0.18), rgba(76, 201, 217, 0.05)),
+    rgba(255, 255, 255, 0.05);
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.22);
+  padding: 9px 13px;
+  color: var(--text);
+  font-size: 0.84rem;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  text-decoration: none;
+  transition:
+    background 140ms ease,
+    border-color 140ms ease,
+    box-shadow 140ms ease,
+    transform 140ms ease;
+}
+
+.doc-links a:hover,
+.doc-links a:focus-visible {
+  border-color: var(--green);
+  background:
+    linear-gradient(180deg, rgba(85, 214, 157, 0.22), rgba(76, 201, 217, 0.08)),
+    rgba(255, 255, 255, 0.08);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.3);
+  text-decoration: none;
+  transform: translateY(-1px);
+}
+
+.doc-links a:focus-visible {
+  outline: 2px solid var(--green);
+  outline-offset: 3px;
+}
+
 .tag,
 .pill {
   border: 1px solid var(--line);

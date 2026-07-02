@@ -53,6 +53,8 @@ Detailed planning lives under `docs/rust-migration/`. Start with:
 - [Rust migration roadmap dashboard](https://dmytro-yemelianov.github.io/qsoe-os-rust-handover/)
   for the issue-backed roadmap dashboard published through GitHub Pages,
   including component state and tooling gates.
+- [Ukrainian roadmap dashboard](https://dmytro-yemelianov.github.io/qsoe-os-rust-handover/index.uk.html)
+  for the translated dashboard entry point.
 - [Project summary](https://dmytro-yemelianov.github.io/qsoe-os-rust-handover/project-summary.html)
   and [Ukrainian translation](https://dmytro-yemelianov.github.io/qsoe-os-rust-handover/project-summary.uk.html)
   for the current handover state and project-level Rust migration stop boundary.

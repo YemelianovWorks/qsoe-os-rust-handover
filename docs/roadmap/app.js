@@ -4,44 +4,250 @@ const ROADMAP_LABEL = "roadmap";
 const ISSUES_API_URL = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/issues?state=all&labels=${ROADMAP_LABEL}&per_page=100`;
 const ROADMAP_ISSUES_URL = `https://github.com/${REPO_OWNER}/${REPO_NAME}/issues?q=label%3A${ROADMAP_LABEL}`;
 const ROADMAP_META_RE = /<!--\s*qsoe-roadmap:v1\s*([\s\S]*?)\s*-->/;
+const LANG = document.documentElement.lang.toLowerCase().startsWith("uk") ? "uk" : "en";
 
-const PURPOSE = {
-  summary: "Make the QSOE Rust migration measurable, reversible, and reviewable instead of a rewrite for its own sake.",
-  whyRust: [
-    "Reduce concrete C failure modes in parsers, state machines, resource servers, and image tooling.",
-    "Use Rust type, ownership, and Result-based error handling where they improve maintenance and review quality.",
-    "Keep high-risk boot, loader, spawn, capability, and kernel-adjacent code in C until boundaries are proven."
-  ],
-  operatingRule: "Every Rust candidate needs a selector, C rollback path through the RC window, host tests, runtime or boot evidence, and documentation before it can become a default. C is removed only by a separate retirement step after that evidence exists."
+const UI_TEXT = {
+  en: {
+    roadmapTitle: "QSOE C-to-Rust Migration Roadmap",
+    loadError: (message) => `Unable to load roadmap issues: ${message}`,
+    generated: (date, count) => `Issue tracker refreshed ${date} from ${count} roadmap issues`,
+    shownOf: (shown, total) => `${shown} shown of ${total}`,
+    noComponents: "No components match the current filters.",
+    noTooling: "No tooling gates match the current filters.",
+    noBacklog: "No candidates match the current filters.",
+    all: "All",
+    purpose: {
+      summary: "Make the QSOE Rust migration measurable, reversible, and reviewable instead of a rewrite for its own sake.",
+      whyRust: [
+        "Reduce concrete C failure modes in parsers, state machines, resource servers, and image tooling.",
+        "Use Rust type, ownership, and Result-based error handling where they improve maintenance and review quality.",
+        "Keep high-risk boot, loader, spawn, capability, and kernel-adjacent code in C until boundaries are proven."
+      ],
+      operatingRule: "Every Rust candidate needs a selector, C rollback path through the RC window, host tests, runtime or boot evidence, and documentation before it can become a default. C is removed only by a separate retirement step after that evidence exists."
+    },
+    policyGates: [
+      {
+        id: "selector",
+        name: "Selector",
+        description: "Rust implementation must be selectable without removing the C implementation."
+      },
+      {
+        id: "rollback",
+        name: "C rollback",
+        description: "A one-command C rollback path must exist and be tested through the RC window."
+      },
+      {
+        id: "host-tests",
+        name: "Host tests",
+        description: "Pure logic, parser, and model code should have host tests before guest wiring."
+      },
+      {
+        id: "runtime-evidence",
+        name: "Runtime evidence",
+        description: "Image-level or service-level smoke tests must prove the behavior in QSOE."
+      },
+      {
+        id: "retirement",
+        name: "Retirement review",
+        description: "Removing C requires the retirement checklist and a separate removal PR."
+      }
+    ],
+    metrics: [
+      ["trackedComponents", "Tracked components"],
+      ["rustDefaultRcComponents", "Rust-default RC components"],
+      ["rustOptInOnlyImplementations", "Opt-in implementations"],
+      ["retiredCComponents", "Retired C components"],
+      ["toolingGates", "Tooling gates"]
+    ],
+    progressNote: "Computed from roadmap issues: tracked components, active rollback coverage, phase status, tooling gates, and remaining backlog posture.",
+    gauges: {
+      overall: ["Overall readiness", "Component posture + phase completion"],
+      rustDefault: (count, total) => ["Rust-default RC coverage", `${count}/${total} tracked components`],
+      rollback: (count, total) => ["Active rollback coverage", `${count}/${total} non-retired components keep C rollback`],
+      retirement: (count, total) => ["C retirement progress", `${count}/${total} C implementations retired`]
+    },
+    architecture: {
+      conservativeKernel: "seL4 kernel, bootstrap, spawn, capability, loader, and relocation paths stay in the conservative boundary.",
+      rustKernel: "seL4 stays unchanged while proven modules move behind Rust providers, services, and host tools.",
+      conservativeStats: (cDefault, rollback, active) => [
+        `${cDefault} C defaults`,
+        `${rollback} rollback paths`,
+        `${active} active modules`
+      ],
+      rustStats: (rustMigrated, retired, total) => [
+        `${rustMigrated} Rust-backed modules`,
+        `${retired} C retirements`,
+        `${total} tracked modules`
+      ],
+      boundary: "IPC / C ABI boundary",
+      groups: {
+        "task-manager": "Task manager providers",
+        services: "Resource servers and drivers",
+        "host-tools": "Host and image tools",
+        "test-helper": "Test helpers",
+        support: "Support modules"
+      },
+      postures: {
+        cDefault: "C default",
+        cRollback: "C rollback",
+        rustDefault: "Rust default",
+        rustDefaultRollback: "Rust default + rollback",
+        rustOptIn: "Rust opt-in",
+        cRetired: "C retired"
+      }
+    },
+    cards: {
+      cDefault: "C default",
+      cNotDefault: "C not default",
+      risk: (risk) => `Risk: ${risk}`,
+      readiness: "Readiness",
+      selectors: "Selectors",
+      evidence: "Evidence",
+      phaseCompletion: "Phase completion"
+    },
+    badges: {
+      cRetired: "C retired",
+      rustDefaultRc: "Rust default RC",
+      rustOptIn: "Rust opt-in",
+      cOnly: "C only"
+    },
+    readable: {}
+  },
+  uk: {
+    roadmapTitle: "Roadmap C-to-Rust міграції QSOE",
+    loadError: (message) => `Не вдалося завантажити roadmap issues: ${message}`,
+    generated: (date, count) => `Issue tracker оновлено ${date}; roadmap issues: ${count}`,
+    shownOf: (shown, total) => `Показано ${shown} з ${total}`,
+    noComponents: "Жоден компонент не відповідає поточним фільтрам.",
+    noTooling: "Жоден tooling gate не відповідає поточним фільтрам.",
+    noBacklog: "Жоден кандидат не відповідає поточним фільтрам.",
+    all: "Усі",
+    purpose: {
+      summary: "Зробити Rust-міграцію QSOE вимірюваною, зворотною та придатною для review, а не переписуванням заради самого Rust.",
+      whyRust: [
+        "Зменшити конкретні C failure modes у парсерах, state machines, resource servers та image tooling.",
+        "Використовувати Rust types, ownership і Result-based error handling там, де це покращує maintenance та review quality.",
+        "Залишати high-risk boot, loader, spawn, capability та kernel-adjacent код у C, доки межі не будуть доведені."
+      ],
+      operatingRule: "Кожному Rust candidate потрібні selector, C rollback path на весь RC window, host tests, runtime або boot evidence та документація перед тим, як він може стати default. C видаляється тільки окремим retirement-кроком після появи evidence."
+    },
+    policyGates: [
+      {
+        id: "selector",
+        name: "Selector",
+        description: "Rust implementation має вмикатися без видалення C implementation."
+      },
+      {
+        id: "rollback",
+        name: "C rollback",
+        description: "Потрібен one-command C rollback path, перевірений протягом RC window."
+      },
+      {
+        id: "host-tests",
+        name: "Host tests",
+        description: "Pure logic, parser і model code мають отримати host tests перед guest wiring."
+      },
+      {
+        id: "runtime-evidence",
+        name: "Runtime evidence",
+        description: "Image-level або service-level smoke tests мають довести поведінку в QSOE."
+      },
+      {
+        id: "retirement",
+        name: "Retirement review",
+        description: "Видалення C потребує retirement checklist і окремого removal PR."
+      }
+    ],
+    metrics: [
+      ["trackedComponents", "Відстежувані компоненти"],
+      ["rustDefaultRcComponents", "Rust-default RC компоненти"],
+      ["rustOptInOnlyImplementations", "Opt-in implementations"],
+      ["retiredCComponents", "Retired C компоненти"],
+      ["toolingGates", "Tooling gates"]
+    ],
+    progressNote: "Обчислено з roadmap issues: tracked components, active rollback coverage, phase status, tooling gates і remaining backlog posture.",
+    gauges: {
+      overall: ["Загальна готовність", "Стан компонентів + завершення фаз"],
+      rustDefault: (count, total) => ["Rust-default RC coverage", `${count}/${total} відстежуваних компонентів`],
+      rollback: (count, total) => ["Active rollback coverage", `${count}/${total} non-retired компонентів зберігають C rollback`],
+      retirement: (count, total) => ["Прогрес C retirement", `${count}/${total} C implementations retired`]
+    },
+    architecture: {
+      conservativeKernel: "seL4 kernel, bootstrap, spawn, capability, loader і relocation paths залишаються в консервативній межі.",
+      rustKernel: "seL4 не змінюється, а доведені модулі переходять за Rust providers, services та host tools.",
+      conservativeStats: (cDefault, rollback, active) => [
+        `${cDefault} C defaults`,
+        `${rollback} rollback paths`,
+        `${active} active modules`
+      ],
+      rustStats: (rustMigrated, retired, total) => [
+        `${rustMigrated} Rust-backed modules`,
+        `${retired} C retirements`,
+        `${total} tracked modules`
+      ],
+      boundary: "IPC / C ABI межа",
+      groups: {
+        "task-manager": "Task manager providers",
+        services: "Resource servers і drivers",
+        "host-tools": "Host та image tools",
+        "test-helper": "Test helpers",
+        support: "Support modules"
+      },
+      postures: {
+        cDefault: "C default",
+        cRollback: "C rollback",
+        rustDefault: "Rust default",
+        rustDefaultRollback: "Rust default + rollback",
+        rustOptIn: "Rust opt-in",
+        cRetired: "C retired"
+      }
+    },
+    cards: {
+      cDefault: "C default",
+      cNotDefault: "C не default",
+      risk: (risk) => `Ризик: ${risk}`,
+      readiness: "Готовність",
+      selectors: "Selectors",
+      evidence: "Evidence",
+      phaseCompletion: "Завершення фази"
+    },
+    badges: {
+      cRetired: "C retired",
+      rustDefaultRc: "Rust default RC",
+      rustOptIn: "Rust opt-in",
+      cOnly: "Лише C"
+    },
+    readable: {
+      complete: "Завершено",
+      "complete-for-current-scope": "Завершено для поточного scope",
+      "rust-default-rc": "Rust-default RC",
+      "in-progress": "У роботі",
+      started: "Розпочато",
+      future: "Заплановано",
+      deferred: "Відкладено",
+      low: "Низький",
+      medium: "Середній",
+      high: "Високий",
+      critical: "Критичний",
+      unknown: "Невідомо",
+      "host-tools": "Host tools",
+      "task-manager": "Task manager",
+      "resource-server": "Resource server",
+      driver: "Driver",
+      service: "Service",
+      "test-helper": "Test helper",
+      support: "Support"
+    }
+  }
 };
 
-const POLICY_GATES = [
-  {
-    id: "selector",
-    name: "Selector",
-    description: "Rust implementation must be selectable without removing the C implementation."
-  },
-  {
-    id: "rollback",
-    name: "C rollback",
-    description: "A one-command C rollback path must exist and be tested through the RC window."
-  },
-  {
-    id: "host-tests",
-    name: "Host tests",
-    description: "Pure logic, parser, and model code should have host tests before guest wiring."
-  },
-  {
-    id: "runtime-evidence",
-    name: "Runtime evidence",
-    description: "Image-level or service-level smoke tests must prove the behavior in QSOE."
-  },
-  {
-    id: "retirement",
-    name: "Retirement review",
-    description: "Removing C requires the retirement checklist and a separate removal PR."
-  }
-];
+const TEXT = UI_TEXT[LANG];
+
+const PURPOSE = {
+  ...TEXT.purpose
+};
+
+const POLICY_GATES = TEXT.policyGates;
 
 const PHASE_SCORE = {
   complete: 100,
@@ -103,7 +309,7 @@ function loadRoadmap() {
       bindControls();
     })
     .catch((error) => {
-      els.purpose.textContent = `Unable to load roadmap issues: ${error.message}`;
+      els.purpose.textContent = TEXT.loadError(error.message);
     });
 }
 
@@ -171,7 +377,7 @@ function normalizeIssueRoadmap(issues) {
   return {
     schemaVersion: 1,
     generatedAt,
-    title: "QSOE C-to-Rust Migration Roadmap",
+    title: TEXT.roadmapTitle,
     purpose: PURPOSE,
     statusSummary: {
       trackedComponents: components.length,
@@ -297,7 +503,7 @@ function render() {
   document.title = data.title;
   els.purpose.textContent = data.purpose.summary;
   els.generated.textContent =
-    `Issue tracker refreshed ${formatDate(data.generatedAt)} from ${data.sourceIssueCount} roadmap issues`;
+    TEXT.generated(formatDate(data.generatedAt), data.sourceIssueCount);
   renderMetrics();
   renderWhy();
   renderProgressVisuals();
@@ -312,13 +518,7 @@ function render() {
 
 function renderMetrics() {
   const summary = state.data.statusSummary;
-  const metrics = [
-    ["Tracked components", summary.trackedComponents],
-    ["Rust-default RC components", summary.rustDefaultRcComponents],
-    ["Opt-in implementations", summary.rustOptInOnlyImplementations],
-    ["Retired C components", summary.retiredCComponents],
-    ["Tooling gates", summary.toolingGates]
-  ];
+  const metrics = TEXT.metrics.map(([key, label]) => [label, summary[key]]);
 
   els.metrics.replaceChildren(
     ...metrics.map(([label, value]) => {
@@ -351,14 +551,13 @@ function renderProgressVisuals() {
   const retiredCount = components.filter((component) => component.retired).length;
   const overallReadiness = Math.round(avg([componentReadiness, phaseReadiness, toolingReadiness]));
 
-  els.progressNote.textContent =
-    "Computed from roadmap issues: tracked components, active rollback coverage, phase status, tooling gates, and remaining backlog posture.";
+  els.progressNote.textContent = TEXT.progressNote;
 
   els.progressGauges.replaceChildren(
-    gauge("Overall readiness", overallReadiness, "Component posture + phase completion", "accent"),
-    gauge("Rust-default RC coverage", pct(rustDefaultCount, components.length), `${rustDefaultCount}/${components.length} tracked components`, "good"),
-    gauge("Active rollback coverage", pct(rollbackCount, activeComponents.length), `${rollbackCount}/${activeComponents.length} non-retired components keep C rollback`, "info"),
-    gauge("C retirement progress", pct(retiredCount, components.length), `${retiredCount}/${components.length} C implementations retired`, "warn")
+    gauge(TEXT.gauges.overall[0], overallReadiness, TEXT.gauges.overall[1], "accent"),
+    gauge(TEXT.gauges.rustDefault(rustDefaultCount, components.length)[0], pct(rustDefaultCount, components.length), TEXT.gauges.rustDefault(rustDefaultCount, components.length)[1], "good"),
+    gauge(TEXT.gauges.rollback(rollbackCount, activeComponents.length)[0], pct(rollbackCount, activeComponents.length), TEXT.gauges.rollback(rollbackCount, activeComponents.length)[1], "info"),
+    gauge(TEXT.gauges.retirement(retiredCount, components.length)[0], pct(retiredCount, components.length), TEXT.gauges.retirement(retiredCount, components.length)[1], "warn")
   );
 
   renderBarChart(els.stateChart, countBy(components, "currentState"));
@@ -379,32 +578,24 @@ function renderArchitecture() {
 
   renderArchitectureMap(els.architectureConservative, {
     mode: "conservative",
-    kernelDetail: "seL4 kernel, bootstrap, spawn, capability, loader, and relocation paths stay in the conservative boundary.",
-    stats: [
-      `${cDefaultCount} C defaults`,
-      `${rollbackCount} rollback paths`,
-      `${activeComponents.length} active modules`
-    ],
+    kernelDetail: TEXT.architecture.conservativeKernel,
+    stats: TEXT.architecture.conservativeStats(cDefaultCount, rollbackCount, activeComponents.length),
     groups: architectureGroups(components)
   });
 
   renderArchitectureMap(els.architectureRust, {
     mode: "rust",
-    kernelDetail: "seL4 stays unchanged while proven modules move behind Rust providers, services, and host tools.",
-    stats: [
-      `${rustMigratedCount} Rust-backed modules`,
-      `${retiredCount} C retirements`,
-      `${components.length} tracked modules`
-    ],
+    kernelDetail: TEXT.architecture.rustKernel,
+    stats: TEXT.architecture.rustStats(rustMigratedCount, retiredCount, components.length),
     groups: architectureGroups(components)
   });
 
   els.architectureLegend.replaceChildren(
-    legendItem("C default", "module-c"),
-    legendItem("C rollback", "module-rollback"),
-    legendItem("Rust default", "module-rust"),
-    legendItem("Rust opt-in", "module-optin"),
-    legendItem("C retired", "module-retired")
+    legendItem(TEXT.architecture.postures.cDefault, "module-c"),
+    legendItem(TEXT.architecture.postures.cRollback, "module-rollback"),
+    legendItem(TEXT.architecture.postures.rustDefault, "module-rust"),
+    legendItem(TEXT.architecture.postures.rustOptIn, "module-optin"),
+    legendItem(TEXT.architecture.postures.cRetired, "module-retired")
   );
 }
 
@@ -416,7 +607,7 @@ function renderArchitectureMap(container, config) {
   statRow.append(...config.stats.map((stat) => el("span", "", stat)));
 
   const boundary = el("div", "architecture-boundary");
-  boundary.append(el("span", "", "IPC / C ABI boundary"));
+  boundary.append(el("span", "", TEXT.architecture.boundary));
 
   const lanes = el("div", "architecture-lanes");
   lanes.append(...config.groups.map((group) => {
@@ -433,13 +624,7 @@ function renderArchitectureMap(container, config) {
 }
 
 function architectureGroups(components) {
-  const labels = {
-    "task-manager": "Task manager providers",
-    "services": "Resource servers and drivers",
-    "host-tools": "Host and image tools",
-    "test-helper": "Test helpers",
-    "support": "Support modules"
-  };
+  const labels = TEXT.architecture.groups;
   const order = ["task-manager", "services", "host-tools", "test-helper", "support"];
   const groups = new Map(order.map((id) => [id, []]));
 
@@ -515,28 +700,30 @@ function architectureModuleClass(component, mode) {
 
 function architectureModulePosture(component, mode) {
   if (component.retired) {
-    return "C retired";
+    return TEXT.architecture.postures.cRetired;
   }
   if (mode === "conservative") {
     if (component.cDefault) {
-      return "C default";
+      return TEXT.architecture.postures.cDefault;
     }
     if (component.cRollback.length > 0) {
-      return "C rollback";
+      return TEXT.architecture.postures.cRollback;
     }
     if (component.rustOptIn) {
-      return "Rust opt-in";
+      return TEXT.architecture.postures.rustOptIn;
     }
     return readable(component.currentState);
   }
   if (component.rustDefault) {
-    return component.cRollback.length > 0 ? "Rust default + rollback" : "Rust default";
+    return component.cRollback.length > 0
+      ? TEXT.architecture.postures.rustDefaultRollback
+      : TEXT.architecture.postures.rustDefault;
   }
   if (component.rustOptIn) {
-    return "Rust opt-in";
+    return TEXT.architecture.postures.rustOptIn;
   }
   if (component.cDefault) {
-    return "C default";
+    return TEXT.architecture.postures.cDefault;
   }
   return readable(component.currentState);
 }
@@ -576,10 +763,10 @@ function renderFilters() {
 
 function renderComponents() {
   const rows = state.data.components.filter(matchesComponentFilters);
-  els.componentCount.textContent = `${rows.length} shown of ${state.data.components.length}`;
+  els.componentCount.textContent = TEXT.shownOf(rows.length, state.data.components.length);
 
   if (rows.length === 0) {
-    els.components.replaceChildren(el("div", "empty", "No components match the current filters."));
+    els.components.replaceChildren(el("div", "empty", TEXT.noComponents));
     return;
   }
 
@@ -595,17 +782,17 @@ function renderComponentCard(component) {
 
   const tags = el("div", "tag-row");
   tags.append(
-    el("span", "tag", component.cDefault ? "C default" : "C not default"),
+    el("span", "tag", component.cDefault ? TEXT.cards.cDefault : TEXT.cards.cNotDefault),
     el("span", "tag", implementationBadge(component)),
-    el("span", `tag risk-${slug(component.risk)}`, `Risk: ${component.risk}`),
+    el("span", `tag risk-${slug(component.risk)}`, TEXT.cards.risk(readable(component.risk))),
     issueLink(component.issue)
   );
 
   card.append(top, tags);
   card.append(el("p", "", component.notes));
-  card.append(meter(componentScore(component), "Readiness"));
-  card.append(el("h3", "", "Selectors"), list(component.selectors, "selector-list"));
-  card.append(el("h3", "", "Evidence"), list(component.evidence, "evidence-list"));
+  card.append(meter(componentScore(component), TEXT.cards.readiness));
+  card.append(el("h3", "", TEXT.cards.selectors), list(component.selectors, "selector-list"));
+  card.append(el("h3", "", TEXT.cards.evidence), list(component.evidence, "evidence-list"));
   card.append(el("p", "next-gate", component.nextGate));
   return card;
 }
@@ -618,7 +805,7 @@ function renderPhases() {
       wrap([
         withInlineLink(el("h3", "", phase.name), phase.issue),
         el("p", "", phase.objective),
-        meter(PHASE_SCORE[phase.status] ?? 0, "Phase completion")
+        meter(PHASE_SCORE[phase.status] ?? 0, TEXT.cards.phaseCompletion)
       ])
     );
     return node;
@@ -638,14 +825,14 @@ function renderPolicies() {
 
 function renderTooling() {
   const rows = state.data.toolingGates.filter(matchesToolingFilters);
-  els.toolingCount.textContent = `${rows.length} shown of ${state.data.toolingGates.length}`;
+  els.toolingCount.textContent = TEXT.shownOf(rows.length, state.data.toolingGates.length);
 
   if (rows.length === 0) {
     const tr = document.createElement("tr");
     const td = document.createElement("td");
     td.colSpan = 7;
     td.className = "empty";
-    td.textContent = "No tooling gates match the current filters.";
+    td.textContent = TEXT.noTooling;
     tr.append(td);
     els.tooling.replaceChildren(tr);
     return;
@@ -669,14 +856,14 @@ function renderTooling() {
 
 function renderBacklog() {
   const rows = state.data.candidateBacklog.filter(matchesBacklogFilters);
-  els.backlogCount.textContent = `${rows.length} shown of ${state.data.candidateBacklog.length}`;
+  els.backlogCount.textContent = TEXT.shownOf(rows.length, state.data.candidateBacklog.length);
 
   if (rows.length === 0) {
     const tr = document.createElement("tr");
     const td = document.createElement("td");
     td.colSpan = 6;
     td.className = "empty";
-    td.textContent = "No candidates match the current filters.";
+    td.textContent = TEXT.noBacklog;
     tr.append(td);
     els.backlog.replaceChildren(tr);
     return;
@@ -804,7 +991,7 @@ function fillOptions(select, values) {
   select.replaceChildren(...values.map((value) => {
     const option = document.createElement("option");
     option.value = value;
-    option.textContent = value === "all" ? "All" : readable(value);
+    option.textContent = value === "all" ? TEXT.all : readable(value);
     return option;
   }));
 }
@@ -879,15 +1066,15 @@ function isRustOptInOnly(component) {
 
 function implementationBadge(component) {
   if (component.retired) {
-    return "C retired";
+    return TEXT.badges.cRetired;
   }
   if (component.rustDefault) {
-    return "Rust default RC";
+    return TEXT.badges.rustDefaultRc;
   }
   if (component.rustOptIn) {
-    return "Rust opt-in";
+    return TEXT.badges.rustOptIn;
   }
-  return "C only";
+  return TEXT.badges.cOnly;
 }
 
 function latestIssueUpdate(items) {
@@ -940,7 +1127,11 @@ function unique(values) {
 }
 
 function readable(value) {
-  return String(value)
+  const raw = String(value);
+  if (TEXT.readable[raw]) {
+    return TEXT.readable[raw];
+  }
+  return raw
     .split("-")
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
     .join(" ");
@@ -955,7 +1146,8 @@ function formatDate(value) {
   if (Number.isNaN(date.getTime())) {
     return value;
   }
-  return date.toLocaleString(undefined, {
+  return date.toLocaleString(LANG === "uk" ? "uk-UA" : undefined, {
+    localeMatcher: "best fit",
     dateStyle: "medium",
     timeStyle: "short"
   });
