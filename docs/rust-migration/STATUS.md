@@ -8,7 +8,7 @@ stack byte accounting validated before child stack writes.
 `tm_cap_plan` now adds a second C-owned seam for child CSpace publication while
 seL4 authority operations remain committed in C.
 `tm_vspace_plan`, `tm_teardown_plan`, `tm_loader_proto`, and
-`tm_loader_admit` and `tm_loader_map_plan` and `tm_loader_auxv_plan` and `tm_loader_entry_plan` and `tm_tcb_handoff_plan` now split VSpace mapping, process cleanup, dynamic-loader
+`tm_loader_admit` and `tm_loader_map_plan` and `tm_loader_auxv_plan` and `tm_loader_entry_plan` and `tm_tcb_handoff_plan` and `tm_spawn_publication_plan` now split VSpace mapping, process cleanup, dynamic-loader
 protocol state, and loader admission/failure state into bounded C-owned seams
 with dedicated source evidence.
 
@@ -88,3 +88,9 @@ initial stack, and pid before the existing C-owned TCB register write.
 2026-07-02: Added `tm_tcb_handoff_plan` C seam evidence. TCB configure,
 scheduling, fault-cap, and reply-object handoff state now flows through a
 bounded C-owned plan while the seL4 authority calls remain in C.
+
+2026-07-02: Added `tm_spawn_publication_plan` C seam evidence. Process
+registration inputs, process-record metadata, taskman connection registration
+inputs, object-cap relocation ownership, and resume gating now flow through a
+bounded C-owned plan while process table, connection, cap-move, slot-free, and
+TCB resume authority remain in C.
