@@ -37,7 +37,8 @@ index 580413b..82c6db8 100644
  
  
  
-@@ -1920,6 +1948,114 @@ static int tm_spawn_objcnode_bind(tm_spawn_objcnode_plan_t *objc_plan,
+@@ -1920,5 +1920,113 @@ static int tm_spawn_objcnode_bind(tm_spawn_objcnode_plan_t *objc_plan,
+     objc_plan->status = TM_SPAWN_OBJCNODE_BOUND;
      return 0;
  }
  
@@ -149,20 +150,16 @@ index 580413b..82c6db8 100644
 +    return 0;
 +}
 +
- static void tm_spawn_state_reset(void)
- {
-     /* Reset per-spawn state.  Frame table is rebuilt as PT_LOAD pages
-@@ -1978,6 +2114,10 @@ int tm_spawn(const void *elf_blob, unsigned long elf_len,
+ int tm_spawn(const void *elf_blob, unsigned long elf_len,
+@@ -1978,4 +2086,8 @@ int tm_spawn(const void *elf_blob, unsigned long elf_len,
               const char *elf_name)
  {
-     tm_spawn_state_reset();
+ 
 +    tm_spawn_unwind_plan_t unwind_plan;
 +    int unwind_rc = tm_spawn_unwind_prepare(&unwind_plan, pid);
 +    if (unwind_rc != 0)
 +        return unwind_rc;
- 
      /* The L1 PT covering [0x40000000, 0x80000000).  In dyn-linked
-      * spawns we install it below as `dl_l1` (so libc.so + rtld + the
 @@ -2075,15 +2215,19 @@ int tm_spawn(const void *elf_blob, unsigned long elf_len,
  
      /* 1. Allocate the child's kernel objects.
