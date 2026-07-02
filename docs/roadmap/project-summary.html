@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>QSOE Rust Migration Summary</title>
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <header class="app-header">
+      <div>
+        <p class="eyebrow">QSOE OS</p>
+        <h1>Rust Migration Summary</h1>
+      </div>
+      <nav class="doc-links" aria-label="Summary navigation">
+        <a href="./">Dashboard</a>
+        <a href="project-summary.uk.html">Українською</a>
+        <a href="https://github.com/dmytro-yemelianov/qsoe-os-rust-handover">Repository</a>
+      </nav>
+    </header>
+
+    <main class="summary-page">
+      <section class="summary-hero">
+        <p class="eyebrow">Project State</p>
+        <h2>Public handover snapshot with a deliberate Rust stop boundary.</h2>
+        <div class="summary-tldr">
+          <strong>TL;DR:</strong>
+          <span>
+            Rust migration is complete for the practical low-risk scope:
+            tools, services, parsers, and task-manager providers. Kernel,
+            spawn, capability, loader, and seL4 authority boundaries remain in
+            C by design.
+          </span>
+        </div>
+        <p>
+          The repository is a measurable Rust migration handover for QSOE OS,
+          not a rewrite. Rust now owns the low-risk leaf logic, parsers, host
+          tools, userland services, and task-manager providers where it reduces
+          concrete C failure modes. Kernel, spawn, capability, loader, and
+          seL4 authority paths remain C-owned and deferred by design.
+        </p>
+      </section>
+
+      <section class="summary-grid">
+        <article class="summary-panel">
+          <h3>Canonical locations</h3>
+          <ul>
+            <li>Repository: <a href="https://github.com/dmytro-yemelianov/qsoe-os-rust-handover">dmytro-yemelianov/qsoe-os-rust-handover</a></li>
+            <li>Roadmap: <a href="https://dmytro-yemelianov.github.io/qsoe-os-rust-handover/">GitHub Pages dashboard</a></li>
+            <li>Roadmap issues: <a href="https://github.com/dmytro-yemelianov/qsoe-os-rust-handover/issues?q=label%3Aroadmap">issue-backed tracker</a></li>
+            <li>NQ mirror branch: <a href="https://github.com/dmytro-yemelianov/nq/pull/1">dmytro-yemelianov/nq PR #1</a></li>
+          </ul>
+        </article>
+
+        <article class="summary-panel">
+          <h3>Migration completed</h3>
+          <ul>
+            <li>Host qrvfs tools are Rust-only: `qrvfs-tree` and `mkfs-qrv-rs`.</li>
+            <li>Userland services `slogger`, `pipe`, and `devb-virtio` are Rust-only.</li>
+            <li>`test_msgpass` is Rust-only in test images.</li>
+            <li>Retired task-manager providers link through the shared `qsoe-tm-providers` archive.</li>
+          </ul>
+        </article>
+
+        <article class="summary-panel">
+          <h3>Task-manager provider posture</h3>
+          <p>
+            The retired C provider set includes `tm_procfs`, `tm_cpio`,
+            `tm_cred`, `tm_script`, `tm_elf`, `tm_reloc`, `tm_fdt`,
+            `tm_syscfg`, `tm_sysmap`, `tm_sysfs`, `tm_pathmgr`,
+            `tm_pseudodev`, and `tm_rsrcdb`.
+          </p>
+          <p>
+            `tm-log` is complete for its Rust-default formatter scope. Rust
+            owns the typed formatter; C intentionally keeps the variadic ABI,
+            `va_list` marshalling, LQ debug-console sink, and explicit
+            fallback selector.
+          </p>
+        </article>
+
+        <article class="summary-panel">
+          <h3>Deferred by design</h3>
+          <ul>
+            <li>Kernel Rust remains deferred.</li>
+            <li>Spawn, capability, relocation, and loader ownership remains C-owned.</li>
+            <li>High-risk runtime and kernel-adjacent work needs a separate milestone and risk review.</li>
+            <li>No further C-to-Rust translation is planned merely to increase Rust coverage.</li>
+          </ul>
+        </article>
+      </section>
+
+      <section class="summary-panel summary-wide">
+        <h3>Evidence status</h3>
+        <p>
+          After the repository transfer back to the user account, the roadmap
+          dashboard, repository metadata, CI runner configuration, and issue
+          metadata were updated to use the `dmytro-yemelianov` owner. Main CI,
+          CodeQL, and Pages deployment passed on the transferred repository.
+        </p>
+        <div class="evidence-strip">
+          <span>Main CI: `28619111329`</span>
+          <span>CodeQL: `28619111391`</span>
+          <span>Pages: `28619111337`</span>
+          <span>Merge: `bdefc3cf64668244fba40d3224e2fbd3b4c7c21d`</span>
+        </div>
+        <p>
+          Local QEMU validation also passed for QSOE/L:
+          `scripts/boot-smoke.sh -k lq -t 180` reached `login:`,
+          `[slogger-rs] alive`, `fs-qrv: mounted qrvfs at /usr`, and
+          `[devb-virtio-rs] /dev/vblk0 ready`.
+        </p>
+      </section>
+    </main>
+
+    <footer>
+      <span>QSOE Rust migration handover summary.</span>
+      <a href="project-summary.uk.html">Українська версія</a>
+    </footer>
+  </body>
+</html>
