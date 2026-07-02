@@ -150,7 +150,7 @@ index 580413b..82c6db8 100644
 +    return 0;
 +}
 +
- int tm_spawn(const void *elf_blob, unsigned long elf_len,
+ static int tm_spawn_plan_prepare(tm_spawn_plan_t *plan,
 @@ -1978,4 +2086,8 @@ int tm_spawn(const void *elf_blob, unsigned long elf_len,
               const char *elf_name)
  {
