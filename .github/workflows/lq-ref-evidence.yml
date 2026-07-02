@@ -22,7 +22,7 @@ concurrency:
 jobs:
   spawn-loader:
     name: Spawn/loader evidence against LQ ref
-    runs-on: [self-hosted, X64]
+    runs-on: ubuntu-latest
     timeout-minutes: 180
     env:
       QSOE_CONTAINER_CACHE_ROOT: ${{ github.workspace }}/.qsoe-cache/container

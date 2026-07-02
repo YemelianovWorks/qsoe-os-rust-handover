@@ -27,8 +27,9 @@ concurrency:
 jobs:
   qsoe:
     name: QSOE build, checks, and boot smoke
-    # Match the hosted runner label used by dmytro-yemelianov/rapsody main CI.
-    runs-on: [self-hosted, X64]
+    # Keep the public user-owned handover repo runnable without org-scoped
+    # self-hosted runner access.
+    runs-on: ubuntu-latest
     timeout-minutes: 180
     env:
       QSOE_CONTAINER_CACHE_ROOT: ${{ github.workspace }}/.qsoe-cache/container
