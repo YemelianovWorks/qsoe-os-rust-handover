@@ -36,7 +36,7 @@ require_source "loader_admit.rtld_blob" "rtld load/parse consumes admission stat
 require_source "loader_admit.libc_size" "libc parse size consumes admission state"
 require_source "loader_admit.rtld_size" "rtld parse size consumes admission state"
 require_source "const struct elf64_hdr *rtld_eh = loader_admit.rtld_blob" "rtld debug metadata consumes admission state"
-require_source "tm_reloc_apply(&main_view" "relocation authority remains in C after admission"
+require_source "tm_reloc_apply(&loader_map.main_view" "relocation authority remains in C after admission via loader map plan"
 require_source "tm_loader_proto_admit_dynamic(&loader_proto" "protocol state remains a later C-owned seam"
 require_source "qsoe_tcb_write_registers" "TCB authority remains in C commit path"
 
