@@ -7,9 +7,10 @@ first C-only planning seam for #154, with argv/envp/auxv bounds and initial
 stack byte accounting validated before child stack writes.
 `tm_cap_plan` now adds a second C-owned seam for child CSpace publication while
 seL4 authority operations remain committed in C.
-`tm_vspace_plan`, `tm_teardown_plan`, and `tm_loader_proto` now split VSpace
-mapping, process cleanup, and dynamic-loader protocol state into bounded
-C-owned seams with dedicated source evidence.
+`tm_vspace_plan`, `tm_teardown_plan`, `tm_loader_proto`, and
+`tm_loader_admit` now split VSpace mapping, process cleanup, dynamic-loader
+protocol state, and loader admission/failure state into bounded C-owned seams
+with dedicated source evidence.
 
 This table tracks components whose current C implementation may be replaced by
 Rust. Link-smoke binaries, examples, and reusable parser crates are not listed
@@ -60,3 +61,8 @@ symbols. C remains the rollback path only for non-retired current migration cand
 state (`AT_PHDR`, `AT_BASE`, `AT_ENTRY`, entry PC, and dyn-link admission) is
 now tracked as a bounded C-owned state object while load, relocation, auxv,
 TCB, VSpace, and capability authority stay in C.
+
+2026-07-02: Added `tm_loader_admit` C seam evidence. Dynamic-loader admission
+now records normalized `PT_INTERP`, runtime-linker lookup, libc lookup, and
+missing-rtld/missing-libc failure states as bounded C-owned state before loader
+mapping and relocation continue in C.

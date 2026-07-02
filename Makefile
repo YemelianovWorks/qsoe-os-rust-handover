@@ -1056,13 +1056,19 @@ spawn-loader-c-evidence:
 container-spawn-loader-c-evidence:
 	@scripts/container-toolchain.sh run make spawn-loader-c-evidence
 
-.PHONY: spawn-loader-proto-c-evidence container-spawn-loader-proto-c-evidence
+.PHONY: spawn-loader-proto-c-evidence container-spawn-loader-proto-c-evidence container-spawn-loader-admit-c-evidence
 
 spawn-loader-proto-c-evidence:
 	@scripts/spawn-loader-proto-c-evidence.sh
 
 container-spawn-loader-proto-c-evidence:
 	@scripts/container-toolchain.sh run make spawn-loader-proto-c-evidence
+
+spawn-loader-admit-c-evidence:
+	@scripts/spawn-loader-admit-c-evidence.sh
+
+container-spawn-loader-admit-c-evidence:
+	@scripts/container-toolchain.sh run make spawn-loader-admit-c-evidence
 
 .PHONY: spawn-argpack-c-evidence container-spawn-argpack-c-evidence
 
