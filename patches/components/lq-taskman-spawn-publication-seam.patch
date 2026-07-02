@@ -37,7 +37,91 @@
  
  
  
-@@ -2327,31 +2357,41 @@
+@@ -1749,6 +1779,83 @@
+     return 0;
+ }
+ 
++static int tm_spawn_publication_prepare(tm_spawn_publication_plan_t *publication,
++                                        pid_t pid,
++                                        seL4_CPtr cnode,
++                                        seL4_CPtr tcb,
++                                        seL4_CPtr vspace,
++                                        seL4_CPtr child_untyped,
++                                        seL4_CPtr fault_ep,
++                                        seL4_CPtr sc,
++                                        seL4_CPtr workers_l1_pt,
++                                        const char *elf_name)
++{
++    if (!publication)
++        return -EINVAL;
++
++    qmemset(publication, 0, sizeof *publication);
++    publication->status = TM_SPAWN_PUBLICATION_EMPTY;
++
++    if (!pid || !cnode || !tcb || !vspace ||
++        !child_untyped || !fault_ep || !sc) {
++        publication->status = TM_SPAWN_PUBLICATION_BAD_OBJECTS;
++        return -EINVAL;
++    }
++
++    publication->pid = pid;
++    publication->cnode = cnode;
++    publication->tcb = tcb;
++    publication->vspace = vspace;
++    publication->first_child_slot = QSOE_CAP_WELL_KNOWN_END;
++    publication->child_untyped = child_untyped;
++    publication->fault_ep = fault_ep;
++    publication->sc = sc;
++    publication->workers_l1_pt = workers_l1_pt;
++
++    publication->name_base = elf_name ? elf_name : "?";
++    for (const char *s = publication->name_base; *s; ++s)
++        if (*s == '/') publication->name_base = s + 1;
++    while (publication->name_base[publication->name_len] != '\0')
++        publication->name_len++;
++
++    publication->taskman_owner_pid = QSOE_PID_TASKMAN;
++    publication->taskman_owner_chid = 1;
++    publication->taskman_ep_slot = QSOE_CAP_TASKMAN_EP;
++    publication->taskman_scoid = (seL4_Word)pid;
++    publication->taskman_flags = 0;
++    publication->primary_idx = -1;
++    publication->status = TM_SPAWN_PUBLICATION_READY;
++    return 0;
++}
++
++static int tm_spawn_publication_bind_taskman_channel(tm_spawn_publication_plan_t *publication,
++                                                     int primary_idx)
++{
++    if (!publication)
++        return -EINVAL;
++    if (publication->status != TM_SPAWN_PUBLICATION_READY)
++        return -EINVAL;
++    if (primary_idx < 0) {
++        publication->status = TM_SPAWN_PUBLICATION_BAD_CHANNEL;
++        return -EINVAL;
++    }
++
++    publication->primary_idx = primary_idx;
++    publication->status = TM_SPAWN_PUBLICATION_CONNECTION_READY;
++    return 0;
++}
++
++static int tm_spawn_publication_mark_resume_ready(tm_spawn_publication_plan_t *publication)
++{
++    if (!publication)
++        return -EINVAL;
++    if (publication->status != TM_SPAWN_PUBLICATION_CONNECTION_READY)
++        return -EINVAL;
++
++    publication->status = TM_SPAWN_PUBLICATION_RESUME_READY;
++    return 0;
++}
++
+ int tm_spawn(const void *elf_blob, unsigned long elf_len,
+              pid_t pid, seL4_CPtr primary_ep,
+              int argc, const char *const *argv,
+@@ -2327,31 +2434,41 @@
      err = qsoe_tcb_write_registers(tcb, 0, &ctx);
      if (err) { tm_err("spawn: TCB_WriteRegisters failed"); return -ENOMEM; }
  
@@ -89,7 +173,7 @@
              ++ni;
          }
          prec->name[ni] = '\0';
-@@ -2362,7 +2402,8 @@
+@@ -2362,7 +2479,8 @@
      }
      /* Hand the dyn-link L1 PT to the worker-region allocator (same
       * L2[1] slot covers libc.so/rtld AND the worker region at 0x40000000). */
@@ -99,7 +183,7 @@
  
      /* 8b. Register the connection record for the SYSMGR_COID cap we
       *     minted in step 5. The badge we used was `pid` itself, so the
-@@ -2373,16 +2414,21 @@
+@@ -2373,16 +2491,21 @@
       * tm_channel_index matches owner_chid as stored, so we use the
       * raw index here -- NOT the encoded TASKMAN_CHID = (gen<<16)|idx
       * the user-facing ABI exposes (see <sys/qsoe.h>).               */
@@ -128,7 +212,7 @@
      if (cnreg) {
          tm_err("spawn: tm_connection_register_existing failed");
          return cnreg;
-@@ -2396,9 +2442,9 @@
+@@ -2396,9 +2519,9 @@
       * lives in the frame cap, so it survives the move; safe now that the
       * loads and the relocation pass have finished touching the frames. */
      {
@@ -140,7 +224,7 @@
              seL4_CPtr objc = alloc_object(seL4_CapTableObject, TM_OBJCNODE_RADIX);
              if (!objc) { tm_err("spawn: objcnode alloc failed"); return -ENOMEM; }
              op->objcnode      = objc;
-@@ -2455,8 +2501,12 @@
+@@ -2455,8 +2578,12 @@
          }
      }
  
